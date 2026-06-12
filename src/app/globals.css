@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --bg: #14120f;
+  --panel: #1e2522;
+  --panel-strong: #25332d;
+  --text: #f6f1e8;
+  --muted: #b9c0b7;
+  --line: rgba(246, 241, 232, 0.14);
+  --gold: #f2c14e;
+  --red: #db4b3f;
+  --blue: #3d7edb;
+  --green: #2f9b67;
+  --yellow: #e7b83d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    linear-gradient(120deg, rgba(47, 155, 103, 0.18), transparent 34%),
+    linear-gradient(240deg, rgba(219, 75, 63, 0.14), transparent 36%),
+    var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.app-shell {
+  width: min(1180px, calc(100vw - 24px));
+  margin: 0 auto;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  background: rgba(30, 37, 34, 0.92);
+  border-radius: 8px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: var(--gold);
+  color: #17130a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.button.secondary {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.button.danger {
+  background: var(--red);
+  color: white;
+}
+
+.field {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: rgba(10, 12, 11, 0.72);
+  color: var(--text);
+}
+
+.board {
+  min-height: calc(100vh - 104px);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 14px;
+}
+
+.card-face {
+  position: relative;
+  width: 86px;
+  aspect-ratio: 5 / 7;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
+  color: white;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.24);
+}
+
+.card-face.small {
+  width: 58px;
+}
+
+.card-face.playable {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 34px rgba(242, 193, 78, 0.28);
+}
+
+.card-face::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 6px;
+}
+
+.card-red {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 34%),
+    var(--red);
+}
+
+.card-blue {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 34%),
+    var(--blue);
+}
+
+.card-green {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 34%),
+    var(--green);
+}
+
+.card-yellow {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent 34%),
+    var(--yellow);
+  color: #221706;
+}
+
+.card-wild {
+  background:
+    conic-gradient(from 45deg, var(--red), var(--yellow), var(--green), var(--blue), var(--red));
+}
+
+.seat {
+  min-width: 106px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(20, 18, 15, 0.74);
+}
+
+.seat.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(242, 193, 78, 0.22);
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    width: min(100vw - 14px, 720px);
+  }
+
+  .card-face {
+    width: 68px;
+  }
+
+  .card-face.small {
+    width: 48px;
+  }
+}
