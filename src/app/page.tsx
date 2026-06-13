@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { Card } from "@congcard/shared";
 import { AVATARS } from "@congcard/shared";
 import { createRoom, resolveRoom } from "@/lib/api";
+import { formatRoomCodeInput } from "@/lib/roomCode";
 import { AvatarGrid } from "@/components/AvatarGrid";
 import { CardView } from "@/components/CardView";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -51,7 +52,7 @@ export default function HomePage() {
   async function submitJoin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await withProfile(async () => {
-      const room = await resolveRoom(roomCode.trim());
+      const room = await resolveRoom(roomCode);
       router.push(`/room/${room.code}`);
     });
   }
@@ -163,8 +164,8 @@ export default function HomePage() {
                   className="field uppercase"
                   maxLength={6}
                   value={roomCode}
-                  onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
-                  placeholder="ABC123"
+                  onChange={(event) => setRoomCode(formatRoomCodeInput(event.target.value))}
+                  placeholder="ABC234"
                 />
               </label>
               <button className="button secondary" disabled={busy || roomCode.trim().length < 6 || !nickname.trim()}>

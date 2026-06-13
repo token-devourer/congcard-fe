@@ -52,6 +52,15 @@ console.log("currentPlayerId set:", Boolean(a.currentPlayerId), "| turnDeadline 
 for (let step = 0; step < 6; step += 1) {
   const snap = snapshots.A;
   if (snap.phase !== "playing") break;
+  if (snap.pendingChallenge) {
+    const challenger = snap.players.find((p) => p.id === snap.pendingChallenge.challengerId);
+    const room = challenger.nickname === "A" ? roomA : roomB;
+    room.send("game.challenge", { accept: false });
+    console.log(`${challenger.nickname} accepted +4 penalty`);
+    await wait(400);
+    continue;
+  }
+
   const current = snap.players.find((p) => p.id === snap.currentPlayerId);
   const room = current.nickname === "A" ? roomA : roomB;
   const mySnap = snapshots[current.nickname];

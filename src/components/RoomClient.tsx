@@ -257,7 +257,9 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   game_in_progress: "errors.gameInProgress",
   game_finished: "errors.gameFinished",
   max_players_too_low: "errors.maxPlayersTooLow",
-  one_call_pending: "errors.oneCallPending"
+  one_call_pending: "errors.oneCallPending",
+  invalid_room_code: "errors.invalidRoomCode",
+  rate_limited: "errors.rateLimited"
 };
 
 // Floating toast instead of an in-flow banner: it never pushes the board
