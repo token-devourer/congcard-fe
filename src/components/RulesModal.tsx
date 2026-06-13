@@ -91,6 +91,48 @@ export function RulesModal({ open, onClose }: RulesModalProps) {
               <h2 className="display text-xl font-bold">{t("oneTitle")}</h2>
               <p className="text-[var(--muted)]">{t("oneBody")}</p>
             </section>
+
+            <hr className="border-white/10" />
+
+            <header className="space-y-1">
+              <h2 className="display text-2xl font-black text-[var(--gold)]">{t("advTitle")}</h2>
+              <p className="text-sm text-[var(--muted)]">{t("advIntro")}</p>
+            </header>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("challengeTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("challengeBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("drawTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("drawBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("timerTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("timerBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("catchTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("catchBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("noStackTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("noStackBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("scoringTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("scoringBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h3 className="display text-xl font-bold">{t("edgeTitle")}</h3>
+              <p className="text-[var(--muted)]">{t("edgeBody")}</p>
+            </section>
           </motion.article>
         </motion.div>
       ) : null}
