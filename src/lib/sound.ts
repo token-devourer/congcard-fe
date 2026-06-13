@@ -4,6 +4,10 @@ export type SoundName = "turn" | "oneWindow" | "oneCalled" | "catch" | "wild" | 
 
 const STORAGE_KEY = "congcard:sound-muted";
 
+// Per-note volumes below are mix ratios; this lifts the overall output to a
+// clearly audible level without clipping (peaks stay under 0.9).
+const MASTER_GAIN = 5;
+
 let audioContext: AudioContext | null = null;
 
 export function isSoundMuted(): boolean {
@@ -91,7 +95,7 @@ export function playSound(name: SoundName): void {
     osc.type = note.type;
     osc.frequency.setValueAtTime(note.frequency, start);
     gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(note.volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(Math.min(0.9, note.volume * MASTER_GAIN), start + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
     osc.connect(gain);
     gain.connect(ctx.destination);

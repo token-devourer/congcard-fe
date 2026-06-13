@@ -29,7 +29,9 @@ export function ChallengeModal({ snapshot, send }: ChallengeModalProps) {
       {pending && forMe ? (
         <motion.div
           key="challenge"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4"
+          // No blocking backdrop: clicks pass through to the board so the
+          // player can still hit ONE/CATCH while the challenge is pending.
+          className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -39,11 +41,11 @@ export function ChallengeModal({ snapshot, send }: ChallengeModalProps) {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="panel grid w-full max-w-md gap-4 p-5"
+            className="panel pointer-events-auto grid w-full max-w-sm gap-3 p-4 shadow-[var(--shadow-pop)]"
           >
             <div className="flex items-center gap-4">
               <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 1.6 }}>
-                <CardView card={{ id: "challenge-wild4", color: null, value: "wild4", deckIndex: 0 }} />
+                <CardView small card={{ id: "challenge-wild4", color: null, value: "wild4", deckIndex: 0 }} />
               </motion.div>
               <div>
                 <h2 className="display text-2xl font-black">{t("challenge.title")}</h2>

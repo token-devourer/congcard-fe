@@ -425,6 +425,24 @@ button.card-face.playable:active {
   }
 }
 
+/* Short viewports (landscape phones/tablets): shrink cards and seats so the
+   table keeps breathing room and the center pile clears the seats. */
+@media (max-height: 760px) {
+  .card-face {
+    width: 64px;
+    border-radius: 10px;
+  }
+
+  .card-face.small {
+    width: 44px;
+  }
+
+  .tableseat {
+    width: 84px;
+    padding: 4px 3px 5px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

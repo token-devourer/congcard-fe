@@ -167,7 +167,8 @@
     "player": "Pemain",
     "score": "Skor",
     "nextRound": "Mulai ronde berikutnya",
-    "waitingHost": "Menunggu host memulai ronde berikutnya..."
+    "waitingHost": "Menunggu host memulai ronde berikutnya...",
+    "leave": "Keluar ke beranda"
   },
   "rules": {
     "tagline": "Aturan",

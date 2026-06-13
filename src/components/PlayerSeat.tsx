@@ -14,10 +14,9 @@ interface PlayerSeatProps {
   oneOpen?: boolean;
   turnDeadline?: number;
   turnTimeoutSec?: number;
-  onCatch?: () => void;
 }
 
-export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turnTimeoutSec, onCatch }: PlayerSeatProps) {
+export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turnTimeoutSec }: PlayerSeatProps) {
   const t = useTranslations();
   const prevCount = useRef<number | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -43,7 +42,7 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
   return (
     <div
       ref={anchorRef(`seat:${player.id}`)}
-      className={`tableseat ${active ? "active" : ""} ${player.connected ? "" : "offline"} ${shaking ? "shake" : ""}`}
+      className={`tableseat ${active ? "active" : ""} ${oneOpen ? "pulse-red" : ""} ${player.connected ? "" : "offline"} ${shaking ? "shake" : ""}`}
     >
       <div className="relative mx-auto h-14 w-14">
         {active && turnDeadline && turnTimeoutSec ? <TimerRing deadline={turnDeadline} totalSec={turnTimeoutSec} /> : null}
@@ -75,15 +74,6 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
       </div>
 
       {!player.connected ? <div className="mt-0.5 text-center text-[10px] font-bold text-red-300">{t("lobby.offline")}</div> : null}
-
-      {oneOpen && onCatch ? (
-        <button
-          className="pulse-red mx-auto mt-1 block whitespace-nowrap rounded-full bg-[var(--red)] px-3 py-1 text-[11px] font-black text-white"
-          onClick={onCatch}
-        >
-          {t("board.catch", { name: player.nickname })}
-        </button>
-      ) : null}
     </div>
   );
 }

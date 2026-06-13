@@ -28,9 +28,9 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
   const catchVisible = Boolean(catchTarget) && now <= (catchTarget?.deadline ?? 0);
 
   return (
-    // Sits centered just above the hand panel (the parent is the hand's
-    // relative wrapper) so the call-to-action stays where the player looks.
-    <div className="pointer-events-none absolute inset-x-0 bottom-full z-30 mb-2 flex items-end justify-center gap-3">
+    // Docked at the middle-right edge of the viewport, stacked vertically,
+    // so the call-to-action never covers seats, the pile, or the hand.
+    <div className="pointer-events-none fixed right-2 top-1/2 z-[60] flex -translate-y-1/2 flex-col items-end gap-3 md:right-4">
       <AnimatePresence>
         {catchTarget && catchVisible ? (
           <motion.button

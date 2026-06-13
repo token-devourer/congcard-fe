@@ -167,7 +167,8 @@
     "player": "Player",
     "score": "Score",
     "nextRound": "Start next round",
-    "waitingHost": "Waiting for the host to start the next round..."
+    "waitingHost": "Waiting for the host to start the next round...",
+    "leave": "Leave to home"
   },
   "rules": {
     "tagline": "Rules",

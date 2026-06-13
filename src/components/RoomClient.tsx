@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
@@ -35,6 +36,7 @@ type ConnectionStatus = "idle" | "connecting" | "connected" | "closed";
 
 export function RoomClient({ code }: RoomClientProps) {
   const t = useTranslations();
+  const router = useRouter();
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
   const { snapshot, setSnapshot, setError, reset } = useRoomStore();
@@ -150,6 +152,15 @@ export function RoomClient({ code }: RoomClientProps) {
     roomRef.current?.send(type, payload);
   }
 
+  function leaveToHome() {
+    // Drop the reconnect token so coming back to this URL asks for a fresh
+    // join instead of silently rejoining the finished game.
+    window.localStorage.removeItem(`congcard:reconnect:${code}`);
+    roomRef.current?.leave();
+    roomRef.current = null;
+    router.push("/");
+  }
+
   if (!profileReady) {
     return null;
   }
@@ -223,7 +234,7 @@ export function RoomClient({ code }: RoomClientProps) {
       ) : snapshot.phase === "lobby" ? (
         <Lobby snapshot={snapshot} code={code} send={send} />
       ) : (
-        <Board snapshot={snapshot} send={send} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
+        <Board snapshot={snapshot} send={send} onLeave={leaveToHome} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
       )}
     </main>
   );
@@ -432,11 +443,13 @@ function Lobby({
 function Board({
   snapshot,
   send,
+  onLeave,
   selectedCard,
   setSelectedCard
 }: {
   snapshot: GameSnapshot;
   send: (type: string, payload?: unknown) => void;
+  onLeave: () => void;
   selectedCard: Card | null;
   setSelectedCard: (card: Card | null) => void;
 }) {
@@ -476,19 +489,11 @@ function Board({
     <>
       <section className="board">
         <div className="relative">
-          <RoundTable
-            snapshot={snapshot}
-            isMyTurn={isMyTurn}
-            canDraw={canDraw}
-            onDraw={() => send("game.drawCard")}
-            onCatch={(targetId) => send("game.catchOne", { targetId })}
-          />
+          <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
           <LogTicker snapshot={snapshot} />
         </div>
 
         <div className="relative">
-          {/* Anchored above the hand so the action sits where the player is
-              already looking, instead of a detached corner of the screen. */}
           <UnoButton
             canCallOne={Boolean(canCallOne)}
             callWindow={
@@ -533,7 +538,7 @@ function Board({
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
       <ChallengeModal snapshot={snapshot} send={send} />
-      <RoundEndOverlay snapshot={snapshot} send={send} />
+      <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>

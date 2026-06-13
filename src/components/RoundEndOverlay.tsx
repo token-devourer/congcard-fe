@@ -10,9 +10,10 @@ const CONFETTI_COLORS = ["var(--red)", "var(--yellow)", "var(--green)", "var(--b
 interface RoundEndOverlayProps {
   snapshot: GameSnapshot;
   send: (type: string, payload?: unknown) => void;
+  onLeave: () => void;
 }
 
-export function RoundEndOverlay({ snapshot, send }: RoundEndOverlayProps) {
+export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProps) {
   const t = useTranslations();
   const open = snapshot.phase === "roundEnd" || snapshot.phase === "gameEnd";
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
@@ -97,6 +98,13 @@ export function RoundEndOverlay({ snapshot, send }: RoundEndOverlayProps) {
                 <p className="text-sm text-[var(--muted)]">{t("roundEnd.waitingHost")}</p>
               )
             ) : null}
+
+            <button
+              className={snapshot.phase === "gameEnd" ? "button !min-h-12" : "button secondary !min-h-10 text-sm"}
+              onClick={onLeave}
+            >
+              {t("roundEnd.leave")}
+            </button>
           </motion.div>
         </motion.div>
       ) : null}
