@@ -121,7 +121,10 @@ describe("diffSnapshots", () => {
 
   it("detects an opened catch window", () => {
     const prev = snapshot({});
-    const next = snapshot({ oneWindow: { playerId: "b", opensAt: 100, deadline: 123 } });
+    const next = snapshot({
+      players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1, cardCount: 1 })],
+      oneWindow: { playerId: "b", opensAt: 100, deadline: 123 }
+    });
 
     expect(diffSnapshots(prev, next).find((event) => event.type === "catchWindow")).toMatchObject({
       playerId: "b",
@@ -129,6 +132,13 @@ describe("diffSnapshots", () => {
       opensAt: 100,
       deadline: 123
     });
+  });
+
+  it("ignores stale catch windows for players who no longer have one card", () => {
+    const prev = snapshot({});
+    const stale = snapshot({ oneWindow: { playerId: "b", opensAt: 100, deadline: 123 } });
+
+    expect(diffSnapshots(prev, stale).map((event) => event.type)).not.toContain("catchWindow");
   });
 
   it("maps awareness events to sounds", () => {

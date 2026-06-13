@@ -86,7 +86,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
 
   if (next.oneWindow && (next.oneWindow.playerId !== prev.oneWindow?.playerId || next.oneWindow.opensAt !== prev.oneWindow?.opensAt)) {
     const target = next.players.find((item) => item.id === next.oneWindow?.playerId);
-    if (target) {
+    if (target && target.cardCount === 1 && !target.calledOne) {
       events.push({
         id: eventId(),
         type: "catchWindow",

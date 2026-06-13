@@ -13,7 +13,7 @@ import { Avatar } from "./Avatar";
 import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
-import { canPlayCard, needsColor } from "@/lib/rules";
+import { needsColor, playableCardInHand } from "@/lib/rules";
 import { useRoomStore } from "@/lib/store";
 import { ChallengeModal } from "./ChallengeModal";
 import { ColorPicker } from "./ColorPicker";
@@ -254,7 +254,10 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   empty_deck: "errors.emptyDeck",
   not_host: "errors.notHost",
   room_full: "errors.roomFull",
-  game_in_progress: "errors.gameInProgress"
+  game_in_progress: "errors.gameInProgress",
+  game_finished: "errors.gameFinished",
+  max_players_too_low: "errors.maxPlayersTooLow",
+  one_call_pending: "errors.oneCallPending"
 };
 
 // Floating toast instead of an in-flow banner: it never pushes the board
@@ -456,32 +459,42 @@ function Board({
   const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
   const isMyTurn = snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+  const actionLocked = Boolean(snapshot.oneWindow?.callPending);
   const canCallOne = snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
-  const canDraw = isMyTurn && !snapshot.self?.drawnCardId;
+  const canDraw = isMyTurn && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
     snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
+  useEffect(() => {
+    if (selectedCard && !playableCardInHand(snapshot, selectedCard)) {
+      setSelectedCard(null);
+    }
+  }, [selectedCard, setSelectedCard, snapshot]);
+
   function play(card: Card) {
-    if (!canPlayCard(snapshot, card)) {
+    const playable = playableCardInHand(snapshot, card);
+    if (!playable) {
       return;
     }
 
-    if (needsColor(card)) {
-      setSelectedCard(card);
+    if (needsColor(playable)) {
+      setSelectedCard(playable);
       return;
     }
 
-    send("game.playCard", { cardId: card.id });
+    send("game.playCard", { cardId: playable.id });
   }
 
   function chooseColor(color: Color) {
-    if (!selectedCard) {
+    const playable = playableCardInHand(snapshot, selectedCard);
+    if (!playable) {
+      setSelectedCard(null);
       return;
     }
 
-    send("game.playCard", { cardId: selectedCard.id, declaredColor: color });
+    send("game.playCard", { cardId: playable.id, declaredColor: color });
     setSelectedCard(null);
   }
 

@@ -23,6 +23,7 @@ export function ChallengeModal({ snapshot, send }: ChallengeModalProps) {
   const pending = snapshot.pendingChallenge;
   const forMe = Boolean(pending && pending.challengerId === snapshot.self?.id);
   const offender = pending ? snapshot.players.find((player) => player.id === pending.offenderId) : undefined;
+  const actionLocked = Boolean(snapshot.oneWindow?.callPending);
 
   return (
     <AnimatePresence>
@@ -72,10 +73,10 @@ export function ChallengeModal({ snapshot, send }: ChallengeModalProps) {
             <DeadlineBar deadline={snapshot.turnDeadline} totalSec={snapshot.settings.turnTimeoutSec} />
 
             <div className="grid grid-cols-2 gap-3">
-              <button className="button secondary !min-h-12" onClick={() => send("game.challenge", { accept: false })}>
+              <button className="button secondary !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: false })}>
                 {t("challenge.accept")}
               </button>
-              <button className="button danger !min-h-12" onClick={() => send("game.challenge", { accept: true })}>
+              <button className="button danger !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: true })}>
                 {t("challenge.challenge")}
               </button>
             </div>

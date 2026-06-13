@@ -146,7 +146,10 @@
     "emptyDeck": "Tidak ada kartu untuk diambil.",
     "notHost": "Hanya host yang bisa melakukan itu.",
     "roomFull": "Ruangan ini penuh.",
-    "gameInProgress": "Ruangan ini sedang bermain."
+    "gameInProgress": "Ruangan ini sedang bermain.",
+    "gameFinished": "Permainan ini sudah selesai.",
+    "maxPlayersTooLow": "Maksimal pemain tidak boleh lebih kecil dari jumlah pemain saat ini.",
+    "oneCallPending": "Panggilan SATU sedang dikunci — tunggu sebentar."
   },
   "challenge": {
     "title": "Tantangan Wild +4",

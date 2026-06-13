@@ -1,7 +1,7 @@
 import type { Card, GameSnapshot } from "@congcard/shared";
 
 export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean {
-  if (!snapshot?.self || snapshot.phase !== "playing" || snapshot.pendingChallenge) {
+  if (!snapshot?.self || snapshot.phase !== "playing" || snapshot.pendingChallenge || snapshot.oneWindow?.callPending) {
     return false;
   }
 
@@ -9,15 +9,33 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     return false;
   }
 
-  if (snapshot.self.drawnCardId && snapshot.self.drawnCardId !== card.id) {
+  const handCard = snapshot.self.hand.find((item) => item.id === card.id);
+  if (!handCard) {
     return false;
   }
 
-  if (card.color === null) {
+  if (snapshot.self.drawnCardId && snapshot.self.drawnCardId !== handCard.id) {
+    return false;
+  }
+
+  if (!snapshot.activeColor || !snapshot.discardTop) {
+    return false;
+  }
+
+  if (handCard.color === null) {
     return true;
   }
 
-  return card.color === snapshot.activeColor || card.value === snapshot.discardTop?.value;
+  return handCard.color === snapshot.activeColor || handCard.value === snapshot.discardTop.value;
+}
+
+export function playableCardInHand(snapshot: GameSnapshot | null, card: Card | null): Card | null {
+  if (!snapshot?.self || !card) {
+    return null;
+  }
+
+  const handCard = snapshot.self.hand.find((item) => item.id === card.id);
+  return handCard && canPlayCard(snapshot, handCard) ? handCard : null;
 }
 
 export function needsColor(card: Card): boolean {

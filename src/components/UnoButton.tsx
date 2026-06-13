@@ -61,7 +61,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
           >
             <span aria-hidden="true">!</span>
             {catchReady ? t("board.catch", { name: catchTarget.nickname }) : t("board.readyIn", { seconds: readySeconds(catchTarget.opensAt, now) })}
-            <ActionCountdown opensAt={catchTarget.opensAt} deadline={catchTarget.deadline} />
+            <ActionCountdown opensAt={catchTarget.opensAt} deadline={catchTarget.callPending ? catchTarget.callResolvesAt ?? catchTarget.deadline : catchTarget.deadline} />
           </motion.button>
         ) : null}
       </AnimatePresence>
