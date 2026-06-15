@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:dev": "next build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
