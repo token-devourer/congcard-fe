@@ -153,64 +153,120 @@ function noise(
   src.stop(start + dur + 0.02);
 }
 
+// Small helpers for tasteful per-event variation. We keep musical intent intact
+// (same chord shape, same envelope feel) and only nudge cents/timing/volume so
+// repeated triggers don't feel like a soundboard.
+const rand = (min: number, max: number) => min + Math.random() * (max - min);
+const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
 function render(name: SoundName, ctx: AudioContext, t: number): void {
   switch (name) {
     case "turn": {
-      // Two warm sine bells, a triumphant little major-third lift.
-      tone(ctx, t, { freq: 523.25, dur: 0.18, type: "sine", gain: 0.22, lp: 4000 });
-      tone(ctx, t + 0.08, { freq: 659.25, dur: 0.22, type: "sine", gain: 0.22, lp: 4000 });
-      tone(ctx, t + 0.08, { freq: 1318.5, dur: 0.22, type: "sine", gain: 0.06, lp: 6000 });
+      // Pick one of three short ascending motifs in major. Slight detune + jitter.
+      const motifs: Array<[number, number]> = [
+        [523.25, 659.25], // C5 -> E5
+        [587.33, 739.99], // D5 -> F#5
+        [493.88, 622.25]  // B4 -> D#5
+      ];
+      const [a, b] = pick(motifs);
+      const cents = rand(-6, 6);
+      const vol = rand(0.2, 0.26);
+      tone(ctx, t,            { freq: a, dur: 0.18, type: "sine",     gain: vol,        lp: 4000, detune: cents });
+      tone(ctx, t + rand(0.07, 0.09), { freq: b, dur: 0.22, type: "sine", gain: vol,    lp: 4000, detune: cents });
+      tone(ctx, t + 0.08,     { freq: b * 2, dur: 0.22, type: "sine",  gain: rand(0.05, 0.08), lp: 6000 });
+      // Optional sparkle on top — only sometimes, so it feels alive.
+      if (Math.random() < 0.5) {
+        tone(ctx, t + rand(0.1, 0.16), { freq: b * 3, dur: 0.14, type: "triangle", gain: 0.04, lp: 7000 });
+      }
       break;
     }
     case "oneWindow": {
-      // Urgent ascending arpeggio — your moment to slam ONE.
-      tone(ctx, t, { freq: 880, dur: 0.09, type: "triangle", gain: 0.22 });
+      tone(ctx, t,        { freq: 880,  dur: 0.09, type: "triangle", gain: 0.22 });
       tone(ctx, t + 0.07, { freq: 1108, dur: 0.09, type: "triangle", gain: 0.22 });
       tone(ctx, t + 0.14, { freq: 1318, dur: 0.16, type: "triangle", gain: 0.26 });
-      tone(ctx, t + 0.14, { freq: 1318, dur: 0.16, type: "sine", gain: 0.12, detune: 8 });
+      tone(ctx, t + 0.14, { freq: 1318, dur: 0.16, type: "sine",     gain: 0.12, detune: 8 });
       break;
     }
     case "oneCalled": {
-      // Royal fanfare — a single bright stab with a sparkle tail.
-      tone(ctx, t, { freq: 523, dur: 0.08, type: "square", gain: 0.18, lp: 2400 });
-      tone(ctx, t + 0.06, { freq: 784, dur: 0.12, type: "square", gain: 0.2, lp: 2800 });
+      tone(ctx, t,        { freq: 523,  dur: 0.08, type: "square",   gain: 0.18, lp: 2400 });
+      tone(ctx, t + 0.06, { freq: 784,  dur: 0.12, type: "square",   gain: 0.2,  lp: 2800 });
       tone(ctx, t + 0.16, { freq: 1046, dur: 0.28, type: "triangle", gain: 0.22, lp: 5000 });
-      tone(ctx, t + 0.16, { freq: 2093, dur: 0.28, type: "sine", gain: 0.07 });
+      tone(ctx, t + 0.16, { freq: 2093, dur: 0.28, type: "sine",     gain: 0.07 });
       break;
     }
     case "catch": {
-      // Slap + descending taunt — someone forgot, you pounce.
-      noise(ctx, t, { dur: 0.09, gain: 0.42, hp: 1200, lp: 7000 });
-      tone(ctx, t + 0.02, { freq: 440, dur: 0.18, type: "sawtooth", gain: 0.22, sweepTo: 180, lp: 1800 });
-      tone(ctx, t + 0.18, { freq: 220, dur: 0.18, type: "square", gain: 0.16, lp: 1400 });
+      // Slap timbre varies: sharper crack vs. duller thump. Taunt pitch wobbles.
+      const crack = Math.random() < 0.5;
+      noise(ctx, t, {
+        dur: rand(0.07, 0.11),
+        gain: rand(0.36, 0.48),
+        hp: crack ? 1600 : 900,
+        lp: crack ? 8000 : 5500
+      });
+      const startFreq = rand(400, 500);
+      tone(ctx, t + 0.02, {
+        freq: startFreq, dur: 0.18, type: "sawtooth",
+        gain: rand(0.2, 0.26), sweepTo: rand(150, 210), lp: 1800
+      });
+      tone(ctx, t + rand(0.16, 0.2), {
+        freq: rand(200, 240), dur: 0.18, type: "square",
+        gain: rand(0.14, 0.18), lp: 1400
+      });
+      // 40% chance of a final cheeky "ha" tick on top.
+      if (Math.random() < 0.4) {
+        tone(ctx, t + 0.32, { freq: rand(700, 900), dur: 0.07, type: "triangle", gain: 0.1, lp: 3500 });
+      }
       break;
     }
     case "wild": {
-      // Color-cycling shimmer: rising whole-tone arpeggio with bell harmonic.
-      const freqs = [392, 523, 659, 784];
-      freqs.forEach((f, i) => {
-        tone(ctx, t + i * 0.05, { freq: f, dur: 0.16, type: "sine", gain: 0.18, lp: 5000 });
+      // Four-tone shimmer, but pick a starting key and direction each time.
+      const scales: number[][] = [
+        [392, 523, 659, 784],   // G major-ish
+        [440, 554, 659, 880],   // A
+        [349, 466, 587, 698],   // F
+        [493, 622, 740, 988]    // B
+      ];
+      const scale = pick(scales).slice();
+      if (Math.random() < 0.35) scale.reverse(); // sometimes descending
+      const step = rand(0.045, 0.06);
+      scale.forEach((f, i) => {
+        tone(ctx, t + i * step, {
+          freq: f * (1 + rand(-0.003, 0.003)),
+          dur: 0.16, type: "sine", gain: rand(0.15, 0.2), lp: 5000
+        });
       });
-      tone(ctx, t + 0.2, { freq: 1568, dur: 0.4, type: "triangle", gain: 0.08, lp: 6000 });
+      // Bell tail — pitch picked from last tone × harmonic.
+      const tail = scale[scale.length - 1] * (Math.random() < 0.5 ? 2 : 3);
+      tone(ctx, t + 0.2, { freq: tail, dur: rand(0.34, 0.46), type: "triangle", gain: rand(0.06, 0.1), lp: 6000 });
       break;
     }
     case "penalty": {
-      // Heavy low thud + buzz — wajib narik kartu.
-      noise(ctx, t, { dur: 0.18, gain: 0.5, hp: 60, lp: 800 });
-      tone(ctx, t, { freq: 110, dur: 0.28, type: "sawtooth", gain: 0.32, sweepTo: 55, lp: 700 });
-      tone(ctx, t + 0.05, { freq: 73, dur: 0.32, type: "square", gain: 0.18, lp: 600 });
+      // Heavy hit, but vary depth + buzz so a Draw 2 vs Draw 4 streak doesn't loop.
+      const deep = Math.random() < 0.5;
+      noise(ctx, t, { dur: rand(0.16, 0.22), gain: rand(0.45, 0.55), hp: 50, lp: deep ? 700 : 950 });
+      const root = deep ? rand(95, 115) : rand(120, 140);
+      tone(ctx, t, {
+        freq: root, dur: 0.28, type: "sawtooth",
+        gain: rand(0.28, 0.34), sweepTo: root * 0.5, lp: 700
+      });
+      tone(ctx, t + rand(0.04, 0.07), {
+        freq: root * 0.66, dur: 0.32, type: "square",
+        gain: rand(0.16, 0.2), lp: 600
+      });
+      // Occasional metallic clang for variety.
+      if (Math.random() < 0.35) {
+        tone(ctx, t + 0.02, { freq: rand(180, 240), dur: 0.18, type: "square", gain: 0.08, lp: 1800, detune: 14 });
+      }
       break;
     }
     case "skip": {
-      // Sharp "tsk" — denied.
       noise(ctx, t, { dur: 0.06, gain: 0.38, hp: 2500, lp: 9000 });
       tone(ctx, t + 0.01, { freq: 660, dur: 0.1, type: "square", gain: 0.18, sweepTo: 220, lp: 2200 });
       break;
     }
     case "reverse": {
-      // Whoosh: descending then ascending glide.
-      tone(ctx, t, { freq: 880, dur: 0.18, type: "triangle", gain: 0.18, sweepTo: 330, lp: 3500 });
-      tone(ctx, t + 0.16, { freq: 330, dur: 0.22, type: "triangle", gain: 0.2, sweepTo: 990, lp: 4500 });
+      tone(ctx, t,        { freq: 880, dur: 0.18, type: "triangle", gain: 0.18, sweepTo: 330, lp: 3500 });
+      tone(ctx, t + 0.16, { freq: 330, dur: 0.22, type: "triangle", gain: 0.2,  sweepTo: 990, lp: 4500 });
       noise(ctx, t + 0.04, { dur: 0.18, gain: 0.12, hp: 600, lp: 3500 });
       break;
     }
