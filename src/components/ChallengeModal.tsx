@@ -23,7 +23,7 @@ export function ChallengeModal({ snapshot, send }: ChallengeModalProps) {
   const pending = snapshot.pendingChallenge;
   const forMe = Boolean(pending && pending.challengerId === snapshot.self?.id);
   const offender = pending ? snapshot.players.find((player) => player.id === pending.offenderId) : undefined;
-  const actionLocked = Boolean(snapshot.oneWindow?.callPending);
+  const actionLocked = Boolean(snapshot.oneWindow);
 
   return (
     <AnimatePresence>

@@ -50,8 +50,8 @@ describe("client rules", () => {
     expect(playableCardInHand(state, card("red-9", "red", 9))).toBeNull();
   });
 
-  it("blocks card actions while a One call is pending arbitration", () => {
-    const state = snapshot({ oneWindow: { playerId: "other", opensAt: 1, deadline: 2, callPending: true, callResolvesAt: 3 } });
+  it("blocks card actions while a One window is active", () => {
+    const state = snapshot({ oneWindow: { playerId: "other", opensAt: 1, deadline: 2 } });
 
     expect(canPlayCard(state, state.self!.hand[0]!)).toBe(false);
     expect(playableCardInHand(state, state.self!.hand[0]!)).toBeNull();

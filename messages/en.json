@@ -171,6 +171,7 @@
     "gameFinished": "This game has already finished.",
     "maxPlayersTooLow": "Max players can't be lower than the current room size.",
     "oneCallPending": "One call is resolving — wait a moment.",
+    "oneWindowActive": "Resolve ONE first.",
     "playerNotFound": "You are watching this room and cannot take player actions.",
     "invalidRoomCode": "Enter a valid 6-character room code.",
     "rateLimited": "Too many requests — wait a moment and try again."

@@ -6,7 +6,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     snapshot.self.role !== "player" ||
     snapshot.phase !== "playing" ||
     snapshot.pendingChallenge ||
-    snapshot.oneWindow?.callPending
+    snapshot.oneWindow
   ) {
     return false;
   }
