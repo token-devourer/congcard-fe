@@ -52,6 +52,8 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
         <div className={`cartouche ${small ? "cartouche-sm" : ""}`}>
           {isWild ? (
             <WildBadge small={small} value={card.value} />
+          ) : card.value === "draw2" ? (
+            <DrawActionGlyph small={small} />
           ) : isActionValue(card.value) ? (
             <ActionGlyph value={card.value} small={small} />
           ) : (
@@ -183,6 +185,15 @@ function DrawAmountLabel({ amount, small, corner }: { amount: "+2" | "+4"; small
   );
 }
 
+function DrawActionGlyph({ small }: { small?: boolean }) {
+  return (
+    <div className="grid place-items-center gap-0.5 text-center">
+      <ActionGlyph value="draw2" small={small} />
+      <DrawAmountLabel amount="+2" small={small} />
+    </div>
+  );
+}
+
 function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, string>; small?: boolean; corner?: boolean }) {
   const size = corner ? (small ? 10 : 14) : small ? 24 : 40;
   const stroke = corner ? 3.2 : 2.4;
@@ -212,19 +223,6 @@ function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, strin
       <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]">
         <rect x="11" y="12" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(-8 20 24.5)" />
         <rect x="19" y="9" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(8 28 21.5)" />
-        {!corner ? (
-          <text
-            x="24"
-            y="42"
-            fill="currentColor"
-            fontFamily="Arial Black, Arial, sans-serif"
-            fontSize="15"
-            fontWeight="900"
-            textAnchor="middle"
-          >
-            +2
-          </text>
-        ) : null}
       </svg>
     );
   }
