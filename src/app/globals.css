@@ -280,7 +280,12 @@ button:disabled {
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
     0 -2px 6px rgba(0, 0, 0, 0.3) inset,
     0 14px 28px rgba(0, 0, 0, 0.45);
-  transition: transform 160ms cubic-bezier(.2,.8,.2,1), box-shadow 160ms ease, filter 160ms ease;
+  transform-style: preserve-3d;
+  transition:
+    transform 180ms cubic-bezier(.2,.8,.2,1),
+    box-shadow 180ms ease,
+    filter 180ms ease;
+  will-change: transform;
 }
 
 .card-face.small {
@@ -298,14 +303,38 @@ button.card-face:not(:disabled) {
     0 0 0 3px rgba(242, 193, 78, 0.95),
     0 0 24px rgba(242, 193, 78, 0.55),
     0 22px 36px rgba(242, 193, 78, 0.32);
+  animation: card-idle-rock 3.6s ease-in-out infinite;
+}
+
+/* Stagger the idle rock across siblings so the hand breathes instead of marching. */
+.card-face.playable:nth-child(3n)   { animation-delay: 0.4s; }
+.card-face.playable:nth-child(3n+1) { animation-delay: 0.9s; }
+.card-face.playable:nth-child(3n+2) { animation-delay: 1.6s; }
+
+/* Travelling shine across playable cards. */
+.card-face.playable::before {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.42), transparent 40%),
+    radial-gradient(120% 80% at 50% 110%, rgba(0, 0, 0, 0.35), transparent 60%),
+    linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
+  background-size: 100% 100%, 100% 100%, 220% 100%;
+  background-position: 0 0, 0 0, -120% 0;
+  background-repeat: no-repeat;
+  animation: card-shine 2.2s ease-in-out infinite;
 }
 
 button.card-face.playable:hover {
-  transform: translateY(-20px) scale(1.07);
+  transform: translateY(-22px) scale(1.08) rotateZ(-2deg) rotateX(8deg) rotateY(-6deg);
+  animation-play-state: paused;
+  box-shadow:
+    0 0 0 3px rgba(255, 233, 173, 1),
+    0 0 38px rgba(255, 217, 122, 0.85),
+    0 28px 44px rgba(0, 0, 0, 0.5);
 }
 
 button.card-face.playable:active {
-  transform: translateY(-10px) scale(0.97);
+  transform: translateY(-8px) scale(0.97) rotateX(0) rotateY(0);
+  transition-duration: 90ms;
 }
 
 .card-face.dimmed {
@@ -509,4 +538,14 @@ button.card-face.playable:active {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+@keyframes card-idle-rock {
+  0%, 100% { transform: translateY(-12px) rotateZ(-1.2deg) rotateY(-2deg); }
+  50%      { transform: translateY(-14px) rotateZ(1.2deg)  rotateY(2deg); }
+}
+
+@keyframes card-shine {
+  0%, 70%, 100% { background-position: 0 0, 0 0, -120% 0; }
+  85%           { background-position: 0 0, 0 0,  140% 0; }
 }
