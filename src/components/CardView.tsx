@@ -126,7 +126,7 @@ function WildBadge({ small, value }: { small?: boolean; value: CardValue }) {
               style={{
                 width: gemSize,
                 height: gemSize,
-                background: `radial-gradient(circle at 28% 22%, #ffffff, ${gem.fill} 34%, rgba(0,0,0,0.28))`,
+                background: `radial-gradient(circle at 28% 22%, #ffe8a3, ${gem.fill} 34%, rgba(0,0,0,0.28))`,
                 transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(45deg)`,
                 border: "1px solid rgba(255,255,255,0.62)"
               }}

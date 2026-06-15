@@ -272,7 +272,7 @@ button:disabled {
   flex-shrink: 0;
   width: 88px;
   aspect-ratio: 5 / 7;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(12, 18, 22, 0.5);
   border-radius: 14px;
   overflow: hidden;
   color: white;
@@ -347,8 +347,8 @@ button.card-face.playable:active {
   inset: 0;
   z-index: 1;
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.28), transparent 38%),
-    radial-gradient(110% 70% at 50% 112%, rgba(0, 0, 0, 0.22), transparent 64%);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.12), transparent 34%),
+    radial-gradient(110% 70% at 50% 112%, rgba(0, 0, 0, 0.2), transparent 64%);
   pointer-events: none;
 }
 
@@ -372,30 +372,30 @@ button.card-face.playable:active {
 
 .card-red {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 225, 199, 0.86), transparent 40%),
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 153, 122, 0.76), transparent 42%),
     radial-gradient(90% 76% at 82% 82%, rgba(255, 26, 95, 0.46), transparent 58%),
-    linear-gradient(145deg, #ff8670 0%, #ff354f 46%, #b00031 100%);
+    linear-gradient(145deg, #ff6f58 0%, #ff284a 46%, #a9002d 100%);
 }
 
 .card-blue {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(214, 244, 255, 0.9), transparent 40%),
+    radial-gradient(120% 82% at 42% 12%, rgba(107, 205, 255, 0.78), transparent 42%),
     radial-gradient(90% 76% at 82% 82%, rgba(22, 211, 255, 0.44), transparent 58%),
-    linear-gradient(145deg, #72c8ff 0%, #277cff 48%, #1437bd 100%);
+    linear-gradient(145deg, #35b8ff 0%, #1275ff 48%, #1231ac 100%);
 }
 
 .card-green {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(210, 255, 220, 0.86), transparent 40%),
+    radial-gradient(120% 82% at 42% 12%, rgba(93, 241, 155, 0.78), transparent 42%),
     radial-gradient(90% 76% at 82% 82%, rgba(60, 255, 171, 0.45), transparent 58%),
-    linear-gradient(145deg, #5df6a6 0%, #10bc76 50%, #007a52 100%);
+    linear-gradient(145deg, #22df8a 0%, #08b66e 50%, #00704b 100%);
 }
 
 .card-yellow {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 255, 212, 0.95), transparent 40%),
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 222, 86, 0.8), transparent 42%),
     radial-gradient(90% 76% at 82% 82%, rgba(255, 145, 18, 0.48), transparent 58%),
-    linear-gradient(145deg, #ffe978 0%, #ffc629 52%, #d98200 100%);
+    linear-gradient(145deg, #ffd53c 0%, #ffb91f 52%, #cf7600 100%);
   color: #17110a;
 }
 
@@ -433,8 +433,8 @@ button.card-face.playable:active {
     radial-gradient(90% 70% at 50% 8%, rgba(255, 255, 255, 0.22), transparent 58%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.1));
   box-shadow:
-    0 0 0 1.5px rgba(255, 223, 118, 0.78),
-    0 0 18px rgba(255, 222, 103, 0.12),
+    0 2px 7px rgba(0, 0, 0, 0.22),
+    0 0 0 1.25px rgba(255, 207, 74, 0.82),
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -1px 0 rgba(0, 0, 0, 0.22);
 }
