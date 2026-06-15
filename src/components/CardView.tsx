@@ -11,12 +11,22 @@ interface CardViewProps {
   onClick?: () => void;
 }
 
+// The four play colors, used as gem accents on Wild cards.
+const WILD_GEMS: Array<{ key: Color; fill: string }> = [
+  { key: "red", fill: "#e64a3d" },
+  { key: "yellow", fill: "#f0c63a" },
+  { key: "green", fill: "#2faa6f" },
+  { key: "blue", fill: "#3d7edb" }
+];
+
 export function CardView({ card, hidden, small, playable, dimmed, disabled, onClick }: CardViewProps) {
   if (hidden || !card) {
     return (
       <div className={`${small ? "card-face small" : "card-face"} card-back grid place-items-center`} aria-label="Hidden card">
-        <div className="relative z-10 grid h-10 w-10 place-items-center rounded-full border-2 border-[var(--gold)]/70 text-center text-xs font-black uppercase tracking-[0.14em] text-[var(--gold)]">
-          CC
+        <div className="relative z-10 grid place-items-center">
+          <div className={`grid place-items-center rounded-full border-2 border-[var(--gold)]/80 bg-black/30 ${small ? "h-8 w-8 text-[10px]" : "h-12 w-12 text-sm"} font-black uppercase tracking-[0.18em] text-[var(--gold)] shadow-[0_0_18px_rgba(242,193,78,0.35)]`}>
+            CC
+          </div>
         </div>
       </div>
     );
@@ -32,33 +42,30 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
     .filter(Boolean)
     .join(" ");
 
-  const isYellow = card.color === "yellow";
   const isWild = !card.color;
-  const ovalFill = isWild ? "rgba(8,12,10,0.85)" : isYellow ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.12)";
 
   const content = (
     <>
-      <div className={`absolute left-1.5 top-1 z-10 font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
-      <div className={`absolute bottom-1 right-1.5 z-10 rotate-180 font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
+      {/* Corner indices — small, elegant, with a tiny color pip underneath. */}
+      <CornerIndex card={card} small={small} position="tl" />
+      <CornerIndex card={card} small={small} position="br" />
+
+      {/* Heraldic cartouche: vertical gold-framed plaque holding the symbol + value. */}
       <div className="absolute inset-0 z-[5] grid place-items-center">
-        <div
-          className={`grid place-items-center ${small ? "h-[68%] w-[78%]" : "h-[64%] w-[74%]"}`}
-          style={{
-            background: ovalFill,
-            borderRadius: "50%",
-            transform: "rotate(-22deg)",
-            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.35), inset 0 -1px 2px rgba(255,255,255,0.18)"
-          }}
-        >
-          <div className="grid place-items-center gap-1 text-center" style={{ transform: "rotate(22deg)" }}>
-            <ColorSymbol color={card.color} small={small} />
-            <span
-              className={`font-black uppercase leading-none ${small ? "text-sm" : "text-2xl"}`}
-              style={{ textShadow: "0 2px 0 rgba(0,0,0,0.35), 0 0 8px rgba(0,0,0,0.25)" }}
-            >
-              {cardText(card)}
-            </span>
-          </div>
+        <div className={`cartouche ${small ? "cartouche-sm" : ""}`}>
+          {isWild ? (
+            <WildBadge small={small} />
+          ) : (
+            <div className="grid place-items-center gap-1 text-center">
+              <ColorSymbol color={card.color} small={small} />
+              <span
+                className={`font-black uppercase leading-none ${small ? "text-sm" : "text-2xl"}`}
+                style={{ textShadow: "0 1px 0 rgba(0,0,0,0.45), 0 0 10px rgba(0,0,0,0.35)" }}
+              >
+                {cardText(card)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -79,22 +86,91 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
   );
 }
 
-// Corner indices use compact symbols so the rotated bottom-right copy stays
-// legible (full words like "Skip" turn into gibberish upside down).
-function cornerText(card: Card): string {
-  if (typeof card.value === "number") {
-    return String(card.value);
-  }
+function CornerIndex({ card, small, position }: { card: Card; small?: boolean; position: "tl" | "br" }) {
+  const place =
+    position === "tl"
+      ? "left-1.5 top-1 items-start"
+      : "bottom-1 right-1.5 items-end rotate-180";
+  return (
+    <div className={`absolute z-10 flex flex-col gap-0.5 ${place}`}>
+      <span
+        className={`font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] ${small ? "text-[11px]" : "text-base"}`}
+      >
+        {cornerText(card)}
+      </span>
+    </div>
+  );
+}
 
+// Corner indices use compact symbols so the rotated bottom-right copy stays legible.
+function cornerText(card: Card): string {
+  if (typeof card.value === "number") return String(card.value);
   const symbols: Record<string, string> = {
     skip: "Ø",
     reverse: "⇄",
     draw2: "+2",
-    wild: "★",
+    wild: "✦",
     wild4: "+4"
   };
-
   return symbols[String(card.value)] ?? cardText(card);
+}
+
+function WildBadge({ small }: { small?: boolean }) {
+  const gemSize = small ? 6 : 9;
+  return (
+    <div className="grid place-items-center gap-1.5 text-center">
+      {/* Four gems arranged in a diamond — the four colors, on their own onyx field. */}
+      <div className={`relative ${small ? "h-7 w-7" : "h-11 w-11"}`}>
+        {WILD_GEMS.map((gem, i) => {
+          const angle = (i / WILD_GEMS.length) * 360 - 90;
+          const r = small ? 12 : 18;
+          const x = Math.cos((angle * Math.PI) / 180) * r;
+          const y = Math.sin((angle * Math.PI) / 180) * r;
+          return (
+            <span
+              key={gem.key}
+              className="absolute left-1/2 top-1/2 block rounded-[2px] shadow-[0_0_6px_rgba(0,0,0,0.6)]"
+              style={{
+                width: gemSize,
+                height: gemSize,
+                background: `linear-gradient(135deg, ${gem.fill}, rgba(0,0,0,0.4))`,
+                transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(45deg)`,
+                border: "1px solid rgba(255,255,255,0.35)"
+              }}
+              aria-hidden="true"
+            />
+          );
+        })}
+        {/* Central gilded star */}
+        <span
+          className="absolute left-1/2 top-1/2 grid place-items-center"
+          style={{ transform: "translate(-50%,-50%)" }}
+        >
+          <svg width={small ? 14 : 22} height={small ? 14 : 22} viewBox="0 0 24 24" aria-hidden="true">
+            <defs>
+              <linearGradient id="cc-star" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#ffe39a" />
+                <stop offset="1" stopColor="#b9801f" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M12 1l3 7.5L23 9l-6 5.5L18.5 23 12 18.5 5.5 23 7 14.5 1 9l8-0.5z"
+              fill="url(#cc-star)"
+              stroke="#5a3608"
+              strokeWidth="0.6"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
+      <span
+        className={`font-black uppercase leading-none tracking-[0.08em] ${small ? "text-[10px]" : "text-sm"}`}
+        style={{ color: "#ffe39a", textShadow: "0 1px 0 rgba(0,0,0,0.6)" }}
+      >
+        Wild
+      </span>
+    </div>
+  );
 }
 
 function ColorSymbol({ color, small }: { color: Color | null; small?: boolean }) {
@@ -132,12 +208,5 @@ function ColorSymbol({ color, small }: { color: Color | null; small?: boolean })
     );
   }
 
-  return (
-    <svg width={size + 6} height={size + 2} viewBox="0 0 52 48" aria-hidden="true">
-      <path fill="#db4b3f" d="M26 4 6 16v16l20 12V4Z" />
-      <path fill="#e7b83d" d="m26 4 20 12v16L26 44V4Z" />
-      <path fill="#2f9b67" d="M6 16h40L26 44 6 16Z" opacity="0.9" />
-      <path fill="#3d7edb" d="M6 32h40L26 4 6 32Z" opacity="0.85" />
-    </svg>
-  );
+  return null;
 }
