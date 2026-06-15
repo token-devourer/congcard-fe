@@ -7,7 +7,9 @@ export type UiEvent =
   | { id: number; type: "reverse"; direction: 1 | -1 }
   | { id: number; type: "colorChange"; color: Color }
   | { id: number; type: "calledOne"; nickname: string }
-  | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number };
+  | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
+  | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
+  | { id: number; type: "roundLost"; winnerId: string; nickname: string; gameEnd: boolean };
 
 let nextEventId = 1;
 
@@ -22,6 +24,28 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
 
   if (!prev || prev.code !== next.code) {
     return events;
+  }
+
+  const roundEnded =
+    (next.phase === "roundEnd" || next.phase === "gameEnd") &&
+    (prev.phase !== next.phase ||
+      prev.roundWinnerId !== next.roundWinnerId ||
+      prev.gameWinnerId !== next.gameWinnerId);
+
+  if (roundEnded) {
+    const winnerId = next.gameWinnerId ?? next.roundWinnerId;
+    const winner = next.players.find((player) => player.id === winnerId);
+    const selfPlayer = next.players.find((player) => player.id === selfId);
+
+    if (winnerId && winner && selfPlayer) {
+      events.push({
+        id: eventId(),
+        type: winnerId === selfId ? "roundWon" : "roundLost",
+        winnerId,
+        nickname: winner.nickname,
+        gameEnd: next.phase === "gameEnd"
+      });
+    }
   }
 
   const becameMyTurn =

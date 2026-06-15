@@ -144,6 +144,46 @@ describe("diffSnapshots", () => {
     expect(diffSnapshots(prev, stale).map((event) => event.type)).not.toContain("catchWindow");
   });
 
+  it("detects when you win a round or game", () => {
+    const prev = snapshot({});
+    const next = snapshot({
+      phase: "gameEnd",
+      roundWinnerId: "a",
+      gameWinnerId: "a"
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "roundWon")).toMatchObject({
+      winnerId: "a",
+      nickname: "a",
+      gameEnd: true
+    });
+  });
+
+  it("detects when another player wins while you are playing", () => {
+    const prev = snapshot({});
+    const next = snapshot({
+      phase: "roundEnd",
+      roundWinnerId: "b"
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "roundLost")).toMatchObject({
+      winnerId: "b",
+      nickname: "b",
+      gameEnd: false
+    });
+  });
+
+  it("does not play a loss sound for spectators", () => {
+    const prev = snapshot({ self: { id: "viewer", role: "spectator", hand: [] } });
+    const next = snapshot({
+      phase: "roundEnd",
+      roundWinnerId: "b",
+      self: { id: "viewer", role: "spectator", hand: [] }
+    });
+
+    expect(diffSnapshots(prev, next).map((event) => event.type)).not.toContain("roundLost");
+  });
+
   it("maps awareness events to sounds", () => {
     expect(soundForEvent({ id: 1, type: "yourTurn" })).toBe("turn");
     expect(
@@ -157,5 +197,7 @@ describe("diffSnapshots", () => {
     expect(soundForEvent({ id: 6, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
     expect(soundForEvent({ id: 7, type: "skip" })).toBe("skip");
     expect(soundForEvent({ id: 8, type: "reverse", direction: -1 })).toBe("reverse");
+    expect(soundForEvent({ id: 9, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
+    expect(soundForEvent({ id: 10, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
 });

@@ -8,7 +8,9 @@ export type SoundName =
   | "wild"
   | "penalty"
   | "skip"
-  | "reverse";
+  | "reverse"
+  | "win"
+  | "lose";
 
 const STORAGE_KEY = "congcard:sound-muted";
 const MASTER = 0.55;
@@ -41,6 +43,8 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     case "colorChange": return "wild";
     case "calledOne": return "oneCalled";
     case "catchWindow": return event.self ? "oneWindow" : "catch";
+    case "roundWon": return "win";
+    case "roundLost": return "lose";
     default: return null;
   }
 }
@@ -268,6 +272,32 @@ function render(name: SoundName, ctx: AudioContext, t: number): void {
       tone(ctx, t,        { freq: 880, dur: 0.18, type: "triangle", gain: 0.18, sweepTo: 330, lp: 3500 });
       tone(ctx, t + 0.16, { freq: 330, dur: 0.22, type: "triangle", gain: 0.2,  sweepTo: 990, lp: 4500 });
       noise(ctx, t + 0.04, { dur: 0.18, gain: 0.12, hp: 600, lp: 3500 });
+      break;
+    }
+    case "win": {
+      const roots = [523.25, 587.33, 659.25];
+      const root = pick(roots);
+      const chord = [root, root * 1.25, root * 1.5, root * 2];
+      noise(ctx, t + 0.02, { dur: 0.12, gain: 0.1, hp: 3200, lp: 9000 });
+      chord.forEach((freq, index) => {
+        tone(ctx, t + index * 0.08, {
+          freq,
+          dur: 0.28 + index * 0.04,
+          type: "triangle",
+          gain: 0.16,
+          lp: 7000,
+          detune: rand(-4, 4)
+        });
+      });
+      tone(ctx, t + 0.2, { freq: root * 3, dur: 0.45, type: "sine", gain: 0.07, lp: 8500 });
+      noise(ctx, t + 0.34, { dur: 0.16, gain: 0.08, hp: 2600, lp: 8500 });
+      break;
+    }
+    case "lose": {
+      tone(ctx, t,        { freq: 392, dur: 0.2,  type: "triangle", gain: 0.15, lp: 3200 });
+      tone(ctx, t + 0.13, { freq: 330, dur: 0.24, type: "triangle", gain: 0.13, lp: 2800 });
+      tone(ctx, t + 0.28, { freq: 247, dur: 0.42, type: "sine",     gain: 0.15, lp: 2100, sweepTo: 220 });
+      noise(ctx, t + 0.12, { dur: 0.16, gain: 0.06, hp: 280, lp: 1200 });
       break;
     }
   }
