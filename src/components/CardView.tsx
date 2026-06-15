@@ -32,14 +32,33 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
     .filter(Boolean)
     .join(" ");
 
+  const isYellow = card.color === "yellow";
+  const isWild = !card.color;
+  const ovalFill = isWild ? "rgba(8,12,10,0.85)" : isYellow ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.12)";
+
   const content = (
     <>
-      <div className={`absolute left-1.5 top-1 z-10 font-black leading-none ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
-      <div className={`absolute bottom-1 right-1.5 z-10 rotate-180 font-black leading-none ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
-      <div className="absolute inset-0 z-10 grid place-items-center">
-        <div className="grid place-items-center gap-1 text-center drop-shadow-[0_2px_3px_rgba(0,0,0,0.35)]">
-          <ColorSymbol color={card.color} small={small} />
-          <span className={`font-black uppercase leading-none ${small ? "text-sm" : "text-xl"}`}>{cardText(card)}</span>
+      <div className={`absolute left-1.5 top-1 z-10 font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
+      <div className={`absolute bottom-1 right-1.5 z-10 rotate-180 font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] ${small ? "text-xs" : "text-base"}`}>{cornerText(card)}</div>
+      <div className="absolute inset-0 z-[5] grid place-items-center">
+        <div
+          className={`grid place-items-center ${small ? "h-[68%] w-[78%]" : "h-[64%] w-[74%]"}`}
+          style={{
+            background: ovalFill,
+            borderRadius: "50%",
+            transform: "rotate(-22deg)",
+            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.35), inset 0 -1px 2px rgba(255,255,255,0.18)"
+          }}
+        >
+          <div className="grid place-items-center gap-1 text-center" style={{ transform: "rotate(22deg)" }}>
+            <ColorSymbol color={card.color} small={small} />
+            <span
+              className={`font-black uppercase leading-none ${small ? "text-sm" : "text-2xl"}`}
+              style={{ textShadow: "0 2px 0 rgba(0,0,0,0.35), 0 0 8px rgba(0,0,0,0.25)" }}
+            >
+              {cardText(card)}
+            </span>
+          </div>
         </div>
       </div>
     </>
