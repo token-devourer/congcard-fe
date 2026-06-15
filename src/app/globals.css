@@ -362,11 +362,6 @@ button.card-face.playable:active {
   pointer-events: none;
 }
 
-.card-red {
-  background:
-    radial-gradient(120% 90% at 50% 35%, #ff6e63, transparent 60%),
-    linear-gradient(155deg, #ef4a3d, #a91a10);
-}
 
 /* ---------- Color schemes ----------
    Each suit gets a coherent dark-to-mid gradient + a subtle radial "spotlight"
