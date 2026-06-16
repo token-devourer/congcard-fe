@@ -15,6 +15,7 @@ import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { needsColor, playableCardInHand } from "@/lib/rules";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
+import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
 import { useRoomStore } from "@/lib/store";
 import { useNow } from "@/lib/useNow";
 import { ChallengeModal } from "./ChallengeModal";
@@ -28,6 +29,8 @@ import { RoundTable } from "./RoundTable";
 import { RulesModal } from "./RulesModal";
 import { SoundToggle } from "./SoundToggle";
 import { TurnBanner } from "./TurnBanner";
+import { TurnAlertLayer } from "./TurnAlertLayer";
+import { NotifyToggle } from "./NotifyToggle";
 import { UnoButton } from "./UnoButton";
 import { PingBadge } from "./PingBadge";
 import { unlockSound } from "@/lib/sound";
@@ -43,6 +46,7 @@ export function RoomClient({ code }: RoomClientProps) {
   const router = useRouter();
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
+  const pingIntervalRef = useRef<number | null>(null);
   const { snapshot, setSnapshot, setError, reset } = useRoomStore();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   // nickname is only set once confirmed (saved profile or submitted form);
@@ -55,8 +59,8 @@ export function RoomClient({ code }: RoomClientProps) {
   const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
-    const savedName = window.localStorage.getItem("congcard:nickname");
-    const savedAvatar = window.localStorage.getItem("congcard:avatar");
+    const savedName = safeGet("congcard:nickname");
+    const savedAvatar = safeGet("congcard:avatar");
     setNickname(savedName ?? "");
     if (savedAvatar && AVATARS.includes(savedAvatar as (typeof AVATARS)[number])) {
       setAvatarId(savedAvatar as (typeof AVATARS)[number]);
@@ -64,6 +68,10 @@ export function RoomClient({ code }: RoomClientProps) {
     setProfileReady(true);
 
     return () => {
+      if (pingIntervalRef.current) {
+        window.clearInterval(pingIntervalRef.current);
+        pingIntervalRef.current = null;
+      }
       roomRef.current?.leave();
       reset();
     };
@@ -93,15 +101,15 @@ export function RoomClient({ code }: RoomClientProps) {
       const client = new Client(GAME_SERVER_URL);
       const reconnectKey = reconnectStorageKey(code);
       const resumeKey = resumeStorageKey(code);
-      const token = window.localStorage.getItem(reconnectKey);
-      const resumeToken = window.localStorage.getItem(resumeKey) ?? undefined;
+      const token = safeGet(reconnectKey);
+      const resumeToken = safeGet(resumeKey) ?? undefined;
       let room: Room | null = null;
 
       if (token) {
         try {
           room = await client.reconnect(token);
         } catch {
-          window.localStorage.removeItem(reconnectKey);
+          safeRemove(reconnectKey);
         }
       }
 
@@ -116,15 +124,15 @@ export function RoomClient({ code }: RoomClientProps) {
 
       roomRef.current = room;
       setStatus("connected");
-      window.localStorage.setItem("congcard:nickname", nickname.trim());
-      window.localStorage.setItem("congcard:avatar", avatarId);
+      safeSet("congcard:nickname", nickname.trim());
+      safeSet("congcard:avatar", avatarId);
       if (room.reconnectionToken) {
-        window.localStorage.setItem(reconnectKey, room.reconnectionToken);
+        safeSet(reconnectKey, room.reconnectionToken);
       }
 
       room.onMessage("state", (nextSnapshot: GameSnapshot) => {
         if (nextSnapshot.self?.resumeToken) {
-          window.localStorage.setItem(resumeKey, nextSnapshot.self.resumeToken);
+          safeSet(resumeKey, nextSnapshot.self.resumeToken);
         }
         setSnapshot(nextSnapshot);
       });
@@ -133,12 +141,19 @@ export function RoomClient({ code }: RoomClientProps) {
       });
 
       const pingInterval = window.setInterval(() => {
+        if (!roomRef.current) {
+          return;
+        }
         room.ping((ms: number) => room.send("room.ping", { ping: ms }));
       }, 1000);
+      pingIntervalRef.current = pingInterval;
 
       room.onLeave(() => {
         setStatus("closed");
-        window.clearInterval(pingInterval);
+        if (pingIntervalRef.current) {
+          window.clearInterval(pingIntervalRef.current);
+          pingIntervalRef.current = null;
+        }
         roomRef.current = null;
       });
     } catch (caught) {
@@ -171,7 +186,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
   function leaveToHome() {
     // Drop room session tokens so a later visit starts a fresh join.
-    clearRoomSession(window.localStorage, code);
+    clearRoomSession(safeStorage, code);
     roomRef.current?.leave();
     roomRef.current = null;
     router.push("/");
@@ -179,9 +194,9 @@ export function RoomClient({ code }: RoomClientProps) {
 
   function leaveAndForget() {
     // Full session reset for the header leave button.
-    clearRoomSession(window.localStorage, code);
-    window.localStorage.removeItem("congcard:nickname");
-    window.localStorage.removeItem("congcard:avatar");
+    clearRoomSession(safeStorage, code);
+    safeRemove("congcard:nickname");
+    safeRemove("congcard:avatar");
     roomRef.current?.leave();
     roomRef.current = null;
     reset();
@@ -262,6 +277,7 @@ export function RoomClient({ code }: RoomClientProps) {
             </button>
           ) : null}
           <SoundToggle />
+          <NotifyToggle />
           <LanguageToggle />
           <button
             type="button"
@@ -714,6 +730,7 @@ function Board({
           >
             {isPlayer && !finished ? (
               <>
+                {playerAway ? <AwayHint onReturn={() => send("room.setAway", { away: false })} /> : null}
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
                   <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
                   <span className="text-xs font-bold text-[var(--muted)]">
@@ -736,7 +753,8 @@ function Board({
       </section>
 
       <FlightLayer />
-      <TurnBanner isMyTurn={isMyTurn} />
+      <TurnBanner />
+      <TurnAlertLayer isMyTurn={isMyTurn} roomCode={snapshot.code} />
       <GameEventOverlay />
       {isPlayer && !finished && !playerAway && !paused ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
@@ -744,6 +762,24 @@ function Board({
         {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>
     </>
+  );
+}
+
+// Makes the auto-play behavior legible to a player who marked themselves away,
+// with a one-tap path back to taking their own turns.
+function AwayHint({ onReturn }: { onReturn: () => void }) {
+  const t = useTranslations();
+
+  return (
+    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--gold)]/45 bg-[var(--gold)]/10 px-3 py-2">
+      <div className="min-w-0">
+        <div className="display text-sm font-black text-[var(--gold)]">{t("board.awaySelf")}</div>
+        <div className="text-xs text-[var(--muted)]">{t("board.awaySelfHint")}</div>
+      </div>
+      <button type="button" className="button !min-h-9 !px-3 text-sm" onClick={onReturn}>
+        {t("room.return")}
+      </button>
+    </div>
   );
 }
 

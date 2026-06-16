@@ -5,7 +5,9 @@
     "close": "Close",
     "actionFailed": "Action failed.",
     "soundOn": "Sound on",
-    "soundOff": "Muted"
+    "soundOff": "Muted",
+    "notifyOn": "Turn alerts on",
+    "notifyOff": "Turn alerts off"
   },
   "colors": {
     "red": "Red",
@@ -123,6 +125,8 @@
     "autoPlay": "auto",
     "paused": "Game paused",
     "pausedHint": "Waiting for at least two active players.",
+    "awaySelf": "You're away",
+    "awaySelfHint": "Auto-playing your turns. Tap Return to take over.",
     "finishedRank": "Finished #{rank}",
     "roles": {
       "waiting": "waiting",
@@ -140,6 +144,10 @@
     "calledOne": "{name}: ONE!",
     "catchWindow": "{name} has 1 card left!",
     "youHaveOne": "One card left - shout ONE!"
+  },
+  "alerts": {
+    "yourTurnTitle": "Your turn!",
+    "yourTurnBody": "It's your turn in room {code}."
   },
   "log": {
     "joined": "{name} joined the room.",
