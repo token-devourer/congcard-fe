@@ -134,7 +134,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
       const pingInterval = window.setInterval(() => {
         room.ping((ms: number) => room.send("room.ping", { ping: ms }));
-      }, 5000);
+      }, 2000);
 
       room.onLeave(() => {
         setStatus("closed");
