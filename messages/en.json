@@ -75,6 +75,8 @@
     "stackingHint": "Draw cards build one total penalty, and an exact Jump In draw card can reset that total.",
     "challenge": "Enable Wild +4 challenge",
     "challengeHint": "Only the first Wild +4 in a stack may be challenged before anyone stacks over it.",
+    "call": "Enable One and Catch",
+    "callHint": "Players must call One at one card, and opponents can Catch missed calls.",
     "start": "Start game",
     "needPlayers": "At least 2 players needed",
     "copyCode": "Copy code",
@@ -264,6 +266,8 @@
     "stackingOff": "Stacking is disabled: draw cards resolve immediately.",
     "challengeOn": "Wild +4 challenge is enabled: the first Wild +4 in a stack can be challenged, but later stacked Wild +4 cards cannot.",
     "challengeOff": "Wild +4 challenge is disabled: the affected player takes 4 cards immediately.",
+    "callOn": "One and Catch are enabled: call One at one card before another player catches you.",
+    "callOff": "One and Catch are disabled for this room.",
     "deckBoxesRule": "Each round starts with {count} card box(es). The minimum increases by one box per four player seats.",
     "actionsTitle": "Action cards",
     "actionSkip": "Skip makes the next player lose a turn.",
@@ -274,7 +278,8 @@
     "actionWild4Stacking": "Wild Draw Four lets you choose a color and starts or extends a Wild +4 stack. The first +4 can be challenged before anyone stacks.",
     "actionWild4NoChallenge": "Wild Draw Four lets you choose a color and makes the next player take 4 cards.",
     "oneTitle": "One call",
-    "oneBody": "Press One when you have one card left. If you miss it, another player can catch you and you draw two cards."
+    "oneBody": "Press One when you have one card left. If you miss it, another player can catch you and you draw two cards.",
+    "oneBodyDisabled": "One and Catch are disabled in this room, so one-card hands do not open a call window."
   },
   "language": {
     "label": "Language",

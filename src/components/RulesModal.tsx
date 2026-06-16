@@ -93,6 +93,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{settings?.jumpInEnabled ? t("jumpInOn") : t("jumpInOff")}</li>
                 <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
                 <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
+                <li>{settings?.callEnabled ?? true ? t("callOn") : t("callOff")}</li>
                 <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
               </ul>
             </section>
@@ -110,7 +111,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
 
             <section className="space-y-2">
               <h2 className="display text-xl font-bold">{t("oneTitle")}</h2>
-              <p className="text-[var(--muted)]">{t("oneBody")}</p>
+              <p className="text-[var(--muted)]">{settings?.callEnabled ?? true ? t("oneBody") : t("oneBodyDisabled")}</p>
             </section>
           </motion.article>
         </motion.div>

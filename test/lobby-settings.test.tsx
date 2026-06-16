@@ -42,6 +42,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       jumpInEnabled: false,
       stackingEnabled: false,
       challengeEnabled: true,
+      callEnabled: true,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -106,5 +107,22 @@ describe("Lobby settings", () => {
     expect(stacking).toBeChecked();
     expect(jumpIn).toBeEnabled();
     expect(stacking).toBeEnabled();
+  });
+
+  it("switches One and Catch defaults when Last Stand is selected", () => {
+    render(<LobbyHarness />);
+
+    const scoreTarget = screen.getByText("Score target").closest("label")?.querySelector("select") as HTMLSelectElement | null;
+    const call = screen.getByText("Enable One and Catch").closest("label")?.querySelector("input") as HTMLInputElement | null;
+
+    expect(scoreTarget).not.toBeNull();
+    expect(call).not.toBeNull();
+    expect(call).toBeChecked();
+
+    fireEvent.change(scoreTarget!, { target: { value: "lastStand" } });
+    expect(call).not.toBeChecked();
+
+    fireEvent.change(scoreTarget!, { target: { value: "0" } });
+    expect(call).toBeChecked();
   });
 });

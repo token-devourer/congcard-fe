@@ -75,6 +75,8 @@
     "stackingHint": "Kartu draw menumpuk jadi satu total penalti, dan Jump In draw yang sama persis bisa mereset total itu.",
     "challenge": "Enable Wild +4 challenge",
     "challengeHint": "Hanya Wild +4 pertama dalam stack yang bisa ditantang sebelum ada pemain lain yang stack.",
+    "call": "Enable One and Catch",
+    "callHint": "Pemain harus memanggil One saat tersisa satu kartu, dan lawan bisa Catch jika terlewat.",
     "start": "Mulai permainan",
     "needPlayers": "Butuh minimal 2 pemain",
     "copyCode": "Salin kode",
@@ -264,6 +266,8 @@
     "stackingOff": "Stacking is disabled: draw cards resolve immediately.",
     "challengeOn": "Wild +4 challenge aktif: Wild +4 pertama dalam stack bisa ditantang, tetapi Wild +4 stack berikutnya tidak bisa.",
     "challengeOff": "Wild +4 challenge nonaktif: pemain terdampak langsung mengambil 4 kartu.",
+    "callOn": "One dan Catch aktif: panggil One saat tersisa satu kartu sebelum pemain lain menangkapmu.",
+    "callOff": "One dan Catch nonaktif untuk room ini.",
     "deckBoxesRule": "Each round starts with {count} card box(es). The minimum increases by one box per four player seats.",
     "actionsTitle": "Kartu aksi",
     "actionSkip": "Skip membuat pemain berikutnya kehilangan giliran.",
@@ -274,7 +278,8 @@
     "actionWild4Stacking": "Wild +4 memilih warna dan memulai atau menambah stack Wild +4. +4 pertama bisa ditantang sebelum ada yang stack.",
     "actionWild4NoChallenge": "Wild +4 memilih warna dan membuat pemain berikutnya mengambil 4 kartu.",
     "oneTitle": "Panggilan SATU",
-    "oneBody": "Tekan SATU saat kartumu tinggal satu. Jika lupa, pemain lain bisa menangkapmu dan kamu menarik dua kartu."
+    "oneBody": "Tekan SATU saat kartumu tinggal satu. Jika lupa, pemain lain bisa menangkapmu dan kamu menarik dua kartu.",
+    "oneBodyDisabled": "One dan Catch nonaktif di room ini, jadi tangan satu kartu tidak membuka window panggilan."
   },
   "language": {
     "label": "Bahasa",

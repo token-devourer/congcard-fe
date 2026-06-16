@@ -502,8 +502,10 @@ export function Lobby({
             value={snapshot.settings.scoreTarget}
             onChange={(event) => {
               const value = event.target.value;
+              const scoreTarget = value === "lastStand" ? "lastStand" : (Number(value) as RoomSettings["scoreTarget"]);
               updateSetting({
-                scoreTarget: value === "lastStand" ? "lastStand" : (Number(value) as RoomSettings["scoreTarget"])
+                scoreTarget,
+                callEnabled: scoreTarget !== "lastStand"
               });
             }}
           >
@@ -578,6 +580,19 @@ export function Lobby({
           <span className="grid gap-1">
             <span className="text-sm font-bold text-[var(--text)]">{t("lobby.challenge")}</span>
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.challengeHint")}</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.callEnabled}
+            onChange={(event) => updateSetting({ callEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.call")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.callHint")}</span>
           </span>
         </label>
         {isHost ? (

@@ -11,6 +11,7 @@ const settings: RoomSettings = {
   jumpInEnabled: false,
   stackingEnabled: false,
   challengeEnabled: true,
+  callEnabled: true,
   deckBoxes: 1,
   modeOptions: {}
 };
