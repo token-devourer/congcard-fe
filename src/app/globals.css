@@ -430,6 +430,7 @@ button:disabled {
   --card-radius: 14px;
   --card-corner-x: calc(var(--card-width) * 0.038);
   --card-corner-y: calc(var(--card-width) * 0.028);
+  --card-corner-text-nudge: calc(var(--card-width) * 0.028);
   --card-corner-font-size: calc(var(--card-width) * 0.19);
   --card-corner-icon-size: calc(var(--card-width) * 0.175);
   --card-center-number-size: calc(var(--card-width) * 0.29);
@@ -543,7 +544,9 @@ button.card-face.playable:active {
 
 .card-corner-number,
 .card-draw-label.corner {
+  display: block;
   font-size: var(--card-corner-font-size);
+  transform: translate(var(--card-corner-text-nudge), var(--card-corner-text-nudge));
 }
 
 .card-center-number {
