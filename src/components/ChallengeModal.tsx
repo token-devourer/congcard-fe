@@ -25,6 +25,13 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
   const forMe = Boolean(pending && pending.challengerId === snapshot.self?.id);
   const offender = pending ? snapshot.players.find((player) => player.id === pending.offenderId) : undefined;
   const actionLocked = Boolean(snapshot.oneWindow) || eventLocked;
+  const stackTotal = snapshot.pendingStack?.challengeable ? snapshot.pendingStack.totalDraw : 4;
+  const canStackWild4 = Boolean(
+    pending &&
+      snapshot.pendingStack?.challengeable &&
+      snapshot.pendingStack.targetPlayerId === snapshot.self?.id &&
+      snapshot.self?.hand.some((card) => card.value === "wild4")
+  );
 
   return (
     <AnimatePresence>
@@ -66,16 +73,17 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
             </div>
 
             <ul className="grid gap-1.5 rounded-lg bg-black/25 p-3 text-sm">
-              <li>✋ {t("challenge.explainAccept")}</li>
-              <li>⚔️ {t("challenge.explainWin", { name: offender?.nickname ?? "?" })}</li>
-              <li>💥 {t("challenge.explainLose")}</li>
+              <li>{t("challenge.explainAccept", { count: stackTotal })}</li>
+              <li>{t("challenge.explainWin", { name: offender?.nickname ?? "?" })}</li>
+              <li>{t("challenge.explainLose")}</li>
+              {canStackWild4 ? <li>{t("challenge.explainStack")}</li> : null}
             </ul>
 
             <DeadlineBar deadline={snapshot.turnDeadline} totalSec={snapshot.settings.turnTimeoutSec} />
 
             <div className="grid grid-cols-2 gap-3">
               <button className="button secondary !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: false })}>
-                {t("challenge.accept")}
+                {t("challenge.accept", { count: stackTotal })}
               </button>
               <button className="button danger !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: true })}>
                 {t("challenge.challenge")}

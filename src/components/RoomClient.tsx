@@ -312,6 +312,7 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   stack_required: "errors.stackRequired",
   player_not_found: "errors.playerNotFound",
   player_away: "errors.playerAway",
+  game_paused: "errors.gamePaused",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -604,10 +605,11 @@ function Board({
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const finished = Boolean(me?.finishedRank);
   const playerAway = Boolean(me?.away);
+  const paused = Boolean(snapshot.pauseReason);
   const isMyTurn =
-    isPlayer && !finished && !playerAway && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+    isPlayer && !finished && !playerAway && !paused && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const eventLocked = now < eventLockUntil;
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway;
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused;
   const canCallOne =
     isPlayer &&
     !finished &&
@@ -666,6 +668,7 @@ function Board({
       <section className="board">
         <div className="relative">
           <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
+          {paused ? <PauseBanner /> : null}
           <LogTicker snapshot={snapshot} />
         </div>
 
@@ -727,12 +730,25 @@ function Board({
       <FlightLayer />
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
-      {isPlayer && !finished && !playerAway ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
+      {isPlayer && !finished && !playerAway && !paused ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>
     </>
+  );
+}
+
+function PauseBanner() {
+  const t = useTranslations();
+
+  return (
+    <div className="pointer-events-none absolute inset-x-3 top-3 z-30 flex justify-center">
+      <div className="panel max-w-md border-[var(--gold)]/70 bg-[#1f1a0a]/90 px-4 py-3 text-center shadow-[0_0_28px_rgba(242,193,78,0.25)]">
+        <div className="display text-base font-black text-[var(--gold)]">{t("board.paused")}</div>
+        <div className="mt-1 text-xs font-bold text-[var(--muted)]">{t("board.pausedHint")}</div>
+      </div>
+    </div>
   );
 }
 

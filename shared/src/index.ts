@@ -49,6 +49,7 @@ export type GamePhase = "lobby" | "playing" | "roundEnd" | "gameEnd";
 export type Direction = 1 | -1;
 export type ScoreTarget = 0 | 500 | "lastStand";
 export type ParticipantRole = "player" | "waiting" | "spectator";
+export type PauseReason = "notEnoughAvailablePlayers";
 export type ActionType =
   | "playCard"
   | "drawCard"
@@ -142,6 +143,10 @@ export interface PendingStack {
   kind: "draw2" | "wild4";
   targetPlayerId: string;
   totalDraw: number;
+  challengeable?: boolean;
+  offenderId?: string;
+  declaredColor?: Color;
+  guilty?: boolean;
   roundWinnerId?: string;
 }
 
@@ -187,6 +192,7 @@ export interface GameSnapshot {
   turnDeadline?: number;
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
+  pauseReason?: PauseReason;
   oneWindow?: OneWindow;
   roundNumber: number;
   drawPileCount: number;

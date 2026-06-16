@@ -5,7 +5,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     !snapshot?.self ||
     snapshot.self.role !== "player" ||
     snapshot.phase !== "playing" ||
-    snapshot.pendingChallenge ||
+    snapshot.pauseReason ||
     snapshot.oneWindow
   ) {
     return false;
@@ -21,8 +21,24 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     return false;
   }
 
+  const canStackCurrentCard = snapshot.pendingStack && canStackCard(handCard, snapshot.pendingStack.kind);
+  if (
+    snapshot.pendingChallenge &&
+    !(
+      snapshot.pendingStack?.challengeable &&
+      snapshot.pendingStack.targetPlayerId === snapshot.self.id &&
+      canStackCurrentCard
+    )
+  ) {
+    return false;
+  }
+
   if (snapshot.pendingStack) {
-    return snapshot.pendingStack.targetPlayerId === snapshot.self.id && canStackCard(handCard, snapshot.pendingStack.kind);
+    if (snapshot.pendingStack.targetPlayerId === snapshot.self.id) {
+      return Boolean(canStackCurrentCard);
+    }
+
+    return Boolean(snapshot.settings.jumpInEnabled && snapshot.discardTop && isJumpInMatch(handCard, snapshot.discardTop) && stackDrawAmount(handCard));
   }
 
   if (snapshot.currentPlayerId !== snapshot.self.id) {
@@ -46,6 +62,12 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
 
 function canStackCard(card: Card, kind: "draw2" | "wild4"): boolean {
   return kind === "draw2" ? card.value === "draw2" : card.value === "wild4";
+}
+
+function stackDrawAmount(card: Card): number | null {
+  if (card.value === "draw2") return 2;
+  if (card.value === "wild4") return 4;
+  return null;
 }
 
 function isJumpInMatch(card: Card, discardTop: Card): boolean {

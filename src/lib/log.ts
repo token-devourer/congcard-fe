@@ -34,7 +34,11 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) lost the challenge and drew six\.$/, key: "lostChallenge" },
   { re: /^(.+) won the challenge\.$/, key: "wonChallenge" },
   { re: /^(.+) took four cards\.$/, key: "tookFour" },
+  { re: /^(.+) took (\d+) cards\.$/, key: "tookCards", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^(.+) must choose whether to challenge\.$/, key: "mustChallenge" },
+  { re: /^(.+) must choose: challenge, stack, or accept (\d+) cards\.$/, key: "mustChallengeStack", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
+  { re: /^Game paused until at least two active players return\.$/, key: "gamePaused", values: () => ({}) },
+  { re: /^Game resumed\.$/, key: "gameResumed", values: () => ({}) },
   {
     re: /^(.+) played (?:(red|yellow|green|blue) )?(\d|skip|reverse|draw2|wild4|wild)\.$/,
     key: "played",

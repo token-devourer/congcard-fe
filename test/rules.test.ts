@@ -99,6 +99,37 @@ describe("client rules", () => {
     expect(canPlayCard(state, state.self!.hand[1]!)).toBe(false);
   });
 
+  it("allows the first Wild +4 challenge target to stack while the challenge is open", () => {
+    const state = snapshot({
+      currentPlayerId: "me",
+      pendingChallenge: { offenderId: "other", challengerId: "me", declaredColor: "blue", guilty: false },
+      pendingStack: { kind: "wild4", targetPlayerId: "me", totalDraw: 4, challengeable: true, offenderId: "other" },
+      self: { id: "me", role: "player", hand: [card("wild4", null, "wild4"), card("blue-2", "blue", 2)] }
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+    expect(canPlayCard(state, state.self!.hand[1]!)).toBe(false);
+  });
+
+  it("allows exact matching Jump In during a pending draw stack", () => {
+    const state = snapshot({
+      currentPlayerId: "other",
+      settings: { ...snapshot().settings, jumpInEnabled: true, stackingEnabled: true },
+      pendingStack: { kind: "draw2", targetPlayerId: "other", totalDraw: 4 },
+      self: { id: "me", role: "player", hand: [card("jump-blue-draw2", "blue", "draw2"), card("wild4", null, "wild4")] },
+      discardTop: card("top-blue-draw2", "blue", "draw2")
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+    expect(canPlayCard(state, state.self!.hand[1]!)).toBe(false);
+  });
+
+  it("blocks player actions while the game is paused", () => {
+    const state = snapshot({ pauseReason: "notEnoughAvailablePlayers" });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(false);
+  });
+
   it("blocks spectator and waiting actions", () => {
     const state = snapshot({ self: { id: "viewer", role: "waiting", hand: [] } });
 
