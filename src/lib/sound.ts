@@ -1,4 +1,5 @@
 import type { UiEvent } from "./events";
+import { safeGet, safeSet } from "./storage";
 
 export type SoundName =
   | "turn"
@@ -25,18 +26,30 @@ let masterGain: GainNode | null = null;
 
 export function isSoundMuted(): boolean {
   if (typeof window === "undefined") return true;
-  return window.localStorage.getItem(STORAGE_KEY) === "1";
+  return safeGet(STORAGE_KEY) === "1";
 }
 
 export function setSoundMuted(muted: boolean): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, muted ? "1" : "0");
+  safeSet(STORAGE_KEY, muted ? "1" : "0");
 }
 
 export function unlockSound(): void {
   if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
   const ctx = getAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
+}
+
+// Louder, doubled turn motif used to nudge a player whose tab is in the
+// background. Resumes the context first (browsers suspend audio on hidden
+// tabs); this only resumes — playback still needs a prior user gesture.
+export function playTurnAlert(): void {
+  if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") void ctx.resume();
+  const t0 = ctx.currentTime + 0.005;
+  render("turn", ctx, t0, 1);
+  render("turn", ctx, t0 + 0.34, 1);
 }
 
 export function soundForEvent(event: UiEvent): SoundName | null {

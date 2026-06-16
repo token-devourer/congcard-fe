@@ -5,7 +5,9 @@
     "close": "Tutup",
     "actionFailed": "Aksi gagal.",
     "soundOn": "Suara aktif",
-    "soundOff": "Senyap"
+    "soundOff": "Senyap",
+    "notifyOn": "Notif giliran aktif",
+    "notifyOff": "Notif giliran mati"
   },
   "colors": {
     "red": "Merah",
@@ -125,6 +127,8 @@
     "autoPlay": "auto",
     "paused": "Game paused",
     "pausedHint": "Menunggu minimal dua pemain aktif.",
+    "awaySelf": "Kamu sedang AFK",
+    "awaySelfHint": "Giliranmu dimainkan otomatis. Ketuk Kembali untuk ambil alih.",
     "finishedRank": "Selesai #{rank}",
     "roles": {
       "waiting": "menunggu",
@@ -142,6 +146,10 @@
     "calledOne": "{name}: SATU!",
     "catchWindow": "{name} tinggal 1 kartu!",
     "youHaveOne": "Kartumu tinggal 1 - teriak SATU!"
+  },
+  "alerts": {
+    "yourTurnTitle": "Giliranmu!",
+    "yourTurnBody": "Sekarang giliranmu di ruang {code}."
   },
   "log": {
     "joined": "{name} bergabung.",

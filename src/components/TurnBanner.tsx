@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useRoomStore } from "@/lib/store";
 
-export function TurnBanner({ isMyTurn }: { isMyTurn: boolean }) {
+export function TurnBanner() {
   const t = useTranslations();
   const events = useRoomStore((state) => state.events);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
@@ -19,13 +19,6 @@ export function TurnBanner({ isMyTurn }: { isMyTurn: boolean }) {
     const id = window.setTimeout(() => dismissEvent(turnEvent.id), 2000);
     return () => window.clearTimeout(id);
   }, [turnEvent, dismissEvent]);
-
-  useEffect(() => {
-    document.title = isMyTurn ? `${t("events.yourTurn")} - ${t("common.appName")}` : t("common.appName");
-    return () => {
-      document.title = t("common.appName");
-    };
-  }, [isMyTurn, t]);
 
   return (
     <AnimatePresence>
