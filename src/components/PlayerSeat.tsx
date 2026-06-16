@@ -6,6 +6,7 @@ import type { PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
+import { PingBadge } from "./PingBadge";
 
 interface PlayerSeatProps {
   player?: PublicPlayer;
@@ -14,9 +15,10 @@ interface PlayerSeatProps {
   oneOpen?: boolean;
   turnDeadline?: number;
   turnTimeoutSec?: number;
+  ping?: number;
 }
 
-export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turnTimeoutSec }: PlayerSeatProps) {
+export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turnTimeoutSec, ping }: PlayerSeatProps) {
   const t = useTranslations();
   const prevCount = useRef<number | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -79,6 +81,7 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
       <div className="mt-1 max-w-[96px] truncate text-center text-xs font-black leading-tight">
         {player.nickname}
         {isSelf ? <span className="text-[var(--gold)]"> ★</span> : null}
+        {isSelf && ping != null && ping > 0 ? <PingBadge ping={ping} /> : null}
       </div>
 
       <div className="mt-0.5 flex items-center justify-center gap-1.5">

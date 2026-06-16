@@ -21,6 +21,7 @@ interface RoundTableProps {
   isMyTurn: boolean;
   canDraw: boolean;
   onDraw: () => void;
+  ping?: number;
 }
 
 // Seats sit on an ellipse: you at six o'clock, then ascending seat order
@@ -33,7 +34,7 @@ function seatPosition(index: number, total: number): { left: string; top: string
   };
 }
 
-export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTableProps) {
+export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw, ping }: RoundTableProps) {
   const t = useTranslations();
   const sorted = [...snapshot.players].sort((a, b) => a.seat - b.seat);
   const selfIndex = Math.max(
@@ -78,6 +79,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
               oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
               turnDeadline={snapshot.turnDeadline}
               turnTimeoutSec={snapshot.settings.turnTimeoutSec}
+              ping={ping}
             />
           </div>
         ))}
