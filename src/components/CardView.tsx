@@ -160,6 +160,7 @@ function WildBadge({ small, value }: { small?: boolean; value: CardValue }) {
           stroke="#5a3608"
           strokeWidth="1.3"
           strokeLinejoin="round"
+          transform="translate(32 32) scale(0.78) translate(-32 -32)"
         />
       </svg>
       {value === "wild4" ? <DrawAmountLabel amount="+4" small={small} /> : null}
@@ -209,10 +210,8 @@ function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, strin
   if (value === "reverse") {
     return (
       <svg viewBox="0 0 48 48" aria-hidden="true" className={className}>
-        <path d="M15 18h15c5 0 8 3 8 8s-3 8-8 8h-2" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
-        <path d="m18 10-8 8 8 8" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M33 30H18c-5 0-8-3-8-8s3-8 8-8h2" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
-        <path d="m30 38 8-8-8-8" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 15h16l-3.8-3.8a2.2 2.2 0 1 1 3.1-3.1l7.6 7.6-7.6 7.6a2.2 2.2 0 1 1-3.1-3.1L30 19.4H18.2a7.8 7.8 0 0 0-6.7 3.8 2.2 2.2 0 1 1-3.8-2.3A12.2 12.2 0 0 1 18.2 15Z" fill="currentColor" />
+        <path d="M34 33H18l3.8 3.8a2.2 2.2 0 1 1-3.1 3.1L11.1 32l7.6-7.6a2.2 2.2 0 1 1 3.1 3.1L18 28.6h11.8a7.8 7.8 0 0 0 6.7-3.8 2.2 2.2 0 1 1 3.8 2.3A12.2 12.2 0 0 1 29.8 33Z" fill="currentColor" />
       </svg>
     );
   }
