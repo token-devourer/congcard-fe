@@ -901,15 +901,11 @@ button.card-face.playable:active {
     padding: 3px 2px 4px;
   }
 
-  .tableseat > div:first-child {
-    height: 44px;
-    width: 44px;
-  }
-
   .table-rim {
     padding: 6px;
     border-radius: 22px;
   }
+
 
   .table-felt {
     border-radius: 18px;
