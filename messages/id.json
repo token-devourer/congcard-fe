@@ -96,6 +96,7 @@
     "counterclockwise": "Lawan jarum jam",
     "drawPile": "{count} kartu di tumpukan",
     "draw": "Ambil",
+    "takeStack": "Ambil +{count}",
     "stackPenalty": "Stack +{count} ({card})",
     "activeColor": "Warna {color}",
     "secondsLeft": "{seconds} dtk",

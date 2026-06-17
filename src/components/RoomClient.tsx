@@ -657,7 +657,12 @@ function Board({
     snapshot.oneWindow?.playerId === snapshot.self?.id &&
     snapshot.self?.hand.length === 1 &&
     !me?.calledOne;
-  const canDraw = isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked;
+  const canTakeStack =
+    isMyTurn &&
+    !snapshot.pendingChallenge &&
+    snapshot.pendingStack?.targetPlayerId === snapshot.self?.id &&
+    !actionLocked;
+  const canDraw = (isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked) || Boolean(canTakeStack);
   const oneTarget =
     isPlayer && !finished && !playerAway && !eventLocked && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)

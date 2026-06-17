@@ -96,6 +96,7 @@
     "counterclockwise": "Counterclockwise",
     "drawPile": "{count} cards in draw pile",
     "draw": "Draw",
+    "takeStack": "Take +{count}",
     "stackPenalty": "Stack +{count} ({card})",
     "activeColor": "{color} active",
     "secondsLeft": "{seconds}s left",

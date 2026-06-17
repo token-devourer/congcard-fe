@@ -63,6 +63,11 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     Boolean(snapshot.oneWindow) &&
     now >= (snapshot.oneWindow?.opensAt ?? 0) &&
     now <= oneVisibleUntil;
+  const stackToTake = snapshot.pendingStack?.targetPlayerId === snapshot.self?.id ? snapshot.pendingStack : undefined;
+  const drawLabel =
+    stackToTake
+      ? t("board.takeStack", { count: stackToTake.totalDraw })
+      : t("board.draw");
 
   const centerPile = (
     <div className="grid justify-items-center gap-2.5">
@@ -76,7 +81,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           disabled={!canDraw}
           onClick={onDraw}
           whileTap={canDraw ? { scale: 0.94 } : undefined}
-          aria-label={t("board.draw")}
+          aria-label={drawLabel}
         >
           <span className="relative">
             <CardView hidden />
@@ -85,7 +90,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
             </span>
           </span>
           <span className={`text-xs font-black uppercase tracking-wider ${canDraw ? "text-[var(--gold)]" : "text-[var(--muted)]"}`}>
-            {t("board.draw")}
+            {drawLabel}
           </span>
         </motion.button>
 
