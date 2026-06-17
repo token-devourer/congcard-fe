@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
@@ -8,6 +9,18 @@ import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
 import { CardView } from "./CardView";
 import { PlayerSeat } from "./PlayerSeat";
+
+function useMobilePortrait(): boolean {
+  const [match, setMatch] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
+    const update = () => setMatch(q.matches);
+    update();
+    q.addEventListener("change", update);
+    return () => q.removeEventListener("change", update);
+  }, []);
+  return match;
+}
 
 const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
