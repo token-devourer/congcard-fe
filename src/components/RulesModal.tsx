@@ -57,7 +57,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
-            className="mobile-modal panel relative flex max-w-2xl flex-col gap-5 p-5 shadow-[var(--shadow-pop)] md:p-7"
+            className="mobile-modal modal-medium panel relative flex flex-col gap-5 p-5 shadow-[var(--shadow-pop)] md:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">

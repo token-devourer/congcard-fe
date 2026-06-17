@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { diffSnapshots } from "../src/lib/events";
-import { soundForEvent } from "../src/lib/sound";
+import { soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
 
 function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer {
   return {
@@ -270,6 +270,7 @@ describe("diffSnapshots", () => {
 
   it("maps awareness events to sounds", () => {
     expect(soundForEvent({ id: 1, type: "yourTurn" })).toBe("turn");
+    expect(TURN_ALERT_SOUND).toBe("turnAlert");
     expect(
       soundForEvent({ id: 2, type: "catchWindow", playerId: "a", nickname: "Ava", self: true, opensAt: 10, deadline: 20 })
     ).toBe("oneWindow");

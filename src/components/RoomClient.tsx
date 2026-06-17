@@ -774,7 +774,7 @@ function Board({
 
       <FlightLayer />
       <TurnBanner />
-      <TurnAlertLayer isMyTurn={isMyTurn} roomCode={snapshot.code} />
+      <TurnAlertLayer isMyTurn={isMyTurn} isAway={playerAway} roomCode={snapshot.code} />
       <GameEventOverlay />
       {isPlayer && !finished && !playerAway && !paused ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />

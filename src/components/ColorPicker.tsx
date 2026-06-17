@@ -16,17 +16,18 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-3 sm:p-4"
+      className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black/75 p-3 sm:p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onCancel}
+      data-testid="color-picker-overlay"
     >
       <motion.div
         initial={{ scale: 0.7, y: 24 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 340, damping: 24 }}
-        className="mobile-modal panel grid max-w-sm gap-4 p-5"
+        className="mobile-modal modal-color-picker panel grid gap-4 p-5"
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"

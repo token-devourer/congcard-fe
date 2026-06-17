@@ -3,6 +3,7 @@ import { safeGet, safeSet } from "./storage";
 
 export type SoundName =
   | "turn"
+  | "turnAlert"
   | "oneWindow"
   | "oneCalled"
   | "catch"
@@ -20,6 +21,7 @@ export type SoundName =
 
 const STORAGE_KEY = "congcard:sound-muted";
 const MASTER = 0.55;
+export const TURN_ALERT_SOUND: SoundName = "turnAlert";
 
 let audioContext: AudioContext | null = null;
 let masterGain: GainNode | null = null;
@@ -40,16 +42,13 @@ export function unlockSound(): void {
   if (ctx.state === "suspended") void ctx.resume();
 }
 
-// Louder, doubled turn motif used to nudge a player whose tab is in the
-// background. Resumes the context first (browsers suspend audio on hidden
-// tabs); this only resumes — playback still needs a prior user gesture.
+// Bell-style idle-turn alert. Playback still needs a prior user gesture.
 export function playTurnAlert(): void {
   if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
   const ctx = getAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
   const t0 = ctx.currentTime + 0.005;
-  render("turn", ctx, t0, 1);
-  render("turn", ctx, t0 + 0.34, 1);
+  render(TURN_ALERT_SOUND, ctx, t0, 1);
 }
 
 export function soundForEvent(event: UiEvent): SoundName | null {
@@ -206,6 +205,14 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       if (Math.random() < 0.5) {
         tone(ctx, t + rand(0.1, 0.16), { freq: b * 3, dur: 0.14, type: "triangle", gain: 0.04, lp: 7000 });
       }
+      break;
+    }
+    case "turnAlert": {
+      tone(ctx, t, { freq: 988, dur: 0.16, type: "triangle", gain: 0.24, lp: 7200, attack: 0.004 });
+      tone(ctx, t + 0.12, { freq: 1318, dur: 0.18, type: "triangle", gain: 0.26, lp: 7600, attack: 0.004 });
+      tone(ctx, t + 0.28, { freq: 1760, dur: 0.46, type: "sine", gain: 0.16, lp: 8200, attack: 0.006 });
+      tone(ctx, t + 0.28, { freq: 880, dur: 0.42, type: "triangle", gain: 0.09, lp: 5200, attack: 0.006 });
+      noise(ctx, t + 0.04, { dur: 0.06, gain: 0.08, hp: 3200, lp: 9500 });
       break;
     }
     case "oneWindow": {

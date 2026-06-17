@@ -72,12 +72,15 @@ describe("mobile layout surfaces", () => {
   it("uses the mobile safe modal shell for color picking", () => {
     renderWithIntl(<ColorPicker onPick={vi.fn()} onCancel={vi.fn()} />);
 
-    expect(screen.getByRole("dialog")).toHaveClass("mobile-modal");
+    expect(screen.getByTestId("color-picker-overlay")).toHaveClass("overflow-hidden");
+    expect(screen.getByRole("dialog")).toHaveClass("mobile-modal", "modal-color-picker");
   });
 
   it("uses the mobile safe modal shell for round end", () => {
     renderWithIntl(<RoundEndOverlay snapshot={snapshot()} send={vi.fn()} onLeave={vi.fn()} />);
 
-    expect(screen.getByRole("dialog")).toHaveClass("mobile-modal");
+    expect(screen.getByTestId("round-end-overlay")).toHaveClass("overflow-hidden");
+    expect(screen.getByTestId("round-end-overlay")).not.toHaveClass("overflow-y-auto");
+    expect(screen.getByRole("dialog")).toHaveClass("mobile-modal", "modal-round-end");
   });
 });

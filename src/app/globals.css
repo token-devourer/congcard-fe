@@ -164,10 +164,27 @@ button:disabled {
 }
 
 .mobile-modal {
-  width: 100%;
-  max-width: min(100%, calc(100vw - 24px));
+  --modal-width: 28rem;
+  width: min(var(--modal-width), calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
+}
+
+.modal-compact {
+  --modal-width: 24rem;
+}
+
+.modal-color-picker {
+  --modal-width: 26rem;
+}
+
+.modal-medium {
+  --modal-width: 42rem;
+}
+
+.modal-round-end {
+  --modal-width: 30rem;
 }
 
 .event-toast-label {
@@ -1161,6 +1178,7 @@ button.card-face.playable:active {
   }
 
   .mobile-modal {
+    width: min(var(--modal-width), calc(100vw - 20px));
     max-width: calc(100vw - 20px);
     max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     padding: 14px;

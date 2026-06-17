@@ -34,10 +34,11 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
       {open ? (
         <motion.div
           key="round-end"
-          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto overflow-x-hidden bg-black/80 p-3 sm:p-4"
+          className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black/80 p-3 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          data-testid="round-end-overlay"
         >
           <Confetti />
 
@@ -46,7 +47,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
-            className="mobile-modal panel relative grid max-w-md gap-4 p-5 text-center sm:p-6"
+            className="mobile-modal modal-round-end panel relative grid gap-4 p-5 text-center sm:p-6"
             role="dialog"
             aria-modal="true"
           >
@@ -150,7 +151,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
 
 function Confetti() {
   return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       {Array.from({ length: 28 }, (_, index) => {
         const left = ((index * 37) % 100) + 1;
         const delay = (index % 7) * 0.22;

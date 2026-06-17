@@ -6,13 +6,12 @@ import { playTurnAlert } from "@/lib/sound";
 import { safeGet } from "@/lib/storage";
 
 export const NOTIFY_STORAGE_KEY = "congcard:turn-notify";
+export const TURN_ALERT_DELAY_MS = 5000;
 
 const FLASH_INTERVAL_MS = 1000;
 const CHIME_REPEAT_MS = 3000;
 const MAX_CHIMES = 4;
 
-// Compact attention favicon (gold-ringed dark tile + red dot), inline as a data
-// URI so no extra static asset or App Router path handling is needed.
 const ALERT_FAVICON =
   "data:image/svg+xml," +
   encodeURIComponent(
@@ -31,16 +30,11 @@ function canVibrate(): boolean {
   return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
 }
 
-/**
- * Alerts a player whose tab is hidden/unfocused that it is their turn:
- * background chime (repeating, capped), browser notification (opt-in), tab
- * title + favicon flash, and a mobile vibration. Everything stops the moment
- * the tab regains focus or the turn ends. Also owns document.title.
- */
-export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; roomCode: string }) {
+export function TurnAlertLayer({ isMyTurn, isAway, roomCode }: { isMyTurn: boolean; isAway: boolean; roomCode: string }) {
   const t = useTranslations();
   const liveRef = useRef<HTMLDivElement | null>(null);
 
+  const delayTimer = useRef<number | undefined>(undefined);
   const flashTimer = useRef<number | undefined>(undefined);
   const chimeTimer = useRef<number | undefined>(undefined);
   const chimeCount = useRef(0);
@@ -49,9 +43,9 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
   const baseIcon = useRef<string | null>(null);
   const evaluateRef = useRef<(() => void) | undefined>(undefined);
 
-  // Latest values, read by the long-lived listeners without re-subscribing.
   const latest = useRef({
     isMyTurn,
+    isAway,
     appName: t("common.appName"),
     yourTurn: t("events.yourTurn"),
     notifyTitle: t("alerts.yourTurnTitle"),
@@ -59,6 +53,7 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
   });
   latest.current = {
     isMyTurn,
+    isAway,
     appName: t("common.appName"),
     yourTurn: t("events.yourTurn"),
     notifyTitle: t("alerts.yourTurnTitle"),
@@ -69,12 +64,16 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
     const iconLink = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
     baseIcon.current = iconLink?.getAttribute("href") ?? null;
 
+    function shouldAlert() {
+      return latest.current.isMyTurn && !latest.current.isAway;
+    }
+
     function applyTitle() {
-      const { isMyTurn: my, appName, yourTurn } = latest.current;
-      if (my && isTabAway()) {
-        document.title = flashOn.current ? `🔔 ${yourTurn}` : appName;
-      } else if (my) {
-        document.title = `${yourTurn} · ${appName}`;
+      const { isMyTurn: my, isAway: away, appName, yourTurn } = latest.current;
+      if (my && !away && alerting.current && isTabAway()) {
+        document.title = flashOn.current ? `! ${yourTurn}` : appName;
+      } else if (my && !away) {
+        document.title = `${yourTurn} | ${appName}`;
       } else {
         document.title = appName;
       }
@@ -90,7 +89,7 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
       chimeCount.current += 1;
       playTurnAlert();
       chimeTimer.current = window.setTimeout(() => {
-        if (latest.current.isMyTurn && isTabAway()) {
+        if (shouldAlert()) {
           chime();
         }
       }, CHIME_REPEAT_MS);
@@ -110,27 +109,30 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
           note.close();
         };
       } catch {
-        // Notification construction can throw on some platforms — ignore.
+        // Ignore unsupported notification surfaces.
       }
     }
 
     function startAlert() {
-      if (alerting.current) return;
+      if (alerting.current || !shouldAlert()) return;
       alerting.current = true;
       flashOn.current = true;
       applyTitle();
-      applyFavicon(true);
+      applyFavicon(isTabAway());
       flashTimer.current = window.setInterval(() => {
         flashOn.current = !flashOn.current;
         applyTitle();
+        applyFavicon(isTabAway());
       }, FLASH_INTERVAL_MS);
       chimeCount.current = 0;
       chime();
-      if (canVibrate()) navigator.vibrate([200, 100, 200]);
+      if (canVibrate() && isTabAway()) navigator.vibrate([200, 100, 200]);
       notify();
     }
 
     function stopAlert() {
+      if (delayTimer.current) window.clearTimeout(delayTimer.current);
+      delayTimer.current = undefined;
       if (alerting.current) {
         alerting.current = false;
         if (flashTimer.current) window.clearInterval(flashTimer.current);
@@ -145,14 +147,28 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
       applyTitle();
     }
 
+    function scheduleAlert() {
+      if (alerting.current || delayTimer.current) return;
+      delayTimer.current = window.setTimeout(() => {
+        delayTimer.current = undefined;
+        if (shouldAlert()) {
+          startAlert();
+        }
+      }, TURN_ALERT_DELAY_MS);
+    }
+
     function evaluate() {
-      if (latest.current.isMyTurn && isTabAway()) {
-        startAlert();
+      if (shouldAlert()) {
+        scheduleAlert();
+        if (alerting.current) {
+          applyTitle();
+          applyFavicon(isTabAway());
+        }
       } else {
         stopAlert();
       }
       if (liveRef.current) {
-        liveRef.current.textContent = latest.current.isMyTurn ? latest.current.yourTurn : "";
+        liveRef.current.textContent = shouldAlert() ? latest.current.yourTurn : "";
       }
     }
 
@@ -166,20 +182,18 @@ export function TurnAlertLayer({ isMyTurn, roomCode }: { isMyTurn: boolean; room
       document.removeEventListener("visibilitychange", evaluate);
       window.removeEventListener("focus", evaluate);
       window.removeEventListener("blur", evaluate);
+      if (delayTimer.current) window.clearTimeout(delayTimer.current);
       if (flashTimer.current) window.clearInterval(flashTimer.current);
       if (chimeTimer.current) window.clearTimeout(chimeTimer.current);
       alerting.current = false;
       if (iconLink) iconLink.setAttribute("href", baseIcon.current ?? "");
       document.title = latest.current.appName;
     };
-    // Mount once: listeners read fresh state via refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-run the alert decision whenever the turn flips.
   useEffect(() => {
     evaluateRef.current?.();
-  }, [isMyTurn]);
+  }, [isAway, isMyTurn]);
 
   return <div ref={liveRef} className="sr-only" role="status" aria-live="polite" aria-atomic="true" />;
 }

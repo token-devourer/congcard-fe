@@ -50,7 +50,7 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="mobile-modal panel pointer-events-auto grid max-w-sm gap-3 p-4 shadow-[var(--shadow-pop)]"
+            className="mobile-modal modal-compact panel pointer-events-auto grid gap-3 p-4 shadow-[var(--shadow-pop)]"
             role="dialog"
             aria-modal="true"
           >
