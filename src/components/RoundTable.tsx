@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
@@ -8,6 +9,18 @@ import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
 import { CardView } from "./CardView";
 import { PlayerSeat } from "./PlayerSeat";
+
+function useMobilePortrait(): boolean {
+  const [match, setMatch] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia("(max-width: 640px) and (orientation: portrait)");
+    const update = () => setMatch(q.matches);
+    update();
+    q.addEventListener("change", update);
+    return () => q.removeEventListener("change", update);
+  }, []);
+  return match;
+}
 
 const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
@@ -35,6 +48,7 @@ function seatPosition(index: number, total: number): { left: string; top: string
 
 export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTableProps) {
   const t = useTranslations();
+  const isMobilePortrait = useMobilePortrait();
   const sorted = [...snapshot.players].sort((a, b) => a.seat - b.seat);
   const selfIndex = Math.max(
     0,
@@ -49,6 +63,101 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     Boolean(snapshot.oneWindow) &&
     now >= (snapshot.oneWindow?.opensAt ?? 0) &&
     now <= oneVisibleUntil;
+
+  const centerPile = (
+    <div className="grid justify-items-center gap-2.5">
+      <TurnChip player={activePlayer} isMyTurn={isMyTurn} deadline={snapshot.turnDeadline} />
+      {snapshot.pendingStack ? <StackPenaltyChip totalDraw={snapshot.pendingStack.totalDraw} kind={snapshot.pendingStack.kind} /> : null}
+
+      <div className="flex items-center justify-center gap-4">
+        <motion.button
+          ref={anchorRef("draw")}
+          className={`grid justify-items-center gap-1 text-center ${canDraw ? "pulse-gold rounded-xl" : ""}`}
+          disabled={!canDraw}
+          onClick={onDraw}
+          whileTap={canDraw ? { scale: 0.94 } : undefined}
+          aria-label={t("board.draw")}
+        >
+          <span className="relative">
+            <CardView hidden />
+            <span className="absolute -right-2 -top-2 z-20 rounded-full bg-black/85 px-2 py-0.5 text-xs font-black text-[var(--gold)]">
+              {snapshot.drawPileCount}
+            </span>
+          </span>
+          <span className={`text-xs font-black uppercase tracking-wider ${canDraw ? "text-[var(--gold)]" : "text-[var(--muted)]"}`}>
+            {t("board.draw")}
+          </span>
+        </motion.button>
+
+        <div className="grid justify-items-center gap-1.5">
+          <div
+            ref={anchorRef("discard")}
+            className="relative rounded-[14px] p-[5px] transition-shadow duration-300"
+            style={{ boxShadow: `0 0 0 3px ${colorVar}, 0 0 30px ${colorVar}` }}
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.div
+                key={snapshot.discardTop?.id ?? "empty"}
+                initial={{ scale: 1.18, rotate: -8, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: "spring", stiffness: 360, damping: 26 }}
+              >
+                <CardView card={snapshot.discardTop} />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {snapshot.activeColor ? (
+            <span className="display rounded-full px-2.5 py-0.5 text-xs font-black text-black" style={{ background: colorVar }}>
+              {t("board.activeColor", { color: t(`colors.${snapshot.activeColor}`) })}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--muted)] [@media(max-height:760px)]:hidden">
+        <span aria-hidden="true">{snapshot.direction === 1 ? "↻" : "↺"}</span>
+        <span>{snapshot.direction === 1 ? t("board.clockwise") : t("board.counterclockwise")}</span>
+      </div>
+    </div>
+  );
+
+  if (isMobilePortrait) {
+    // Phone portrait: ellipse seating squeezes seats and clips them. Use a
+    // vertical stack — opponent strip on top, central pile below — so seats
+    // and cards both keep readable size in a 9:16 viewport.
+    const opponents = ordered.filter((p) => p.id !== snapshot.self?.id);
+
+    return (
+      <div className="relative grid h-full min-h-[min(360px,44dvh)] grid-rows-[auto_minmax(0,1fr)] gap-2 px-1 pb-1 pt-2">
+        <div
+          className={`opponent-strip ${opponents.length > 3 ? "is-scrollable" : "is-centered"}`}
+          role="list"
+        >
+          {opponents.map((player) => (
+            <div key={player.id} role="listitem" className="opponent-strip-item">
+              <PlayerSeat
+                player={player}
+                active={player.id === snapshot.currentPlayerId}
+                isSelf={false}
+                oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id}
+                turnDeadline={snapshot.turnDeadline}
+                turnTimeoutSec={snapshot.settings.turnTimeoutSec}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="table-rim relative mx-1 min-h-0 overflow-hidden">
+          <div className="table-felt grid place-items-center px-2 py-3">
+            <DirectionRing direction={snapshot.direction} />
+            <div className="relative z-10">{centerPile}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="relative h-full min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]">
@@ -82,65 +191,14 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           </div>
         ))}
 
-        <div className="absolute left-1/2 top-1/2 z-[5] grid -translate-x-1/2 -translate-y-1/2 justify-items-center gap-2.5">
-          <TurnChip player={activePlayer} isMyTurn={isMyTurn} deadline={snapshot.turnDeadline} />
-          {snapshot.pendingStack ? <StackPenaltyChip totalDraw={snapshot.pendingStack.totalDraw} kind={snapshot.pendingStack.kind} /> : null}
-
-          <div className="flex items-center justify-center gap-4">
-            <motion.button
-              ref={anchorRef("draw")}
-              className={`grid justify-items-center gap-1 text-center ${canDraw ? "pulse-gold rounded-xl" : ""}`}
-              disabled={!canDraw}
-              onClick={onDraw}
-              whileTap={canDraw ? { scale: 0.94 } : undefined}
-              aria-label={t("board.draw")}
-            >
-              <span className="relative">
-                <CardView hidden />
-                <span className="absolute -right-2 -top-2 z-20 rounded-full bg-black/85 px-2 py-0.5 text-xs font-black text-[var(--gold)]">
-                  {snapshot.drawPileCount}
-                </span>
-              </span>
-              <span className={`text-xs font-black uppercase tracking-wider ${canDraw ? "text-[var(--gold)]" : "text-[var(--muted)]"}`}>
-                {t("board.draw")}
-              </span>
-            </motion.button>
-
-            <div className="grid justify-items-center gap-1.5">
-              <div
-                ref={anchorRef("discard")}
-                className="relative rounded-[14px] p-[5px] transition-shadow duration-300"
-                style={{ boxShadow: `0 0 0 3px ${colorVar}, 0 0 30px ${colorVar}` }}
-              >
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
-                    key={snapshot.discardTop?.id ?? "empty"}
-                    initial={{ scale: 1.18, rotate: -8, opacity: 0 }}
-                    animate={{ scale: 1, rotate: 0, opacity: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 360, damping: 26 }}
-                  >
-                    <CardView card={snapshot.discardTop} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-              {snapshot.activeColor ? (
-                <span className="display rounded-full px-2.5 py-0.5 text-xs font-black text-black" style={{ background: colorVar }}>
-                  {t("board.activeColor", { color: t(`colors.${snapshot.activeColor}`) })}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[11px] font-bold text-[var(--muted)] [@media(max-height:760px)]:hidden">
-            <span aria-hidden="true">{snapshot.direction === 1 ? "↻" : "↺"}</span>
-            <span>{snapshot.direction === 1 ? t("board.clockwise") : t("board.counterclockwise")}</span>
-          </div>
+        <div className="absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2">
+          {centerPile}
         </div>
       </div>
     </div>
   );
 }
+
 
 function StackPenaltyChip({ totalDraw, kind }: { totalDraw: number; kind: "draw2" | "wild4" }) {
   const t = useTranslations();

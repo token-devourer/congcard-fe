@@ -825,7 +825,7 @@ button.card-face.playable:active {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100vw - 12px, 720px);
+    width: min(100vw - 8px, 720px);
   }
 
   .card-face {
@@ -871,6 +871,78 @@ button.card-face.playable:active {
     padding: 4px 3px 5px;
   }
 }
+
+/* Phone portrait (9:16-ish): reclaim vertical space — tighter app-shell,
+   smaller cards, compact opponent seats in the top strip, and a board grid
+   that gives the hand panel more room than the table. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .app-shell {
+    width: min(100vw - 6px, 480px);
+  }
+
+  .board {
+    min-height: calc(100dvh - 88px);
+    grid-template-rows: minmax(min(300px, 40dvh), auto) 1fr;
+    gap: 8px;
+  }
+
+  .card-face {
+    --card-width: 62px;
+    border-radius: 11px;
+  }
+
+  .card-face.small {
+    --card-width: 42px;
+  }
+
+  /* Opponent strip uses compact seats so 4–6 players fit without scrolling. */
+  .tableseat {
+    width: 76px;
+    padding: 3px 2px 4px;
+  }
+
+  .table-rim {
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+
+  .table-felt {
+    border-radius: 18px;
+    aspect-ratio: auto;
+  }
+
+  /* Tighten the hand panel so it can host the central pile area on mobile. */
+  .panel {
+    border-radius: 14px;
+  }
+
+  .hand-group-mode {
+    min-height: clamp(180px, 28dvh, 240px);
+    gap: 8px;
+  }
+
+  .hand-group-pile {
+    min-height: 96px;
+    min-width: 104px;
+    width: calc(50vw - 18px);
+    grid-template-rows: 52px minmax(46px, auto);
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .hand-group-rail {
+    max-height: 128px;
+    gap: 6px;
+  }
+
+  /* On portrait, the card lift + 3D hover is wasted (no hover) and just
+     clips behind the seat strip — flatten it. */
+  .card-face.playable {
+    transform: translateY(-4px);
+  }
+}
+
 
 /* Short viewports (landscape phones/tablets): shrink cards and seats so the
    table keeps breathing room and the center pile clears the seats. */
@@ -968,4 +1040,44 @@ button.card-face.playable:active {
 @keyframes card-shine {
   0%, 70%, 100% { background-position: 0 0, 0 0, -120% 0; }
   85%           { background-position: 0 0, 0 0,  140% 0; }
+}
+
+/* ---------- Mobile opponent strip ----------
+   Horizontal rail of opponent seats on phone-portrait. Snaps smoothly,
+   hides scrollbar chrome, clips overflow vertically so seat shadows
+   never bleed into the felt below. */
+.opponent-strip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 12px 8px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 12px;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Vertical clip prevents seat glow/active-ring from leaking into the felt
+     row of the parent grid. Horizontal stays scrollable. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Soft fade at the edges so cut-off seats read as "more available". */
+  mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+
+.opponent-strip.is-centered {
+  justify-content: center;
+}
+
+.opponent-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.opponent-strip {
+  scrollbar-width: none;
+}
+
+.opponent-strip-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
