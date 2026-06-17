@@ -82,7 +82,7 @@ function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
 
   return (
     <motion.div
-      className="absolute inset-0 grid place-items-center px-4"
+      className="absolute inset-0 grid place-items-center px-3 sm:px-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -107,7 +107,7 @@ function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
         className={`relative z-10 grid justify-items-center gap-2 ${event.type === "penalty" && event.self ? "shake" : ""}`}
       >
         <div
-          className="display relative overflow-hidden rounded-[28px] border-2 border-white/30 px-8 py-4 text-center text-4xl font-black uppercase text-white shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md md:px-12 md:py-5 md:text-6xl"
+          className="event-toast-label display relative overflow-hidden rounded-[28px] border-2 border-white/30 text-center font-black uppercase text-white shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md"
           style={{ background, color }}
         >
           <motion.span
@@ -121,7 +121,7 @@ function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
           <span className="relative z-10">{label}</span>
         </div>
         {sublabel ? (
-          <div className="rounded-full border border-white/15 bg-black/78 px-4 py-1.5 text-sm font-black text-white shadow-[0_10px_28px_rgba(0,0,0,0.42)]">
+          <div className="event-toast-sublabel rounded-full border border-white/15 bg-black/78 px-4 py-1.5 text-sm font-black text-white shadow-[0_10px_28px_rgba(0,0,0,0.42)]">
             {sublabel}
           </div>
         ) : null}

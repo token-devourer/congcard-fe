@@ -25,10 +25,19 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
   background:
     radial-gradient(1100px 720px at 50% -8%, rgba(47, 155, 103, 0.32), transparent 64%),
     radial-gradient(900px 600px at 88% 110%, rgba(61, 126, 219, 0.12), transparent 60%),
@@ -37,6 +46,16 @@ body {
   color: var(--text);
   font-family: var(--font-body, "Nunito"), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+body > * {
+  max-width: 100%;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
 }
 
 h1,
@@ -68,9 +87,101 @@ button:disabled {
 }
 
 .app-shell {
-  width: min(1180px, calc(100vw - 24px));
+  width: 100%;
+  max-width: 1180px;
   margin: 0 auto;
+  padding-inline: 12px;
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.room-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.room-title-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.room-title-row h1 {
+  overflow-wrap: anywhere;
+}
+
+.room-toolbar {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.room-toolbar > button,
+.room-toolbar > span,
+.room-toolbar > div {
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.toolbar-pill {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  line-height: 1.15;
+  white-space: normal;
+}
+
+.lobby-layout,
+.board,
+.board-zone,
+.hand-panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.lobby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setting-card {
+  min-width: 0;
+}
+
+.mobile-modal {
+  width: 100%;
+  max-width: min(100%, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.event-toast-label {
+  max-width: min(760px, calc(100vw - 24px));
+  padding: clamp(12px, 3vw, 20px) clamp(18px, 7vw, 48px);
+  font-size: clamp(1.75rem, 9vw, 3.75rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.event-toast-sublabel {
+  max-width: calc(100vw - 32px);
+  text-align: center;
 }
 
 .panel {
@@ -179,6 +290,7 @@ button:disabled {
      page to scroll; the hand row sizes itself. */
   grid-template-rows: minmax(min(380px, 46dvh), 1fr) auto;
   gap: 12px;
+  overflow-x: hidden;
 }
 
 /* ---------- Round table ---------- */
@@ -825,7 +937,48 @@ button.card-face.playable:active {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100vw - 8px, 720px);
+    max-width: 100%;
+    padding-inline: 8px;
+  }
+
+  .room-header {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .room-toolbar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+    justify-content: stretch;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .room-toolbar > button,
+  .room-toolbar > span,
+  .room-toolbar > div {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .toolbar-pill {
+    min-height: 36px;
+    padding-inline: 8px;
+  }
+
+  .lobby-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lobby-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    width: 100%;
+  }
+
+  .lobby-actions .button {
+    width: 100%;
+    padding-inline: 10px;
   }
 
   .card-face {
@@ -870,6 +1023,10 @@ button.card-face.playable:active {
     width: 84px;
     padding: 4px 3px 5px;
   }
+
+  .event-toast-label {
+    border-radius: 20px;
+  }
 }
 
 /* Phone portrait (9:16-ish): reclaim vertical space — tighter app-shell,
@@ -877,12 +1034,68 @@ button.card-face.playable:active {
    that gives the hand panel more room than the table. */
 @media (max-width: 640px) and (orientation: portrait) {
   .app-shell {
-    width: min(100vw - 6px, 480px);
+    max-width: 100%;
+    padding-left: max(6px, env(safe-area-inset-left));
+    padding-right: max(6px, env(safe-area-inset-right));
+  }
+
+  .room-title-row {
+    gap: 10px;
+  }
+
+  .room-title-row img {
+    height: 38px;
+    width: 38px;
+    border-radius: 10px;
+  }
+
+  .room-title-row p {
+    font-size: 12px;
+    letter-spacing: 0.13em;
+  }
+
+  .room-title-row h1 {
+    font-size: clamp(1.35rem, 7.2vw, 2rem);
+    line-height: 1.05;
+  }
+
+  .room-toolbar {
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .room-toolbar > button,
+  .room-toolbar > .toolbar-pill {
+    min-height: 34px;
+    padding: 5px 7px;
+  }
+
+  .button {
+    min-height: 44px;
+    border-radius: 12px;
+    padding-inline: 14px;
+  }
+
+  .field {
+    min-height: 42px;
+    border-radius: 11px;
+    padding-inline: 10px;
+  }
+
+  .lobby-layout .panel {
+    padding: 14px;
+  }
+
+  .setting-card {
+    gap: 8px;
+    padding: 10px;
+    border-radius: 12px;
   }
 
   .board {
-    min-height: calc(100dvh - 88px);
-    grid-template-rows: minmax(min(300px, 40dvh), auto) 1fr;
+    min-height: 0;
+    grid-template-rows: auto auto;
     gap: 8px;
   }
 
@@ -904,6 +1117,8 @@ button.card-face.playable:active {
   .table-rim {
     padding: 6px;
     border-radius: 22px;
+    width: 100%;
+    max-width: 100%;
   }
 
 
@@ -915,6 +1130,11 @@ button.card-face.playable:active {
   /* Tighten the hand panel so it can host the central pile area on mobile. */
   .panel {
     border-radius: 14px;
+  }
+
+  .hand-panel {
+    padding: 10px;
+    overflow: hidden;
   }
 
   .hand-group-mode {
@@ -936,10 +1156,69 @@ button.card-face.playable:active {
     gap: 6px;
   }
 
+  .hand-stack {
+    padding-inline: 0;
+  }
+
+  .mobile-modal {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 14px;
+  }
+
+  .event-toast-label {
+    max-width: calc(100vw - 18px);
+    border-radius: 18px;
+  }
+
+  .event-toast-sublabel {
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+  }
+
   /* On portrait, the card lift + 3D hover is wasted (no hover) and just
      clips behind the seat strip — flatten it. */
   .card-face.playable {
     transform: translateY(-4px);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell {
+    padding-inline: 6px;
+  }
+
+  .room-toolbar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .lobby-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .lobby-actions .button {
+    min-height: 42px;
+  }
+
+  .card-face {
+    --card-width: 58px;
+  }
+
+  .card-face.small {
+    --card-width: 39px;
+  }
+
+  .hand-group-pile {
+    min-width: 0;
+    width: calc(50vw - 17px);
+  }
+
+  .hand-group-expanded-header {
+    gap: 8px;
+  }
+
+  .hand-group-expanded-cards {
+    gap: 12px 8px;
   }
 }
 
@@ -971,6 +1250,10 @@ button.card-face.playable:active {
   .tableseat {
     width: 84px;
     padding: 4px 3px 5px;
+  }
+
+  .mobile-modal {
+    max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 

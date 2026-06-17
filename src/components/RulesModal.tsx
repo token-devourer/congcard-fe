@@ -44,7 +44,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
       {open ? (
         <motion.div
           key="rules-overlay"
-          className="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-3 backdrop-blur-sm sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -57,7 +57,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.9, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
-            className="panel relative flex max-h-[88vh] w-full max-w-2xl flex-col gap-5 overflow-y-auto p-5 shadow-[var(--shadow-pop)] md:p-7"
+            className="mobile-modal panel relative flex max-w-2xl flex-col gap-5 p-5 shadow-[var(--shadow-pop)] md:p-7"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">

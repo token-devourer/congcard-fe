@@ -242,17 +242,17 @@ export function RoomClient({ code }: RoomClientProps) {
 
   return (
     <main className="app-shell py-3 md:py-5">
-      <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <header className="room-header mb-3">
+        <div className="room-title-row">
           <img src="/icon.svg" alt="" className="h-11 w-11 rounded-xl" />
           <div className="min-w-0">
             <p className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]">{t("common.appName")}</p>
-            <h1 className="display text-2xl font-black">{t("room.title", { code })}</h1>
+            <h1 className="display text-2xl font-black leading-tight">{t("room.title", { code })}</h1>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
+        <div className="room-toolbar">
           <span
-            className={`flex items-center gap-1.5 rounded-full border border-[var(--line)] px-3 py-1 ${
+            className={`toolbar-pill ${
               status === "closed" ? "text-red-300" : ""
             }`}
           >
@@ -266,7 +266,7 @@ export function RoomClient({ code }: RoomClientProps) {
           {selfPlayer ? (
             <button
               type="button"
-              className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+              className={`toolbar-pill font-bold transition-colors ${
                 selfPlayer.away
                   ? "border-[var(--gold)] bg-[var(--gold)] text-black"
                   : "border-[var(--line)] text-[var(--text)] hover:border-[var(--gold)]"
@@ -281,14 +281,14 @@ export function RoomClient({ code }: RoomClientProps) {
           <LanguageToggle />
           <button
             type="button"
-            className="rounded-full border border-[var(--line)] px-3 py-1 text-[var(--text)] transition-colors hover:border-[var(--gold)]"
+            className="toolbar-pill text-[var(--text)] transition-colors hover:border-[var(--gold)]"
             onClick={() => setShowRules(true)}
           >
             {t("room.rules")}
           </button>
           <button
             type="button"
-            className="rounded-full border border-red-400/40 px-3 py-1 font-bold text-red-200 transition-colors hover:border-red-400 hover:text-red-100"
+            className="toolbar-pill border-red-400/40 font-bold text-red-200 transition-colors hover:border-red-400 hover:text-red-100"
             onClick={leaveAndForget}
             title={t("room.leaveHint")}
           >
@@ -411,11 +411,11 @@ export function Lobby({
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-[1fr_320px]">
+    <section className="lobby-layout grid gap-4 md:grid-cols-[1fr_320px]">
       <div className="panel p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="display text-xl font-black">{t("lobby.players")}</h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="lobby-actions">
             <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("code")}>
               {copied === "code" ? t("lobby.copied") : `📋 ${t("lobby.copyCode")}`}
             </button>
@@ -546,7 +546,7 @@ export function Lobby({
           </select>
           <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.deckBoxesHint", { count: deckBoxMinimum })}</span>
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
@@ -559,7 +559,7 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.allowMidGameJoinHint")}</span>
           </span>
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
@@ -572,7 +572,7 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.jumpInHint")}</span>
           </span>
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
@@ -585,7 +585,7 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.stackingHint")}</span>
           </span>
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
@@ -598,7 +598,7 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.challengeHint")}</span>
           </span>
         </label>
-        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
@@ -710,13 +710,13 @@ function Board({
   return (
     <>
       <section className="board">
-        <div className="relative">
+        <div className="board-zone relative">
           <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
           {paused ? <PauseBanner /> : null}
           <LogTicker snapshot={snapshot} />
         </div>
 
-        <div className="relative">
+        <div className="board-zone relative">
           <UnoButton
             canCallOne={Boolean(canCallOne)}
             callWindow={
@@ -746,7 +746,7 @@ function Board({
           />
           <div
             ref={anchorRef("hand")}
-            className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
+            className={`hand-panel panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
           >
             {isPlayer && !finished ? (
               <>

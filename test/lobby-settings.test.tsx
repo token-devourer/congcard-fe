@@ -88,6 +88,9 @@ describe("Lobby settings", () => {
   it("keeps Jump In and Stacking enabled together across incremental updates", () => {
     render(<LobbyHarness />);
 
+    expect(screen.getByText("Players").closest("section")).toHaveClass("lobby-layout");
+    expect(screen.getByRole("button", { name: /Copy code/ }).closest("div")).toHaveClass("lobby-actions");
+
     const jumpIn = screen.getByText("Enable Jump In").closest("label")?.querySelector("input") as HTMLInputElement | null;
     const stacking = screen.getByText("Enable stacking").closest("label")?.querySelector("input") as HTMLInputElement | null;
 

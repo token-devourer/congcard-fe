@@ -16,7 +16,7 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4"
+      className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-3 sm:p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -26,10 +26,12 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
         initial={{ scale: 0.7, y: 24 }}
         animate={{ scale: 1, y: 0 }}
         transition={{ type: "spring", stiffness: 340, damping: 24 }}
-        className="panel grid w-full max-w-sm gap-4 p-5"
+        className="mobile-modal panel grid max-w-sm gap-4 p-5"
         onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
-        <h2 className="display text-center text-2xl font-black">{t("colorPicker.title")}</h2>
+        <h2 className="display text-center text-[clamp(1.5rem,7vw,2rem)] font-black">{t("colorPicker.title")}</h2>
         <div className="grid grid-cols-2 gap-3">
           {COLORS.map((color, index) => (
             <motion.button
@@ -39,7 +41,7 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
               transition={{ delay: index * 0.05, type: "spring", stiffness: 380, damping: 20 }}
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.94 }}
-              className={`card-${color} display h-24 rounded-xl border-2 border-white/30 text-xl font-black ${
+              className={`card-${color} display h-[clamp(72px,18dvh,96px)] rounded-xl border-2 border-white/30 text-[clamp(1rem,4.8vw,1.25rem)] font-black ${
                 color === "yellow" ? "text-[#221706]" : "text-white"
               }`}
               style={{ boxShadow: "var(--shadow-pop)" }}

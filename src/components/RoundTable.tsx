@@ -134,7 +134,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     const opponents = ordered.filter((p) => p.id !== snapshot.self?.id);
 
     return (
-      <div className="relative grid h-full min-h-[min(360px,44dvh)] grid-rows-[auto_minmax(0,1fr)] gap-2 px-1 pb-1 pt-2">
+      <div className="relative grid h-full min-h-[min(340px,44dvh)] w-full max-w-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden px-1 pb-1 pt-2">
         <div
           className={`opponent-strip ${opponents.length > 3 ? "is-scrollable" : "is-centered"}`}
           role="list"
@@ -153,7 +153,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           ))}
         </div>
 
-        <div className="table-rim relative mx-1 min-h-0 overflow-hidden">
+        <div className="table-rim relative mx-auto min-h-0 w-full max-w-full overflow-hidden">
           <div className="table-felt grid place-items-center px-2 py-3">
             <DirectionRing direction={snapshot.direction} />
             <div className="relative z-10">{centerPile}</div>
@@ -165,7 +165,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
 
 
   return (
-    <div className="relative h-full min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]">
+    <div className="relative h-full min-h-[min(420px,46dvh)] w-full max-w-full min-w-0 overflow-hidden md:min-h-[min(460px,50dvh)]">
       {/* Width-capped, centered stage: the felt keeps a sane aspect ratio on
           short/wide screens instead of stretching into a flat sliver. Seats
           and the center pile share its coordinate space so geometry holds. */}

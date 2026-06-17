@@ -34,7 +34,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
       {open ? (
         <motion.div
           key="round-end"
-          className="fixed inset-0 z-50 grid place-items-center overflow-hidden bg-black/80 p-4"
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto overflow-x-hidden bg-black/80 p-3 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -46,7 +46,9 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
-            className="panel relative grid w-full max-w-md gap-4 p-6 text-center"
+            className="mobile-modal panel relative grid max-w-md gap-4 p-5 text-center sm:p-6"
+            role="dialog"
+            aria-modal="true"
           >
             <div>
               <p className="display text-sm font-black uppercase tracking-[0.2em] text-[var(--gold)]">

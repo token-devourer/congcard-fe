@@ -40,7 +40,7 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
           key="challenge"
           // No blocking backdrop: clicks pass through to the board so the
           // player can still hit ONE/CATCH while the challenge is pending.
-          className="pointer-events-none fixed inset-0 z-50 grid place-items-center p-4"
+          className="pointer-events-none fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -50,7 +50,9 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.85, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="panel pointer-events-auto grid w-full max-w-sm gap-3 p-4 shadow-[var(--shadow-pop)]"
+            className="mobile-modal panel pointer-events-auto grid max-w-sm gap-3 p-4 shadow-[var(--shadow-pop)]"
+            role="dialog"
+            aria-modal="true"
           >
             <div className="flex items-center gap-4">
               <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 1.6 }}>
