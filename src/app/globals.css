@@ -825,7 +825,7 @@ button.card-face.playable:active {
 
 @media (max-width: 760px) {
   .app-shell {
-    width: min(100vw - 12px, 720px);
+    width: min(100vw - 8px, 720px);
   }
 
   .card-face {
@@ -871,6 +871,82 @@ button.card-face.playable:active {
     padding: 4px 3px 5px;
   }
 }
+
+/* Phone portrait (9:16-ish): reclaim vertical space — tighter app-shell,
+   smaller cards, compact opponent seats in the top strip, and a board grid
+   that gives the hand panel more room than the table. */
+@media (max-width: 640px) and (orientation: portrait) {
+  .app-shell {
+    width: min(100vw - 6px, 480px);
+  }
+
+  .board {
+    min-height: calc(100dvh - 88px);
+    grid-template-rows: minmax(min(300px, 40dvh), auto) 1fr;
+    gap: 8px;
+  }
+
+  .card-face {
+    --card-width: 62px;
+    border-radius: 11px;
+  }
+
+  .card-face.small {
+    --card-width: 42px;
+  }
+
+  /* Opponent strip uses compact seats so 4–6 players fit without scrolling. */
+  .tableseat {
+    width: 76px;
+    padding: 3px 2px 4px;
+  }
+
+  .tableseat > div:first-child {
+    height: 44px;
+    width: 44px;
+  }
+
+  .table-rim {
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+  .table-felt {
+    border-radius: 18px;
+    aspect-ratio: auto;
+  }
+
+  /* Tighten the hand panel so it can host the central pile area on mobile. */
+  .panel {
+    border-radius: 14px;
+  }
+
+  .hand-group-mode {
+    min-height: clamp(180px, 28dvh, 240px);
+    gap: 8px;
+  }
+
+  .hand-group-pile {
+    min-height: 96px;
+    min-width: 104px;
+    width: calc(50vw - 18px);
+    grid-template-rows: 52px minmax(46px, auto);
+    padding: 6px;
+    border-radius: 14px;
+  }
+
+  .hand-group-rail {
+    max-height: 128px;
+    gap: 6px;
+  }
+
+  /* On portrait, the card lift + 3D hover is wasted (no hover) and just
+     clips behind the seat strip — flatten it. */
+  .card-face.playable {
+    transform: translateY(-4px);
+  }
+}
+
 
 /* Short viewports (landscape phones/tablets): shrink cards and seats so the
    table keeps breathing room and the center pile clears the seats. */
