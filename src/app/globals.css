@@ -901,15 +901,11 @@ button.card-face.playable:active {
     padding: 3px 2px 4px;
   }
 
-  .tableseat > div:first-child {
-    height: 44px;
-    width: 44px;
-  }
-
   .table-rim {
     padding: 6px;
     border-radius: 22px;
   }
+
 
   .table-felt {
     border-radius: 18px;
@@ -1044,4 +1040,44 @@ button.card-face.playable:active {
 @keyframes card-shine {
   0%, 70%, 100% { background-position: 0 0, 0 0, -120% 0; }
   85%           { background-position: 0 0, 0 0,  140% 0; }
+}
+
+/* ---------- Mobile opponent strip ----------
+   Horizontal rail of opponent seats on phone-portrait. Snaps smoothly,
+   hides scrollbar chrome, clips overflow vertically so seat shadows
+   never bleed into the felt below. */
+.opponent-strip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 4px 12px 8px;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 12px;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Vertical clip prevents seat glow/active-ring from leaking into the felt
+     row of the parent grid. Horizontal stays scrollable. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Soft fade at the edges so cut-off seats read as "more available". */
+  mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+
+.opponent-strip.is-centered {
+  justify-content: center;
+}
+
+.opponent-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.opponent-strip {
+  scrollbar-width: none;
+}
+
+.opponent-strip-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }

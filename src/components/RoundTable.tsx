@@ -129,10 +129,13 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     const opponents = ordered.filter((p) => p.id !== snapshot.self?.id);
 
     return (
-      <div className="relative grid h-full min-h-[min(360px,44dvh)] grid-rows-[auto_1fr] gap-2 px-1 pb-1 pt-2">
-        <div className="thin-scroll flex snap-x snap-mandatory items-start gap-2 overflow-x-auto px-1 pb-1">
+      <div className="relative grid h-full min-h-[min(360px,44dvh)] grid-rows-[auto_minmax(0,1fr)] gap-2 px-1 pb-1 pt-2">
+        <div
+          className={`opponent-strip ${opponents.length > 3 ? "is-scrollable" : "is-centered"}`}
+          role="list"
+        >
           {opponents.map((player) => (
-            <div key={player.id} className="snap-start shrink-0">
+            <div key={player.id} role="listitem" className="opponent-strip-item">
               <PlayerSeat
                 player={player}
                 active={player.id === snapshot.currentPlayerId}
@@ -145,7 +148,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           ))}
         </div>
 
-        <div className="table-rim relative mx-1 overflow-hidden">
+        <div className="table-rim relative mx-1 min-h-0 overflow-hidden">
           <div className="table-felt grid place-items-center px-2 py-3">
             <DirectionRing direction={snapshot.direction} />
             <div className="relative z-10">{centerPile}</div>
@@ -154,6 +157,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
       </div>
     );
   }
+
 
   return (
     <div className="relative h-full min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]">
