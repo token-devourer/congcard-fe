@@ -75,9 +75,10 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
             </div>
 
             <ul className="grid gap-1.5 rounded-lg bg-black/25 p-3 text-sm">
+              <li>{t("challenge.basis", { name: offender?.nickname ?? "?" })}</li>
               <li>{t("challenge.explainAccept", { count: stackTotal })}</li>
               <li>{t("challenge.explainWin", { name: offender?.nickname ?? "?" })}</li>
-              <li>{t("challenge.explainLose")}</li>
+              <li>{t("challenge.explainLose", { name: offender?.nickname ?? "?" })}</li>
               {canStackWild4 ? <li>{t("challenge.explainStack")}</li> : null}
             </ul>
 
@@ -110,11 +111,11 @@ function DeadlineBar({ deadline, totalSec }: { deadline?: number; totalSec: numb
   return (
     <div className="h-2 overflow-hidden rounded-full bg-black/40">
       <div
-        className="h-full rounded-full"
+        className="h-full w-full origin-left rounded-full"
         style={{
-          width: `${fraction * 100}%`,
+          transform: `scaleX(${fraction})`,
           background: fraction < 0.25 ? "var(--red)" : "var(--gold)",
-          transition: "width 150ms linear, background 300ms ease"
+          transition: "transform 150ms linear, background 300ms ease"
         }}
       />
     </div>

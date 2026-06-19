@@ -383,6 +383,19 @@ button:disabled {
   background: transparent;
 }
 
+/* Scrolls, but the scrollbar itself is hidden (panels that have their own
+   visual edge/fade, e.g. the rules overlay). */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chromium/WebKit */
+}
+
 .hand-stack {
   display: grid;
   justify-items: center;
