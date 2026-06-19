@@ -6,6 +6,8 @@
     "actionFailed": "Action failed.",
     "soundOn": "Sound on",
     "soundOff": "Muted",
+    "musicOn": "Music on",
+    "musicOff": "Music off",
     "notifyOn": "Turn alerts on",
     "notifyOff": "Turn alerts off"
   },
@@ -63,6 +65,17 @@
     "modeFlip": "Flip (Coming soon)",
     "maxPlayers": "Max players",
     "turnTimer": "Turn timer",
+    "absentPlayerAction": "Away / offline behavior",
+    "absentDoNothing": "Do Nothing",
+    "absentDraw": "Draw a Card",
+    "absentAutoplay": "Autoplay",
+    "absentHints": {
+      "none": "Take no proactive action. The normal turn timer still applies.",
+      "draw": "After a short delay, draw one card and pass.",
+      "autoplay": "After a short delay, play a legal card or draw, wait, then resolve the drawn card."
+    },
+    "autoPlayCallOne": "Autoplay calls One",
+    "autoPlayCallOneHint": "When Autoplay reaches one card, it automatically calls One.",
     "seconds": "{value} seconds",
     "scoreTarget": "Score target",
     "oneRound": "One round",
@@ -128,6 +141,7 @@
     "viewers": "Viewers",
     "viewersCount": "{count} viewers",
     "autoPlay": "auto",
+    "autoDraw": "auto draw",
     "paused": "Game paused",
     "pausedHint": "Waiting for at least two active players.",
     "awaySelf": "You're away",
@@ -299,6 +313,13 @@
     "callOff": "One and Catch are off: a player on one card never has to call out and cannot be caught.",
     "batchOn": "Batch Cards are on: play two or more cards with the same value in a chosen order. Draw penalties are multiplied by the batch size.",
     "batchOff": "Batch Cards are off: cards are played one at a time.",
+    "absentPlayer": {
+      "none": "Away/offline behavior is Do Nothing: no proactive action is taken, and the normal turn timer remains active.",
+      "draw": "Away/offline behavior is Draw a Card: after a short delay, the player draws one card and passes.",
+      "autoplay": "Away/offline behavior is Autoplay: each draw, play, stack, and challenge response waits before resolving."
+    },
+    "autoPlayOneOn": "Autoplay One is on: Autoplay calls One automatically when one card remains.",
+    "autoPlayOneOff": "Autoplay One is off: absent players can still be caught when one card remains.",
     "deckBoxesRule": "Each round starts with {count} card box(es) of 108 cards. The minimum grows by one box for every four player seats.",
     "actionsTitle": "Action cards",
     "actionSkip": "Skip makes the next player lose their turn.",

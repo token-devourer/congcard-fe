@@ -1,4 +1,5 @@
 import type { UiEvent } from "./events";
+import { audioAvailable, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
 import { safeGet, safeSet } from "./storage";
 
 export type SoundName =
@@ -20,11 +21,7 @@ export type SoundName =
   | "uiClick";
 
 const STORAGE_KEY = "congcard:sound-muted";
-const MASTER = 0.55;
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
-
-let audioContext: AudioContext | null = null;
-let masterGain: GainNode | null = null;
 
 export function isSoundMuted(): boolean {
   if (typeof window === "undefined") return true;
@@ -37,16 +34,15 @@ export function setSoundMuted(muted: boolean): void {
 }
 
 export function unlockSound(): void {
-  if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") void ctx.resume();
+  if (typeof window === "undefined" || isSoundMuted()) return;
+  unlockAudio();
 }
 
 // Bell-style idle-turn alert. Playback still needs a prior user gesture.
 export function playTurnAlert(): void {
-  if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") void ctx.resume();
+  if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  const ctx = sharedAudioContext();
+  unlockAudio();
   const t0 = ctx.currentTime + 0.005;
   render(TURN_ALERT_SOUND, ctx, t0, 1);
 }
@@ -67,7 +63,6 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     default: return null;
   }
 }
-
 export function playUiEventSounds(events: UiEvent[]): void {
   for (const event of events) {
     const sound = soundForEvent(event);
@@ -83,29 +78,12 @@ export function playUiEventSounds(events: UiEvent[]): void {
     }
   }
 }
-
 export function playSound(name: SoundName, level = 1): void {
-  if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
-  const ctx = getAudioContext();
-  if (ctx.state === "suspended") void ctx.resume();
+  if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  const ctx = sharedAudioContext();
+  unlockAudio();
   const t0 = ctx.currentTime + 0.005;
   render(name, ctx, t0, level);
-}
-
-function getAudioContext(): AudioContext {
-  if (!audioContext) {
-    const AC = window.AudioContext ?? window.webkitAudioContext;
-    if (!AC) throw new Error("Web Audio is not available.");
-    audioContext = new AC();
-    masterGain = audioContext.createGain();
-    masterGain.gain.value = MASTER;
-    masterGain.connect(audioContext.destination);
-  }
-  return audioContext;
-}
-
-function hasAudioContext(): boolean {
-  return Boolean(window.AudioContext ?? window.webkitAudioContext);
 }
 
 function pitchedLevel(level: number): { level: number; ratio: number } {
@@ -114,7 +92,7 @@ function pitchedLevel(level: number): { level: number; ratio: number } {
 }
 
 function dest(): AudioNode {
-  return masterGain ?? getAudioContext().destination;
+  return sfxDestination();
 }
 
 /** A musical "tone" with attack/decay envelope, optional detune layer, and lowpass shaping. */
@@ -409,11 +387,5 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       });
       break;
     }
-  }
-}
-
-declare global {
-  interface Window {
-    webkitAudioContext?: typeof AudioContext;
   }
 }

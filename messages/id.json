@@ -6,6 +6,8 @@
     "actionFailed": "Aksi gagal.",
     "soundOn": "Suara aktif",
     "soundOff": "Senyap",
+    "musicOn": "Musik aktif",
+    "musicOff": "Musik mati",
     "notifyOn": "Notif giliran aktif",
     "notifyOff": "Notif giliran mati"
   },
@@ -63,6 +65,17 @@
     "modeFlip": "Flip (Coming soon)",
     "maxPlayers": "Maksimal pemain",
     "turnTimer": "Timer giliran",
+    "absentPlayerAction": "Perilaku pemain away / offline",
+    "absentDoNothing": "Diam Saja",
+    "absentDraw": "Ambil Satu Kartu",
+    "absentAutoplay": "Autoplay",
+    "absentHints": {
+      "none": "Tidak melakukan aksi proaktif. Timer giliran normal tetap berlaku.",
+      "draw": "Setelah jeda singkat, ambil satu kartu lalu lewat.",
+      "autoplay": "Setelah jeda singkat, mainkan kartu legal atau ambil kartu, tunggu, lalu selesaikan kartu yang diambil."
+    },
+    "autoPlayCallOne": "Autoplay memanggil One",
+    "autoPlayCallOneHint": "Saat Autoplay tersisa satu kartu, sistem otomatis memanggil One.",
     "seconds": "{value} detik",
     "scoreTarget": "Target skor",
     "oneRound": "Satu ronde",
@@ -128,6 +141,7 @@
     "viewers": "Penonton",
     "viewersCount": "{count} penonton",
     "autoPlay": "auto",
+    "autoDraw": "auto ambil",
     "paused": "Game paused",
     "pausedHint": "Menunggu minimal dua pemain aktif.",
     "awaySelf": "Kamu sedang AFK",
@@ -299,6 +313,13 @@
     "callOff": "One dan Catch nonaktif: pemain dengan satu kartu tidak perlu berteriak dan tidak bisa ditangkap.",
     "batchOn": "Batch Cards aktif: mainkan dua atau lebih kartu dengan value sama sesuai urutan pilihan. Penalti draw dikalikan jumlah kartu batch.",
     "batchOff": "Batch Cards nonaktif: kartu dimainkan satu per satu.",
+    "absentPlayer": {
+      "none": "Perilaku pemain away/offline adalah Diam Saja: tidak ada aksi proaktif dan timer giliran normal tetap aktif.",
+      "draw": "Perilaku pemain away/offline adalah Ambil Satu Kartu: setelah jeda singkat, pemain mengambil satu kartu lalu lewat.",
+      "autoplay": "Perilaku pemain away/offline adalah Autoplay: setiap aksi ambil, main, stack, dan respons challenge menunggu sebelum diproses."
+    },
+    "autoPlayOneOn": "Autoplay One aktif: Autoplay otomatis memanggil One saat tersisa satu kartu.",
+    "autoPlayOneOff": "Autoplay One nonaktif: pemain yang tidak hadir tetap bisa ditangkap saat tersisa satu kartu.",
     "deckBoxesRule": "Setiap ronde dimulai dengan {count} kotak kartu berisi 108 kartu. Minimumnya bertambah satu kotak untuk setiap empat kursi pemain.",
     "actionsTitle": "Kartu aksi",
     "actionSkip": "Skip membuat pemain berikutnya kehilangan gilirannya.",

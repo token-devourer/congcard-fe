@@ -24,6 +24,8 @@ import { FlightLayer } from "./FlightLayer";
 import { GameEventOverlay } from "./GameEventOverlay";
 import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
+import { MusicLayer } from "./MusicLayer";
+import { MusicToggle } from "./MusicToggle";
 import { RoundEndOverlay } from "./RoundEndOverlay";
 import { RoundTable } from "./RoundTable";
 import { RulesModal } from "./RulesModal";
@@ -242,6 +244,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
   return (
     <main className="app-shell py-3 md:py-5">
+      <MusicLayer snapshot={snapshot} />
       <header className="room-header mb-3">
         <div className="room-title-row">
           <img src="/icon.svg" alt="" className="h-11 w-11 rounded-xl" />
@@ -277,6 +280,7 @@ export function RoomClient({ code }: RoomClientProps) {
             </button>
           ) : null}
           <SoundToggle />
+          <MusicToggle />
           <NotifyToggle />
           <LanguageToggle />
           <button
@@ -514,6 +518,35 @@ export function Lobby({
             ))}
           </select>
         </label>
+        <label className="grid gap-2">
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.absentPlayerAction")}</span>
+          <select
+            className="field"
+            disabled={!isHost}
+            value={snapshot.settings.absentPlayerAction}
+            onChange={(event) => updateSetting({ absentPlayerAction: event.target.value as RoomSettings["absentPlayerAction"] })}
+          >
+            <option value="none">{t("lobby.absentDoNothing")}</option>
+            <option value="draw">{t("lobby.absentDraw")}</option>
+            <option value="autoplay">{t("lobby.absentAutoplay")}</option>
+          </select>
+          <span className="text-xs leading-snug text-[var(--muted)]">{t(`lobby.absentHints.${snapshot.settings.absentPlayerAction}`)}</span>
+        </label>
+        {snapshot.settings.absentPlayerAction === "autoplay" ? (
+          <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-[var(--gold)]"
+              disabled={!isHost}
+              checked={snapshot.settings.autoPlayCallOne}
+              onChange={(event) => updateSetting({ autoPlayCallOne: event.target.checked })}
+            />
+            <span className="grid gap-1">
+              <span className="text-sm font-bold text-[var(--text)]">{t("lobby.autoPlayCallOne")}</span>
+              <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.autoPlayCallOneHint")}</span>
+            </span>
+          </label>
+        ) : null}
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.scoreTarget")}</span>
           <select
@@ -881,7 +914,11 @@ function ViewerStatus({ snapshot, role, finishedRank }: { snapshot: GameSnapshot
                 <span className="truncate font-bold">{player.nickname}</span>
                 {!player.connected ? <span className="text-xs text-red-300">{t("lobby.offline")}</span> : null}
                 {player.connected && player.away ? <span className="text-xs text-[var(--gold)]">{t("lobby.away")}</span> : null}
-                {player.autoPlay ? <span className="text-xs text-[var(--gold)]">{t("board.autoPlay")}</span> : null}
+                {player.autoPlay ? (
+                  <span className="text-xs text-[var(--gold)]">
+                    {t(snapshot.settings.absentPlayerAction === "autoplay" ? "board.autoPlay" : "board.autoDraw")}
+                  </span>
+                ) : null}
                   </span>
               <span className="tabular-nums text-[var(--muted)]">{player.score}</span>
                 </div>

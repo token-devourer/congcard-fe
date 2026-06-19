@@ -95,6 +95,10 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
                 <li>{settings?.callEnabled ?? true ? t("callOn") : t("callOff")}</li>
                 <li>{settings?.batchEnabled ? t("batchOn") : t("batchOff")}</li>
+                <li>{t(`absentPlayer.${settings?.absentPlayerAction ?? "draw"}`)}</li>
+                {settings?.absentPlayerAction === "autoplay" ? (
+                  <li>{settings.autoPlayCallOne ? t("autoPlayOneOn") : t("autoPlayOneOff")}</li>
+                ) : null}
                 <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
               </ul>
             </section>

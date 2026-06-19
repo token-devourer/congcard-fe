@@ -1,20 +1,21 @@
 {
   "name": "congcard-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.17.0 <25"
   },
   "scripts": {
     "dev": "next dev",
+    "start": "next start",
     "build": "next build",
     "build:dev": "next build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "@colyseus/sdk": "^0.17.42",
+    "@colyseus/sdk": "^0.17.43",
     "@congcard/shared": "file:shared",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.2",

@@ -47,6 +47,8 @@ function snapshot(): GameSnapshot {
       challengeEnabled: true,
       callEnabled: true,
       batchEnabled: false,
+      absentPlayerAction: "draw",
+      autoPlayCallOne: false,
       deckBoxes: 1,
       modeOptions: {}
     },

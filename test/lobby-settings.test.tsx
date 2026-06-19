@@ -44,6 +44,8 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       challengeEnabled: true,
       callEnabled: true,
       batchEnabled: false,
+      absentPlayerAction: "draw",
+      autoPlayCallOne: false,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -141,5 +143,27 @@ describe("Lobby settings", () => {
     fireEvent.click(batch!);
     expect(batch).toBeChecked();
     expect(stacking).not.toBeChecked();
+  });
+
+  it("configures away and offline behavior independently", () => {
+    render(<LobbyHarness />);
+
+    const action = screen.getByText("Away / offline behavior").closest("label")?.querySelector("select") as HTMLSelectElement | null;
+
+    expect(action).not.toBeNull();
+    expect(action).toHaveValue("draw");
+    expect(screen.queryByText("Autoplay calls One")).not.toBeInTheDocument();
+
+    fireEvent.change(action!, { target: { value: "autoplay" } });
+    const callOne = screen.getByText("Autoplay calls One").closest("label")?.querySelector("input") as HTMLInputElement | null;
+    expect(callOne).not.toBeNull();
+    expect(callOne).not.toBeChecked();
+
+    fireEvent.click(callOne!);
+    expect(callOne).toBeChecked();
+
+    fireEvent.change(action!, { target: { value: "none" } });
+    expect(screen.queryByText("Autoplay calls One")).not.toBeInTheDocument();
+    expect(screen.getByText("Enable stacking").closest("label")?.querySelector("input")).toBeEnabled();
   });
 });
