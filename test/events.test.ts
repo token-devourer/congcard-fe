@@ -41,6 +41,7 @@ function snapshot(overrides: Partial<GameSnapshot>): GameSnapshot {
       stackingEnabled: false,
       challengeEnabled: true,
       callEnabled: true,
+      batchEnabled: false,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -164,7 +165,7 @@ describe("diffSnapshots", () => {
 
     expect(diffSnapshots(prev, next).find((event) => event.type === "stack")).toMatchObject({
       totalDraw: 10,
-      level: 4
+      level: 5
     });
   });
 

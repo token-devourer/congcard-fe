@@ -79,6 +79,8 @@
     "challengeHint": "Hanya Wild +4 pertama dalam stack yang bisa ditantang sebelum ada pemain lain yang stack.",
     "call": "Enable One and Catch",
     "callHint": "Pemain harus memanggil One saat tersisa satu kartu, dan lawan bisa Catch jika terlewat.",
+    "batch": "Aktifkan Batch Cards",
+    "batchHint": "Mainkan dua atau lebih kartu dengan value sama dalam urutan pilihanmu.",
     "start": "Mulai permainan",
     "needPlayers": "Butuh minimal 2 pemain",
     "copyCode": "Salin kode",
@@ -136,6 +138,16 @@
       "spectator": "penonton"
     }
   },
+  "batch": {
+    "open": "Batch",
+    "title": "Batch Cards",
+    "chooseValue": "Pilih value yang memiliki minimal dua kartu.",
+    "chooseOrder": "Pilih kartu sesuai urutan peletakan. Kartu terakhir berada di atas.",
+    "cardCount": "{count} tersedia",
+    "selectCard": "Pilih {card} untuk batch",
+    "clear": "Hapus pilihan",
+    "play": "Mainkan {count} kartu"
+  },
   "events": {
     "yourTurn": "GILIRANMU!",
     "youDrew": "Kamu menarik {count} kartu!",
@@ -170,6 +182,7 @@
     "newHost": "{name} kini menjadi host.",
     "roundStarted": "Ronde {number} dimulai.",
     "played": "{name} memainkan {card}.",
+    "playedBatch": "{name} memainkan {count} kartu {value} sebagai batch.",
     "cardWithColor": "{value} {color}",
     "valSkip": "Skip",
     "valReverse": "Reverse",
@@ -191,7 +204,9 @@
     "mustChallenge": "{name} harus memilih: tantang atau terima.",
     "mustChallengeStack": "{name} harus memilih: tantang, stack, atau ambil {count}.",
     "wonChallenge": "{name} memenangkan tantangan.",
-    "lostChallenge": "{name} kalah tantangan dan menarik enam kartu.",
+    "lostChallenge": "{name} kalah tantangan dan menarik {count} kartu.",
+    "batchSkipped": "Batch melewati {count} pemain.",
+    "batchReversed": "Arah putaran berubah {count} kali.",
     "gamePaused": "Game paused sampai dua pemain aktif kembali.",
     "gameResumed": "Game resumed.",
     "skipped": "{name} dilewati.",
@@ -225,15 +240,19 @@
     "playerAway": "Kembali ke meja sebelum melakukan aksi.",
     "gamePaused": "Game paused sampai minimal dua pemain aktif kembali.",
     "invalidRoomCode": "Masukkan kode ruangan 6 karakter yang valid.",
-    "rateLimited": "Terlalu banyak permintaan — tunggu sebentar lalu coba lagi."
+    "rateLimited": "Terlalu banyak permintaan — tunggu sebentar lalu coba lagi.",
+    "batchDisabled": "Batch Cards dinonaktifkan untuk room ini.",
+    "invalidBatch": "Pilih minimal dua kartu dengan value yang sama.",
+    "batchAfterDraw": "Batch Cards tidak dapat dimainkan setelah mengambil kartu.",
+    "batchInProgress": "Tunggu batch saat ini selesai."
   },
   "challenge": {
     "title": "Tantangan Wild +4",
     "declared": "{name} memainkan +4 dan memilih warna {color}.",
     "basis": "Seorang pemain hanya boleh memainkan Wild +4 kalau dia tidak punya kartu yang cocok dengan warna yang aktif sebelum +4 itu. Dengan menantang, kamu menuduh {name} sebenarnya masih punya kartu warna sebelumnya dan memainkan +4 secara curang.",
     "explainAccept": "Terima kartu: lewati tantangan dan tarik {count}.",
-    "explainWin": "Tantang & menang: kalau {name} memang menyimpan kartu warna sebelumnya, +4-nya tidak sah — {name} yang menarik 4 kartu, bukan kamu.",
-    "explainLose": "Tantang & kalah: kalau {name} benar-benar tidak punya kartu warna itu, +4-nya sah — tantanganmu salah dan kamu menarik 6 kartu.",
+    "explainWin": "Tantang & menang: kalau {name} memang menyimpan kartu warna sebelumnya, +4-nya tidak sah — {name} yang menarik {count} kartu, bukan kamu.",
+    "explainLose": "Tantang & kalah: kalau {name} benar-benar tidak punya kartu warna itu, +4-nya sah — tantanganmu salah dan kamu menarik {count} kartu.",
     "explainStack": "Atau stack kartu Wild +4 dari tanganmu untuk meneruskan penaltinya.",
     "accept": "Ambil {count}",
     "challenge": "Tantang!"
@@ -278,6 +297,8 @@
     "challengeOff": "Wild +4 challenge nonaktif: pemain berikutnya langsung mengambil 4 kartu dan tidak bisa menyanggah.",
     "callOn": "One dan Catch aktif: pemain wajib memanggil One begitu kartunya tinggal satu. Kalau lupa, pemain lain bisa menangkapnya sebelum giliran berikutnya dan dia menarik dua kartu.",
     "callOff": "One dan Catch nonaktif: pemain dengan satu kartu tidak perlu berteriak dan tidak bisa ditangkap.",
+    "batchOn": "Batch Cards aktif: mainkan dua atau lebih kartu dengan value sama sesuai urutan pilihan. Penalti draw dikalikan jumlah kartu batch.",
+    "batchOff": "Batch Cards nonaktif: kartu dimainkan satu per satu.",
     "deckBoxesRule": "Setiap ronde dimulai dengan {count} kotak kartu berisi 108 kartu. Minimumnya bertambah satu kotak untuk setiap empat kursi pemain.",
     "actionsTitle": "Kartu aksi",
     "actionSkip": "Skip membuat pemain berikutnya kehilangan gilirannya.",

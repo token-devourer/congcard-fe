@@ -75,6 +75,7 @@ export interface RoomSettings {
   stackingEnabled: boolean;
   challengeEnabled: boolean;
   callEnabled: boolean;
+  batchEnabled: boolean;
   deckBoxes: number;
   modeOptions: Record<string, unknown>;
 }
@@ -89,6 +90,7 @@ export type RoomSettingsInput = {
   stackingEnabled?: RoomSettings["stackingEnabled"] | undefined;
   challengeEnabled?: RoomSettings["challengeEnabled"] | undefined;
   callEnabled?: RoomSettings["callEnabled"] | undefined;
+  batchEnabled?: RoomSettings["batchEnabled"] | undefined;
   deckBoxes?: RoomSettings["deckBoxes"] | undefined;
   modeOptions?: RoomSettings["modeOptions"] | undefined;
 };
@@ -132,6 +134,7 @@ export interface PendingChallenge {
   challengerId: string;
   declaredColor: Color;
   guilty: boolean;
+  drawCount?: number;
 }
 
 export interface OneWindow {
@@ -153,6 +156,16 @@ export interface PendingStack {
   roundWinnerId?: string;
 }
 
+export interface PendingBatchPlay {
+  id: number;
+  playerId: string;
+  cards: Card[];
+  declaredColor?: Color;
+  startsAt: number;
+  cardIntervalMs: number;
+  resolvesAt: number;
+}
+
 export interface LastStandPlacement {
   playerId: string;
   rank: number;
@@ -165,6 +178,7 @@ export interface GameLogEntry {
   type:
     | "room"
     | "play"
+    | "batch"
     | "draw"
     | "skip"
     | "reverse"
@@ -195,6 +209,7 @@ export interface GameSnapshot {
   turnDeadline?: number;
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
+  pendingBatchPlay?: PendingBatchPlay;
   pauseReason?: PauseReason;
   oneWindow?: OneWindow;
   roundNumber: number;
@@ -238,6 +253,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
   stackingEnabled: false,
   challengeEnabled: true,
   callEnabled: true,
+  batchEnabled: false,
   deckBoxes: 1,
   modeOptions: {}
 };
@@ -252,6 +268,7 @@ export const roomSettingsSchema = z.object({
   stackingEnabled: z.boolean().default(false),
   challengeEnabled: z.boolean().default(true),
   callEnabled: z.boolean().default(true),
+  batchEnabled: z.boolean().default(false),
   deckBoxes: z.number().int().min(1).max(6).default(1),
   modeOptions: z.record(z.string(), z.unknown()).default({})
 });
@@ -266,6 +283,7 @@ export const roomSettingsUpdateSchema = z.object({
   stackingEnabled: z.boolean().optional(),
   challengeEnabled: z.boolean().optional(),
   callEnabled: z.boolean().optional(),
+  batchEnabled: z.boolean().optional(),
   deckBoxes: z.number().int().min(1).max(6).optional(),
   modeOptions: z.record(z.string(), z.unknown()).optional()
 });
@@ -281,6 +299,13 @@ export const joinOptionsSchema = z.object({
 
 export const playCardSchema = z.object({
   cardId: z.string().min(1),
+  declaredColor: z.enum(COLORS).optional()
+});
+
+export const playBatchSchema = z.object({
+  cardIds: z.array(z.string().min(1)).min(2).max(60).refine((ids) => new Set(ids).size === ids.length, {
+    message: "Card ids must be unique."
+  }),
   declaredColor: z.enum(COLORS).optional()
 });
 
@@ -327,6 +352,7 @@ export function mergeRoomSettings(input?: RoomSettingsInput): RoomSettings {
     stackingEnabled: parsed.stackingEnabled ?? DEFAULT_ROOM_SETTINGS.stackingEnabled,
     challengeEnabled: parsed.challengeEnabled ?? DEFAULT_ROOM_SETTINGS.challengeEnabled,
     callEnabled: parsed.callEnabled ?? (scoreTarget === "lastStand" ? false : DEFAULT_ROOM_SETTINGS.callEnabled),
+    batchEnabled: parsed.batchEnabled ?? DEFAULT_ROOM_SETTINGS.batchEnabled,
     deckBoxes: parsed.deckBoxes ?? DEFAULT_ROOM_SETTINGS.deckBoxes,
     modeOptions: parsed.modeOptions ?? DEFAULT_ROOM_SETTINGS.modeOptions
   };

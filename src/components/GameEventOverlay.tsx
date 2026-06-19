@@ -191,7 +191,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
   }
 
   if (event.type === "stack") {
-    const level = Math.min(4, Math.max(1, event.level));
+    const level = Math.min(8, Math.max(1, event.level));
     return (
       <div className="absolute inset-0 z-[1] grid place-items-center">
         <motion.div
@@ -201,7 +201,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
         >
           +{event.totalDraw}
         </motion.div>
-        {Array.from({ length: 4 }, (_, index) => (
+        {Array.from({ length: 8 }, (_, index) => (
           <motion.div
             key={index}
             className="absolute h-24 w-16 rounded-lg border border-yellow-100/35 bg-gradient-to-b from-yellow-200/75 to-yellow-600/60"

@@ -6,6 +6,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     snapshot.self.role !== "player" ||
     snapshot.phase !== "playing" ||
     snapshot.pauseReason ||
+    snapshot.pendingBatchPlay ||
     snapshot.oneWindow
   ) {
     return false;

@@ -108,6 +108,11 @@ function hasAudioContext(): boolean {
   return Boolean(window.AudioContext ?? window.webkitAudioContext);
 }
 
+function pitchedLevel(level: number): { level: number; ratio: number } {
+  const capped = Math.min(8, Math.max(1, Math.round(level)));
+  return { level: capped, ratio: 2 ** (((capped - 1) * 2) / 12) };
+}
+
 function dest(): AudioNode {
   return masterGain ?? getAudioContext().destination;
 }
@@ -255,8 +260,7 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
     }
     case "wild": {
       // Four-tone shimmer, but pick a starting key and direction each time.
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const transpose = [1, 1.125, 1.25, 1.5][pitchLevel - 1] ?? 1;
+      const transpose = pitchedLevel(level).ratio;
       const scales: number[][] = [
         [392, 523, 659, 784],   // G major-ish
         [440, 554, 659, 880],   // A
@@ -278,8 +282,8 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "stack": {
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const root = [392, 466, 554, 659][pitchLevel - 1] ?? 392;
+      const { level: pitchLevel, ratio } = pitchedLevel(level);
+      const root = 392 * ratio;
       const gain = 0.15 + pitchLevel * 0.025;
       tone(ctx, t, { freq: root, dur: 0.09, type: "square", gain, lp: 2600 });
       tone(ctx, t + 0.06, { freq: root * 1.5, dur: 0.11, type: "triangle", gain: gain + 0.02, lp: 4200 });
@@ -288,16 +292,16 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "drawTick": {
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const root = [523, 622, 740, 880][pitchLevel - 1] ?? 523;
+      const { level: pitchLevel, ratio } = pitchedLevel(level);
+      const root = 523 * ratio;
       tone(ctx, t, { freq: root, dur: 0.055, type: "triangle", gain: 0.12 + pitchLevel * 0.018, lp: 5200 });
       tone(ctx, t + 0.04, { freq: root * 1.5, dur: 0.08, type: "sine", gain: 0.07 + pitchLevel * 0.012, lp: 6500 });
       noise(ctx, t, { dur: 0.035, gain: 0.045 + pitchLevel * 0.01, hp: 2600, lp: 9000 });
       break;
     }
     case "matchChain": {
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const root = [440, 554, 659, 784][pitchLevel - 1] ?? 440;
+      const { level: pitchLevel, ratio } = pitchedLevel(level);
+      const root = 440 * ratio;
       const gain = 0.13 + pitchLevel * 0.025;
       tone(ctx, t, { freq: root, dur: 0.07, type: "triangle", gain, lp: 4200 });
       tone(ctx, t + 0.055, { freq: root * 1.5, dur: 0.09, type: "square", gain: gain * 0.78, lp: 3000 });
@@ -325,16 +329,16 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "skip": {
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const root = [660, 742, 880, 988][pitchLevel - 1] ?? 660;
+      const { ratio } = pitchedLevel(level);
+      const root = 660 * ratio;
       noise(ctx, t, { dur: 0.06, gain: 0.38, hp: 2500, lp: 9000 });
       tone(ctx, t + 0.01, { freq: root, dur: 0.1, type: "square", gain: 0.18, sweepTo: root / 3, lp: 2200 });
       break;
     }
     case "reverse": {
-      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
-      const high = [880, 988, 1175, 1319][pitchLevel - 1] ?? 880;
-      const low = [330, 370, 440, 494][pitchLevel - 1] ?? 330;
+      const { ratio } = pitchedLevel(level);
+      const high = 880 * ratio;
+      const low = 330 * ratio;
       tone(ctx, t,        { freq: high, dur: 0.18, type: "triangle", gain: 0.18, sweepTo: low, lp: 3500 });
       tone(ctx, t + 0.16, { freq: low, dur: 0.22, type: "triangle", gain: 0.2,  sweepTo: high * 1.125, lp: 4500 });
       noise(ctx, t + 0.04, { dur: 0.18, gain: 0.12, hp: 600, lp: 3500 });

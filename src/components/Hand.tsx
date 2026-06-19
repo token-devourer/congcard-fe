@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { Card, Color, GameSnapshot } from "@congcard/shared";
 import { canPlayCard } from "@/lib/rules";
 import { groupHand, shouldUseGroupedHand, type HandGroup, type HandGroupId } from "@/lib/handGroups";
 import { CardView } from "./CardView";
+import { BatchSelector } from "./BatchSelector";
 
 interface HandProps {
   snapshot: GameSnapshot;
   isMyTurn: boolean;
   actionLocked?: boolean;
   onPlay: (card: Card) => void;
+  onPlayBatch?: (cards: Card[], declaredColor?: Color) => void;
+  onBatchSelectionChange?: (active: boolean) => void;
   onPassDrawn: () => void;
 }
 
@@ -20,17 +23,35 @@ const CARD_WIDTH = { normal: 88, compact: 56 };
 const CARD_WIDTH_NARROW = { normal: 70, compact: 46 };
 const MIN_VISIBLE_STEP = 14;
 const MIN_OVERLAP = 24;
+const NOOP_BATCH_PLAY = () => undefined;
+const NOOP_BATCH_SELECTION = () => undefined;
 
-export function Hand({ snapshot, isMyTurn, actionLocked = false, onPlay, onPassDrawn }: HandProps) {
+export function Hand({
+  snapshot,
+  isMyTurn,
+  actionLocked = false,
+  onPlay,
+  onPlayBatch = NOOP_BATCH_PLAY,
+  onBatchSelectionChange = NOOP_BATCH_SELECTION,
+  onPassDrawn
+}: HandProps) {
   const t = useTranslations();
   const stackRef = useRef<HTMLDivElement | null>(null);
   const [stackWidth, setStackWidth] = useState(0);
   const [isNarrow, setIsNarrow] = useState(false);
+  const [batchActive, setBatchActive] = useState(false);
   const hand = snapshot.self?.hand ?? [];
   const drawnId = snapshot.self?.drawnCardId;
   const drawnCount = drawnId ? 1 : 0;
   const count = hand.length;
   const grouped = shouldUseGroupedHand(count, isNarrow);
+  const handleBatchSelectionChange = useCallback(
+    (active: boolean) => {
+      setBatchActive(active);
+      onBatchSelectionChange(active);
+    },
+    [onBatchSelectionChange]
+  );
 
   useEffect(() => {
     const element = stackRef.current;
@@ -59,6 +80,12 @@ export function Hand({ snapshot, isMyTurn, actionLocked = false, onPlay, onPassD
 
   return (
     <div className="grid gap-2">
+      <BatchSelector
+        snapshot={snapshot}
+        actionLocked={actionLocked}
+        onSelectionChange={handleBatchSelectionChange}
+        onPlay={onPlayBatch}
+      />
       {drawnId && isMyTurn ? (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -72,9 +99,9 @@ export function Hand({ snapshot, isMyTurn, actionLocked = false, onPlay, onPassD
         </motion.div>
       ) : null}
 
-      {grouped ? (
+      {!batchActive && grouped ? (
         <GroupedHand snapshot={snapshot} actionLocked={actionLocked} onPlay={onPlay} />
-      ) : (
+      ) : !batchActive ? (
         <FanHand
           snapshot={snapshot}
           actionLocked={actionLocked}
@@ -83,7 +110,7 @@ export function Hand({ snapshot, isMyTurn, actionLocked = false, onPlay, onPassD
           isNarrow={isNarrow}
           onPlay={onPlay}
         />
-      )}
+      ) : null}
     </div>
   );
 }

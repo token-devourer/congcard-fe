@@ -43,6 +43,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       stackingEnabled: false,
       challengeEnabled: true,
       callEnabled: true,
+      batchEnabled: false,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -127,5 +128,18 @@ describe("Lobby settings", () => {
 
     fireEvent.change(scoreTarget!, { target: { value: "0" } });
     expect(call).toBeChecked();
+  });
+
+  it("keeps Batch Cards disabled by default and independently configurable", () => {
+    render(<LobbyHarness />);
+
+    const batch = screen.getByText("Enable Batch Cards").closest("label")?.querySelector("input") as HTMLInputElement | null;
+    const stacking = screen.getByText("Enable stacking").closest("label")?.querySelector("input") as HTMLInputElement | null;
+
+    expect(batch).not.toBeNull();
+    expect(batch).not.toBeChecked();
+    fireEvent.click(batch!);
+    expect(batch).toBeChecked();
+    expect(stacking).not.toBeChecked();
   });
 });

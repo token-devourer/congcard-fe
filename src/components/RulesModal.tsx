@@ -94,6 +94,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
                 <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
                 <li>{settings?.callEnabled ?? true ? t("callOn") : t("callOff")}</li>
+                <li>{settings?.batchEnabled ? t("batchOn") : t("batchOff")}</li>
                 <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
               </ul>
             </section>

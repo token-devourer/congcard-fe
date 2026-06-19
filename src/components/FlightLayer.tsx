@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import type { Card, GameSnapshot } from "@congcard/shared";
 import { anchorRect } from "@/lib/anchors";
@@ -8,7 +8,7 @@ import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
 
 type Flight =
-  | { kind: "card"; card: Card; from: string; to: string; delay?: number }
+  | { kind: "card"; card: Card; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number }
   | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number }
   | { kind: "token"; from: string; to: string; delay?: number };
 
@@ -20,18 +20,34 @@ const DRAW_STAGGER_SEC = 0.22;
 export function FlightLayer() {
   const layerRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<GameSnapshot | null>(null);
+  const animatedBatchIds = useRef(new Set<number>());
+  const [reducedMotion, setReducedMotion] = useState(false);
   const snapshot = useRoomStore((state) => state.snapshot);
+  const clockOffset = useRoomStore((state) => state.clockOffset);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const prev = prevRef.current;
     prevRef.current = snapshot;
 
     const layer = layerRef.current;
-    if (!snapshot || !prev || !layer || prev.code !== snapshot.code) {
+    if (!snapshot || !prev || !layer) {
       return;
     }
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (prev.code !== snapshot.code) {
+      animatedBatchIds.current.clear();
+      return;
+    }
+
+    if (reducedMotion) {
       return;
     }
 
@@ -40,8 +56,32 @@ export function FlightLayer() {
       prev.roundNumber === snapshot.roundNumber && prev.phase === "playing" && snapshot.phase === "playing";
 
     if (sameRound) {
-      if (snapshot.discardTop && snapshot.discardTop.id !== prev.discardTop?.id && prev.currentPlayerId) {
+      const resolvedBatchTop = prev.pendingBatchPlay?.cards.at(-1)?.id;
+      if (
+        snapshot.discardTop &&
+        snapshot.discardTop.id !== prev.discardTop?.id &&
+        snapshot.discardTop.id !== resolvedBatchTop &&
+        prev.currentPlayerId
+      ) {
         flights.push({ kind: "card", card: snapshot.discardTop, from: `seat:${prev.currentPlayerId}`, to: "discard" });
+      }
+
+      const batch = snapshot.pendingBatchPlay;
+      if (batch && !animatedBatchIds.current.has(batch.id)) {
+        animatedBatchIds.current.add(batch.id);
+        const source = batch.playerId === snapshot.self?.id ? "hand" : `seat:${batch.playerId}`;
+        const serverNow = Date.now() + clockOffset;
+        batch.cards.forEach((card, index) => {
+          flights.push({
+            kind: "card",
+            card,
+            from: source,
+            to: "discard",
+            delay: Math.max(0, batch.startsAt + index * batch.cardIntervalMs - serverNow) / 1000,
+            pitchLevel: Math.min(8, index + 1),
+            batchIndex: index + 1
+          });
+        });
       }
 
       for (const player of snapshot.players) {
@@ -80,7 +120,7 @@ export function FlightLayer() {
     for (const flight of flights) {
       spawnFlight(layer, flight);
     }
-  }, [snapshot]);
+  }, [clockOffset, reducedMotion, snapshot]);
 
   useEffect(() => {
     const layer = layerRef.current;
@@ -91,7 +131,18 @@ export function FlightLayer() {
     };
   }, []);
 
-  return <div ref={layerRef} className="pointer-events-none fixed inset-0 z-[70] overflow-hidden" aria-hidden="true" />;
+  return (
+    <>
+      <div ref={layerRef} className="pointer-events-none fixed inset-0 z-[70] overflow-hidden" aria-hidden="true" />
+      {reducedMotion && snapshot?.pendingBatchPlay ? (
+        <div className="pointer-events-none fixed inset-x-0 top-1/2 z-[70] flex justify-center" aria-live="polite">
+          <span className="display rounded-full border border-[var(--gold)]/60 bg-black/80 px-5 py-2 font-black text-[var(--gold-strong)]">
+            Batch x{snapshot.pendingBatchPlay.cards.length}
+          </span>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 function spawnFlight(layer: HTMLDivElement, flight: Flight) {
@@ -104,6 +155,12 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const el = document.createElement("div");
   if (flight.kind === "card") {
     el.className = `card-face small ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
+    if (flight.batchIndex) {
+      const badge = document.createElement("span");
+      badge.className = "flight-draw-badge";
+      badge.textContent = String(flight.batchIndex);
+      el.appendChild(badge);
+    }
   } else if (flight.kind === "back") {
     el.className = "card-face small card-back";
     if (flight.drawTotal && flight.drawTotal > 1 && flight.drawIndex) {
@@ -131,8 +188,10 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const secondLegDuration = flight.kind === "back" ? 0.38 : 0.3;
   const fadeDuration = flight.kind === "back" ? 0.18 : 0.16;
   if (flight.kind === "back") {
-    const pitchLevel = Math.min(4, Math.max(1, flight.drawIndex ?? 1));
+    const pitchLevel = Math.min(8, Math.max(1, flight.drawIndex ?? 1));
     window.setTimeout(() => playSound("drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
+  } else if (flight.kind === "card" && flight.pitchLevel) {
+    window.setTimeout(() => playSound("matchChain", flight.pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
   }
 
   gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });

@@ -565,6 +565,92 @@ button:disabled {
   place-items: center;
 }
 
+.batch-button {
+  box-shadow: 0 0 22px rgba(242, 193, 78, 0.28);
+}
+
+.batch-selector {
+  display: grid;
+  gap: 12px;
+  width: min(100%, 820px);
+  margin-inline: auto;
+  border: 1px solid rgba(242, 193, 78, 0.42);
+  border-radius: 16px;
+  background: rgba(3, 9, 6, 0.72);
+  padding: 12px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28);
+}
+
+.batch-value-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.batch-value-option {
+  display: grid;
+  gap: 2px;
+  min-height: 64px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 8px;
+}
+
+.batch-value-option:hover {
+  border-color: rgba(242, 193, 78, 0.72);
+  background: rgba(242, 193, 78, 0.1);
+}
+
+.batch-card-list {
+  display: flex;
+  align-items: end;
+  justify-content: flex-start;
+  gap: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 18px 8px 10px;
+}
+
+.batch-card-choice {
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  transition: transform 150ms ease, filter 150ms ease;
+}
+
+.batch-card-choice.selected {
+  transform: translateY(-8px);
+  filter: drop-shadow(0 0 12px rgba(242, 193, 78, 0.72));
+}
+
+.batch-card-choice:disabled {
+  cursor: not-allowed;
+}
+
+.batch-order-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  z-index: 35;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  transform: translateX(-50%);
+  border: 2px solid #fff2b8;
+  border-radius: 999px;
+  background: var(--gold-strong);
+  color: #1d1303;
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: 0 0 18px rgba(242, 193, 78, 0.72);
+}
+
 /* ---------- Cards ---------- */
 
 .card-face {

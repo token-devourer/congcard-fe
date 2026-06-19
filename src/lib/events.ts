@@ -193,7 +193,7 @@ export function isVisibleUiEvent(event: UiEvent): boolean {
 }
 
 function stackPitchLevel(totalDraw: number): number {
-  return Math.min(4, Math.max(1, Math.floor(totalDraw / 2)));
+  return Math.min(8, Math.max(1, Math.floor(totalDraw / 2)));
 }
 
 function sameValuePitchLevel(next: GameSnapshot): number {
@@ -203,7 +203,7 @@ function sameValuePitchLevel(next: GameSnapshot): number {
   }
 
   const run = sameValueRunFromLog(next, value);
-  return run > 1 ? Math.min(4, run) : 0;
+  return run > 1 ? Math.min(8, run) : 0;
 }
 
 function latestPlayedValueFromLog(snapshot: GameSnapshot): CardValue | undefined {

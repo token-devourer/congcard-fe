@@ -31,7 +31,7 @@ function cardName(color: string | undefined, value: string, t: Translate): strin
 // would otherwise be swallowed by "drew one card").
 const PATTERNS: Pattern[] = [
   { re: /^(.+) timed out and drew one card\.$/, key: "timedOut" },
-  { re: /^(.+) lost the challenge and drew six\.$/, key: "lostChallenge" },
+  { re: /^(.+) lost the challenge and drew (\d+) cards\.$/, key: "lostChallenge", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^(.+) won the challenge\.$/, key: "wonChallenge" },
   { re: /^(.+) took four cards\.$/, key: "tookFour" },
   { re: /^(.+) took (\d+) cards\.$/, key: "tookCards", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
@@ -39,6 +39,13 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) must choose: challenge, stack, or accept (\d+) cards\.$/, key: "mustChallengeStack", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^Game paused until at least two active players return\.$/, key: "gamePaused", values: () => ({}) },
   { re: /^Game resumed\.$/, key: "gameResumed", values: () => ({}) },
+  {
+    re: /^(.+) played a batch of (\d+) (\d|skip|reverse|draw2|wild4|wild) cards\.$/,
+    key: "playedBatch",
+    values: (match, t) => ({ name: match[1], count: Number(match[2]), value: cardName(undefined, match[3], t) })
+  },
+  { re: /^(\d+) players were skipped by the batch\.$/, key: "batchSkipped", values: (match) => ({ count: Number(match[1]) }) },
+  { re: /^Turn direction changed (\d+) times\.$/, key: "batchReversed", values: (match) => ({ count: Number(match[1]) }) },
   {
     re: /^(.+) played (?:(red|yellow|green|blue) )?(\d|skip|reverse|draw2|wild4|wild)\.$/,
     key: "played",
@@ -99,6 +106,7 @@ export function translateLog(message: string, t: Translate): string {
 }
 
 export const LOG_ICON: Record<string, string> = {
+  batch: "*",
   room: "👥",
   play: "🎴",
   draw: "🃏",

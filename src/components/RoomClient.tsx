@@ -336,6 +336,10 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   player_not_found: "errors.playerNotFound",
   player_away: "errors.playerAway",
   game_paused: "errors.gamePaused",
+  batch_disabled: "errors.batchDisabled",
+  invalid_batch: "errors.invalidBatch",
+  batch_after_draw: "errors.batchAfterDraw",
+  batch_in_progress: "errors.batchInProgress",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -564,6 +568,19 @@ export function Lobby({
             type="checkbox"
             className="mt-1 h-4 w-4 accent-[var(--gold)]"
             disabled={!isHost}
+            checked={snapshot.settings.batchEnabled}
+            onChange={(event) => updateSetting({ batchEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.batch")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.batchHint")}</span>
+          </span>
+        </label>
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
             checked={snapshot.settings.jumpInEnabled}
             onChange={(event) => updateSetting({ jumpInEnabled: event.target.checked })}
           />
@@ -637,6 +654,7 @@ function Board({
   setSelectedCard: (card: Card | null) => void;
 }) {
   const t = useTranslations();
+  const [batchSelecting, setBatchSelecting] = useState(false);
   const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
   const now = useNow(100);
   const selfRole = snapshot.self?.role ?? "spectator";
@@ -648,12 +666,15 @@ function Board({
   const isMyTurn =
     isPlayer && !finished && !playerAway && !paused && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const eventLocked = now < eventLockUntil;
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused;
+  const batchResolving = Boolean(snapshot.pendingBatchPlay);
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving;
   const canCallOne =
     isPlayer &&
     !finished &&
     !playerAway &&
     !eventLocked &&
+    !batchSelecting &&
+    !batchResolving &&
     snapshot.oneWindow?.playerId === snapshot.self?.id &&
     snapshot.self?.hand.length === 1 &&
     !me?.calledOne;
@@ -661,10 +682,12 @@ function Board({
     isMyTurn &&
     !snapshot.pendingChallenge &&
     snapshot.pendingStack?.targetPlayerId === snapshot.self?.id &&
-    !actionLocked;
-  const canDraw = (isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked) || Boolean(canTakeStack);
+    !actionLocked &&
+    !batchSelecting;
+  const canDraw =
+    (isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked && !batchSelecting) || Boolean(canTakeStack);
   const oneTarget =
-    isPlayer && !finished && !playerAway && !eventLocked && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && !finished && !playerAway && !eventLocked && !batchSelecting && !batchResolving && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
@@ -675,7 +698,7 @@ function Board({
   }, [finished, isPlayer, playerAway, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer || finished || playerAway || eventLocked) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchSelecting || batchResolving) {
       return;
     }
 
@@ -693,7 +716,7 @@ function Board({
   }
 
   function chooseColor(color: Color) {
-    if (eventLocked || playerAway) {
+    if (eventLocked || playerAway || batchResolving) {
       return;
     }
 
@@ -705,6 +728,17 @@ function Board({
 
     send("game.playCard", { cardId: playable.id, declaredColor: color });
     setSelectedCard(null);
+  }
+
+  function playBatch(cards: Card[], declaredColor?: Color) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchResolving) {
+      return;
+    }
+
+    send("game.playBatch", {
+      cardIds: cards.map((card) => card.id),
+      ...(declaredColor ? { declaredColor } : {})
+    });
   }
 
   return (
@@ -762,6 +796,8 @@ function Board({
                   isMyTurn={isMyTurn}
                   actionLocked={actionLocked}
                   onPlay={play}
+                  onPlayBatch={playBatch}
+                  onBatchSelectionChange={setBatchSelecting}
                   onPassDrawn={() => send("game.playDrawn", { play: false })}
                 />
               </>
@@ -776,7 +812,9 @@ function Board({
       <TurnBanner />
       <TurnAlertLayer isMyTurn={isMyTurn} isAway={playerAway} roomCode={snapshot.code} />
       <GameEventOverlay />
-      {isPlayer && !finished && !playerAway && !paused ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
+      {isPlayer && !finished && !playerAway && !paused ? (
+        <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked || batchSelecting || batchResolving} />
+      ) : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}

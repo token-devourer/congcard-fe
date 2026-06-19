@@ -46,6 +46,7 @@ function snapshot(): GameSnapshot {
       stackingEnabled: false,
       challengeEnabled: true,
       callEnabled: true,
+      batchEnabled: false,
       deckBoxes: 1,
       modeOptions: {}
     },

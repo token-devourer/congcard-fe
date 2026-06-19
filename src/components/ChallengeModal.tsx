@@ -25,7 +25,9 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
   const forMe = Boolean(pending && pending.challengerId === snapshot.self?.id);
   const offender = pending ? snapshot.players.find((player) => player.id === pending.offenderId) : undefined;
   const actionLocked = Boolean(snapshot.oneWindow) || eventLocked;
-  const stackTotal = snapshot.pendingStack?.challengeable ? snapshot.pendingStack.totalDraw : 4;
+  const stackTotal = snapshot.pendingStack?.challengeable
+    ? snapshot.pendingStack.totalDraw
+    : snapshot.pendingChallenge?.drawCount ?? 4;
   const canStackWild4 = Boolean(
     pending &&
       snapshot.pendingStack?.challengeable &&
@@ -77,8 +79,8 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
             <ul className="grid gap-1.5 rounded-lg bg-black/25 p-3 text-sm">
               <li>{t("challenge.basis", { name: offender?.nickname ?? "?" })}</li>
               <li>{t("challenge.explainAccept", { count: stackTotal })}</li>
-              <li>{t("challenge.explainWin", { name: offender?.nickname ?? "?" })}</li>
-              <li>{t("challenge.explainLose", { name: offender?.nickname ?? "?" })}</li>
+              <li>{t("challenge.explainWin", { name: offender?.nickname ?? "?", count: stackTotal })}</li>
+              <li>{t("challenge.explainLose", { name: offender?.nickname ?? "?", count: stackTotal + 2 })}</li>
               {canStackWild4 ? <li>{t("challenge.explainStack")}</li> : null}
             </ul>
 

@@ -79,6 +79,8 @@
     "challengeHint": "Only the first Wild +4 in a stack may be challenged before anyone stacks over it.",
     "call": "Enable One and Catch",
     "callHint": "Players must call One at one card, and opponents can Catch missed calls.",
+    "batch": "Enable Batch Cards",
+    "batchHint": "Play two or more cards with the same value in a chosen order.",
     "start": "Start game",
     "needPlayers": "At least 2 players needed",
     "copyCode": "Copy code",
@@ -136,6 +138,16 @@
       "spectator": "spectator"
     }
   },
+  "batch": {
+    "open": "Batch",
+    "title": "Batch Cards",
+    "chooseValue": "Choose a value that has at least two cards.",
+    "chooseOrder": "Select cards in placement order. The last card stays on top.",
+    "cardCount": "{count} available",
+    "selectCard": "Select {card} for batch",
+    "clear": "Clear",
+    "play": "Play {count} cards"
+  },
   "events": {
     "yourTurn": "YOUR TURN!",
     "youDrew": "You drew {count} cards!",
@@ -170,6 +182,7 @@
     "newHost": "{name} is now the host.",
     "roundStarted": "Round {number} started.",
     "played": "{name} played {card}.",
+    "playedBatch": "{name} played {count} {value} cards as a batch.",
     "cardWithColor": "{color} {value}",
     "valSkip": "Skip",
     "valReverse": "Reverse",
@@ -191,7 +204,9 @@
     "mustChallenge": "{name} must choose: challenge or accept.",
     "mustChallengeStack": "{name} must choose: challenge, stack, or take {count}.",
     "wonChallenge": "{name} won the challenge.",
-    "lostChallenge": "{name} lost the challenge and drew six.",
+    "lostChallenge": "{name} lost the challenge and drew {count} cards.",
+    "batchSkipped": "The batch skipped {count} players.",
+    "batchReversed": "Turn direction changed {count} times.",
     "gamePaused": "Game paused until two active players return.",
     "gameResumed": "Game resumed.",
     "skipped": "{name} was skipped.",
@@ -225,15 +240,19 @@
     "playerAway": "Return to the table before taking actions.",
     "gamePaused": "Game paused until at least two active players return.",
     "invalidRoomCode": "Enter a valid 6-character room code.",
-    "rateLimited": "Too many requests — wait a moment and try again."
+    "rateLimited": "Too many requests — wait a moment and try again.",
+    "batchDisabled": "Batch Cards are disabled for this room.",
+    "invalidBatch": "Select at least two cards with the same value.",
+    "batchAfterDraw": "Batch Cards cannot be played after drawing.",
+    "batchInProgress": "Wait for the current batch to finish."
   },
   "challenge": {
     "title": "Wild +4 challenge",
     "declared": "{name} played a +4 and chose {color}.",
     "basis": "A player may only play a Wild +4 when they have no card matching the color that was active before it. By challenging, you are claiming {name} still had a card of that previous color and played the +4 unfairly.",
     "explainAccept": "Take the cards: skip the challenge and draw {count}.",
-    "explainWin": "Challenge and win: if {name} really did hold a card of the previous color, the +4 was illegal — {name} takes 4 cards instead of you.",
-    "explainLose": "Challenge and lose: if {name} truly had no card of that color, the +4 was fair — your challenge was wrong and you draw 6 cards.",
+    "explainWin": "Challenge and win: if {name} really did hold a card of the previous color, the +4 was illegal — {name} takes {count} cards instead of you.",
+    "explainLose": "Challenge and lose: if {name} truly had no card of that color, the +4 was fair — your challenge was wrong and you draw {count} cards.",
     "explainStack": "Or stack a Wild +4 from your hand to pass the penalty on.",
     "accept": "Take {count}",
     "challenge": "Challenge!"
@@ -278,6 +297,8 @@
     "challengeOff": "Wild +4 challenge is off: the next player simply takes 4 cards and cannot dispute it.",
     "callOn": "One and Catch are on: a player must call One the moment they are down to a single card. If they forget, another player can catch them before their next turn and they draw two cards.",
     "callOff": "One and Catch are off: a player on one card never has to call out and cannot be caught.",
+    "batchOn": "Batch Cards are on: play two or more cards with the same value in a chosen order. Draw penalties are multiplied by the batch size.",
+    "batchOff": "Batch Cards are off: cards are played one at a time.",
     "deckBoxesRule": "Each round starts with {count} card box(es) of 108 cards. The minimum grows by one box for every four player seats.",
     "actionsTitle": "Action cards",
     "actionSkip": "Skip makes the next player lose their turn.",
