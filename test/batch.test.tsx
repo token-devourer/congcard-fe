@@ -1,10 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import type { Card, GameSnapshot } from "@congcard/shared";
 import messages from "../messages/en.json";
 import { Hand } from "../src/components/Hand";
-import { batchCardGroups, defaultBatchCardIds, groupBatchCardsByColor } from "../src/lib/batch";
+import { batchCardGroups, defaultBatchCardIds, groupBatchCardsByColor, orderedBatchCardsByColor } from "../src/lib/batch";
 
 function card(id: string, color: Card["color"], value: Card["value"]): Card {
   return { id, color, value, deckIndex: 0 };
@@ -108,9 +108,11 @@ describe("Batch Cards", () => {
     ]);
   });
 
-  it("groups tray cards by color with the active color first", () => {
+  it("orders tray cards by color with the active color first", () => {
+    const cards = orderedBatchCardsByColor(snapshot().self!.hand.slice(0, 3), "blue");
     const groups = groupBatchCardsByColor(snapshot().self!.hand.slice(0, 3), "blue");
 
+    expect(cards.map((item) => item.id)).toEqual(["blue-5", "red-5", "green-5"]);
     expect(groups.map((group) => group.color)).toEqual(["blue", "red", "green"]);
     expect(groups.map((group) => group.cards.map((item) => item.id))).toEqual([["blue-5"], ["red-5"], ["green-5"]]);
   });
@@ -163,8 +165,8 @@ describe("Batch Cards", () => {
     fireEvent.click(screen.getByRole("button", { name: "Batch" }));
     fireEvent.click(screen.getByRole("button", { name: /5.*3 available/i }));
 
-    const tray = screen.getByTestId("batch-color-tray");
-    expect(tray.firstElementChild).toHaveAttribute("data-testid", "batch-color-group-red");
+    const tray = screen.getByTestId("batch-card-tray");
+    expect(within(tray).getAllByRole("button")[0]).toHaveAccessibleName(/Select red 5 for batch/i);
 
     fireEvent.click(screen.getByRole("button", { name: "All" }));
     expect(screen.getByText("1")).toBeInTheDocument();

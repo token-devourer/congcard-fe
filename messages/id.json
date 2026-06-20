@@ -166,8 +166,6 @@
     "cardCount": "{count} tersedia",
     "selectCard": "Pilih {card} untuk batch",
     "all": "Semua",
-    "activeColor": "Aktif",
-    "wildColor": "Wild",
     "clear": "Hapus pilihan",
     "play": "Mainkan {count} kartu"
   },

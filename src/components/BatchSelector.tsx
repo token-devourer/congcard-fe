@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { Card, CardValue, Color, GameSnapshot } from "@congcard/shared";
-import { batchCardGroups, batchValueText, defaultBatchCardIds, groupBatchCardsByColor } from "@/lib/batch";
+import { batchCardGroups, batchValueText, defaultBatchCardIds, groupBatchCardsByColor, orderedBatchCardsByColor } from "@/lib/batch";
 import { ColorPicker } from "./ColorPicker";
 import { CardView } from "./CardView";
 
@@ -31,6 +31,10 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
   const group = groups.find((item) => item.value === value) ?? null;
   const colorGroups = useMemo(
     () => groupBatchCardsByColor(group?.cards ?? [], snapshot.activeColor),
+    [group?.cards, snapshot.activeColor]
+  );
+  const orderedCards = useMemo(
+    () => orderedBatchCardsByColor(group?.cards ?? [], snapshot.activeColor),
     [group?.cards, snapshot.activeColor]
   );
   const allCardIds = useMemo(
@@ -161,46 +165,27 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
               </div>
             ) : group ? (
               <>
-                <div className="batch-card-list thin-scroll" data-testid="batch-color-tray">
+                <div className="batch-card-list thin-scroll" data-testid="batch-card-tray">
                   <AnimatePresence initial={false}>
-                    {colorGroups.map((colorGroup) => (
-                      <motion.section
-                        key={colorGroup.color ?? "wild"}
-                        layout
-                        className="batch-color-group"
-                        data-testid={`batch-color-group-${colorGroup.color ?? "wild"}`}
-                      >
-                        <div className="batch-color-heading">
-                          <span
-                            className={`batch-color-swatch ${colorGroup.color ? `card-${colorGroup.color}` : "card-wild"}`}
-                            aria-hidden="true"
-                          />
-                          <span>{colorGroup.color ? t(`colors.${colorGroup.color}`) : t("batch.wildColor")}</span>
-                          {colorGroup.color === snapshot.activeColor ? <span className="batch-active-badge">{t("batch.activeColor")}</span> : null}
-                        </div>
-                        <div className="batch-color-cards">
-                          {colorGroup.cards.map((card) => {
-                            const order = selectedIds.indexOf(card.id);
-                            const disabled = selectedIds.length === 0 && !group.playableStarterIds.has(card.id);
-                            return (
-                              <motion.button
-                                key={card.id}
-                                type="button"
-                                layout
-                                className={`batch-card-choice ${order >= 0 ? "selected" : ""}`}
-                                aria-label={t("batch.selectCard", { card: `${card.color ?? "Wild"} ${batchValueText(card.value)}` })}
-                                disabled={disabled}
-                                onClick={() => toggleCard(card)}
-                                whileTap={{ scale: 0.95 }}
-                              >
-                                {order >= 0 ? <span className="batch-order-badge">{order + 1}</span> : null}
-                                <CardView card={card} dimmed={disabled} />
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      </motion.section>
-                    ))}
+                    {orderedCards.map((card) => {
+                      const order = selectedIds.indexOf(card.id);
+                      const disabled = selectedIds.length === 0 && !group.playableStarterIds.has(card.id);
+                      return (
+                        <motion.button
+                          key={card.id}
+                          type="button"
+                          layout
+                          className={`batch-card-choice ${order >= 0 ? "selected" : ""}`}
+                          aria-label={t("batch.selectCard", { card: `${card.color ?? "Wild"} ${batchValueText(card.value)}` })}
+                          disabled={disabled}
+                          onClick={() => toggleCard(card)}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          {order >= 0 ? <span className="batch-order-badge">{order + 1}</span> : null}
+                          <CardView card={card} dimmed={disabled} />
+                        </motion.button>
+                      );
+                    })}
                   </AnimatePresence>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">

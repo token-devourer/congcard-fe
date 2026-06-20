@@ -166,8 +166,6 @@
     "cardCount": "{count} available",
     "selectCard": "Select {card} for batch",
     "all": "All",
-    "activeColor": "Active",
-    "wildColor": "Wild",
     "clear": "Clear",
     "play": "Play {count} cards"
   },

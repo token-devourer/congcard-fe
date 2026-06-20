@@ -29,6 +29,10 @@ export function groupBatchCardsByColor(cards: Card[], activeColor?: Color): Batc
     .filter((group) => group.cards.length > 0);
 }
 
+export function orderedBatchCardsByColor(cards: Card[], activeColor?: Color): Card[] {
+  return groupBatchCardsByColor(cards, activeColor).flatMap((group) => group.cards);
+}
+
 export function defaultBatchCardIds(colorGroups: BatchColorGroup[], playableStarterIds: Set<string>): string[] {
   const orderedIds = colorGroups.flatMap((group) => group.cards.map((card) => card.id));
   const starterId = orderedIds.find((id) => playableStarterIds.has(id));
