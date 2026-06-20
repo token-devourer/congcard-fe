@@ -37,9 +37,10 @@ describe("synth music", () => {
   it("defines restrained oscillator-only tracks", () => {
     expect(MUSIC_TRACKS.lobby.bpm).toBe(70);
     expect(MUSIC_TRACKS.play.bpm).toBe(104);
-    expect(MUSIC_TRACKS.flipDark.bpm).toBe(66);
+    expect(MUSIC_TRACKS.flipDark.bpm).toBe(98);
     expect(MUSIC_TRACKS.play.lengthSteps).toBe(128);
     expect(MUSIC_TRACKS.flipDark.lengthSteps).toBe(128);
+    expect(MUSIC_TRACKS.flipDark.bpm).toBeLessThan(MUSIC_TRACKS.play.bpm);
     for (const track of Object.values(MUSIC_TRACKS)) {
       expect(track.notes.length).toBeGreaterThan(0);
       expect(track.notes.every((item) => ["sine", "triangle"].includes(item.type))).toBe(true);
