@@ -23,6 +23,7 @@ import { useNow } from "@/lib/useNow";
 import { ChallengeModal } from "./ChallengeModal";
 import { ColorPicker } from "./ColorPicker";
 import { FlightLayer } from "./FlightLayer";
+import { FlipTransitionLayer } from "./FlipTransitionLayer";
 import { GameEventOverlay } from "./GameEventOverlay";
 import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
@@ -264,8 +265,9 @@ export function RoomClient({ code }: RoomClientProps) {
   const selfPlayer = snapshot?.players.find((player) => player.id === snapshot.self?.id);
 
   return (
-    <main className="app-shell py-3 md:py-5">
+    <main className={`app-shell py-3 md:py-5 ${snapshot?.settings.modeId === "flip" ? `flip-${snapshot.flipSide ?? "light"}` : ""}`}>
       <MusicLayer snapshot={snapshot} />
+      {snapshot ? <FlipTransitionLayer snapshot={snapshot} /> : null}
       <header className="room-header mb-3">
         <div className="room-title-row">
           <img src="/icon.svg" alt="" className="h-11 w-11 rounded-xl" />
@@ -518,11 +520,11 @@ export function Lobby({
         <h2 className="display text-xl font-black">{t("lobby.settings")}</h2>
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.gameMode")}</span>
-          <select className="field" disabled={!isHost} value={snapshot.settings.modeId} onChange={() => updateSetting({ modeId: "standard" })}>
+          <select className="field" disabled={!isHost} value={snapshot.settings.modeId} onChange={(event) => updateSetting({ modeId: event.target.value as RoomSettings["modeId"] })}>
             <option value="standard">{t("lobby.modeStandard")}</option>
             <option value="zero-seven" disabled>{t("lobby.modeZeroSeven")}</option>
             <option value="explode-25" disabled>{t("lobby.modeExplode")}</option>
-            <option value="flip" disabled>{t("lobby.modeFlip")}</option>
+            <option value="flip">{t("lobby.modeFlip")}</option>
           </select>
         </label>
         <label className="grid gap-2">
@@ -618,7 +620,9 @@ export function Lobby({
               </option>
             ))}
           </select>
-          <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.deckBoxesHint", { count: deckBoxMinimum })}</span>
+          <span className="text-xs leading-snug text-[var(--muted)]">
+            {t(snapshot.settings.modeId === "flip" ? "lobby.deckBoxesHintFlip" : "lobby.deckBoxesHint", { count: deckBoxMinimum })}
+          </span>
         </label>
         <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
@@ -681,8 +685,8 @@ export function Lobby({
             onChange={(event) => updateSetting({ challengeEnabled: event.target.checked })}
           />
           <span className="grid gap-1">
-            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.challenge")}</span>
-            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.challengeHint")}</span>
+            <span className="text-sm font-bold text-[var(--text)]">{t(snapshot.settings.modeId === "flip" ? "lobby.challengeFlip" : "lobby.challenge")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t(snapshot.settings.modeId === "flip" ? "lobby.challengeFlipHint" : "lobby.challengeHint")}</span>
           </span>
         </label>
         <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
@@ -755,7 +759,8 @@ export function Board({
     isPlayer && !finished && !playerAway && !paused && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const eventLocked = now < eventLockUntil;
   const batchResolving = Boolean(snapshot.pendingBatchPlay);
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving;
+  const flipResolving = Boolean(snapshot.pendingFlip);
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving;
   const canCallOne =
     isPlayer &&
     !finished &&
@@ -1015,7 +1020,7 @@ export function Board({
       <GameEventOverlay />
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
-        {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
+        {selectedCard ? <ColorPicker disabled={eventLocked} flipSide={snapshot.flipSide} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>
     </>
   );

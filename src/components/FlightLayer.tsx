@@ -59,6 +59,7 @@ export function FlightLayer() {
       const serverNow = Date.now() + clockOffset;
       if (dealEvent.kind === "shuffle") {
         window.setTimeout(() => playSound("shuffle"), Math.max(0, dealEvent.startsAt - serverNow));
+        window.setTimeout(() => playSound("shuffleSettle"), Math.max(0, dealEvent.resolvesAt - serverNow - 120));
       } else if (dealEvent.kind === "deal") {
         dealEvent.targetPlayerIds.forEach((targetPlayerId, index) => {
           flights.push({

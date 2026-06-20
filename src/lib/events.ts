@@ -1,4 +1,4 @@
-import type { CardValue, Color, GameSnapshot } from "@congcard/shared";
+import type { CardValue, Color, GameSnapshot, PendingStack } from "@congcard/shared";
 
 export type UiEvent =
   | { id: number; type: "yourTurn" }
@@ -6,7 +6,7 @@ export type UiEvent =
   | { id: number; type: "skip"; level?: number }
   | { id: number; type: "reverse"; direction: 1 | -1; level?: number }
   | { id: number; type: "colorChange"; color: Color; level?: number }
-  | { id: number; type: "stack"; totalDraw: number; level: number }
+  | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
@@ -111,7 +111,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
 
   if (
     topChanged &&
-    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild4") &&
+    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild3" || next.discardTop?.value === "wild4" || next.discardTop?.value === "wildColor") &&
     next.activeColor
   ) {
     events.push({ id: eventId(), type: "colorChange", color: next.activeColor, ...(matchLevel > 1 ? { level: matchLevel } : {}) });
@@ -142,7 +142,8 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
       id: eventId(),
       type: "stack",
       totalDraw: stackLogTotal,
-      level: stackPitchLevel(stackLogTotal)
+      level: stackPitchLevel(stackLogTotal),
+      ...(next.pendingStack ? { kind: next.pendingStack.kind, targetColor: next.pendingStack.targetColor } : {})
     });
     stackEventAdded = true;
   }
@@ -158,7 +159,9 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
       id: eventId(),
       type: "stack",
       totalDraw: next.pendingStack.totalDraw,
-      level: stackPitchLevel(next.pendingStack.totalDraw)
+      level: stackPitchLevel(next.pendingStack.totalDraw),
+      kind: next.pendingStack.kind,
+      targetColor: next.pendingStack.targetColor
     });
   }
 
@@ -237,7 +240,7 @@ function sameValueRunFromLog(snapshot: GameSnapshot, value: CardValue): number {
 }
 
 function playedCardValue(message?: string): CardValue | undefined {
-  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue) )?(\d|skip|reverse|draw2|wild4|wild)\.$/)?.[1];
+  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild)\.$/)?.[1];
   if (!raw) {
     return undefined;
   }

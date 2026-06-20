@@ -9,7 +9,11 @@ const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
   yellow: "var(--yellow)",
   green: "var(--green)",
-  blue: "var(--blue)"
+  blue: "var(--blue)",
+  orange: "var(--orange)",
+  cyan: "var(--cyan)",
+  purple: "var(--purple)",
+  pink: "var(--pink)"
 };
 
 interface ChallengeModalProps {
@@ -35,11 +39,12 @@ export function ChallengeModal({
   const stackTotal = snapshot.pendingStack?.challengeable
     ? snapshot.pendingStack.totalDraw
     : snapshot.pendingChallenge?.drawCount ?? 4;
-  const canStackWild4 = Boolean(
+  const title = pending?.kind === "wild3" ? t("challenge.title3") : t("challenge.title");
+  const canStackWild = Boolean(
     pending &&
       snapshot.pendingStack?.challengeable &&
       snapshot.pendingStack.targetPlayerId === snapshot.self?.id &&
-      snapshot.self?.hand.some((card) => card.value === "wild4")
+      snapshot.self?.hand.some((card) => card.value === snapshot.pendingStack?.kind)
   );
 
   return (
@@ -52,14 +57,14 @@ export function ChallengeModal({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           role="region"
-          aria-label={t("challenge.title")}
+          aria-label={title}
           aria-live="polite"
         >
           <div className="challenge-copy">
-            <div className="challenge-mark" aria-hidden="true">+4</div>
+            <div className="challenge-mark" aria-hidden="true">+{pending.kind === "wild3" ? 3 : 4}</div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="display text-lg font-black">{t("challenge.title")}</h2>
+                <h2 className="display text-lg font-black">{title}</h2>
                 <span
                   className="inline-block h-4 w-10 rounded-full border border-white/30"
                   style={{ background: COLOR_VAR[pending.declaredColor] }}
@@ -78,7 +83,7 @@ export function ChallengeModal({
 
           <div className="challenge-outcome">
             {t("challenge.outcome", { name: offender?.nickname ?? "?", count: stackTotal, loseCount: stackTotal + 2 })}
-            {canStackWild4 ? <span>{t("challenge.stackHint")}</span> : null}
+            {canStackWild ? <span>{t(pending.kind === "wild3" ? "challenge.stackHint3" : "challenge.stackHint")}</span> : null}
           </div>
 
           <DeadlineBar deadline={snapshot.turnDeadline} totalSec={snapshot.settings.turnTimeoutSec} />
@@ -92,7 +97,7 @@ export function ChallengeModal({
             </button>
             {canBatchStack ? (
               <button className="button !min-h-10 !px-3 text-sm" disabled={actionLocked} onClick={onBatchStack} aria-keyshortcuts="B">
-                {t("challenge.batchStack")}
+                {t(pending.kind === "wild3" ? "challenge.batchStack3" : "challenge.batchStack")}
               </button>
             ) : null}
           </div>

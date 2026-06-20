@@ -17,7 +17,7 @@ export interface HandGroup {
   drawnCount: number;
 }
 
-export const HAND_GROUP_ORDER: HandGroupId[] = ["red", "yellow", "green", "blue", "wild"];
+export const HAND_GROUP_ORDER: HandGroupId[] = ["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "wild"];
 
 const VALUE_ORDER = new Map<CardValue, number>([
   [0, 0],
@@ -33,8 +33,12 @@ const VALUE_ORDER = new Map<CardValue, number>([
   ["skip", 10],
   ["reverse", 11],
   ["draw2", 12],
-  ["wild", 13],
-  ["wild4", 14]
+  ["draw5", 13],
+  ["flip", 14],
+  ["wild", 15],
+  ["wild3", 16],
+  ["wild4", 17],
+  ["wildColor", 18]
 ]);
 
 export function shouldUseGroupedHand(cardCount: number, isNarrow: boolean): boolean {

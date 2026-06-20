@@ -105,7 +105,7 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
       return;
     }
 
-    if (value === "wild" || value === "wild4") {
+    if (value === "wild" || value === "wild3" || value === "wild4" || value === "wildColor") {
       setChoosingColor(true);
       return;
     }
@@ -209,7 +209,7 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
           </motion.section>
         )}
       </div>
-      {choosingColor ? <ColorPicker onPick={playWild} onCancel={() => setChoosingColor(false)} /> : null}
+      {choosingColor ? <ColorPicker flipSide={snapshot.flipSide} onPick={playWild} onCancel={() => setChoosingColor(false)} /> : null}
     </>
   );
 }

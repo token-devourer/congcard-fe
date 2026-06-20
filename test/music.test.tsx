@@ -11,7 +11,8 @@ function snapshot(phase: GameSnapshot["phase"], flipSide?: "dark"): GameSnapshot
     seq: 1,
     code: "ABC123",
     phase,
-    settings: mergeRoomSettings({ modeOptions: flipSide ? { flipSide } : {} }),
+    settings: mergeRoomSettings(flipSide ? { modeId: "flip" } : {}),
+    ...(flipSide ? { flipSide } : {}),
     players: [],
     viewers: [],
     direction: 1,
@@ -26,7 +27,7 @@ describe("synth music", () => {
     window.localStorage.clear();
   });
 
-  it("selects lobby, play, and future Flip dark-side scenes", () => {
+  it("selects lobby, play, and Flip dark-side scenes", () => {
     expect(musicSceneForSnapshot(snapshot("lobby"))).toBe("lobby");
     expect(musicSceneForSnapshot(snapshot("playing"))).toBe("play");
     expect(musicSceneForSnapshot(snapshot("playing", "dark"))).toBe("flipDark");

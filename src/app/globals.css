@@ -17,6 +17,10 @@
   --blue: #3d7edb;
   --green: #2f9b67;
   --yellow: #eebc3a;
+  --orange: #f47b20;
+  --cyan: #23bfd5;
+  --purple: #8257d8;
+  --pink: #e84f9a;
   --shadow-pop: 0 18px 44px rgba(0, 0, 0, 0.5);
   --shadow-card: 0 14px 28px rgba(0, 0, 0, 0.45), 0 2px 0 rgba(255, 255, 255, 0.06) inset;
 }
@@ -614,6 +618,46 @@ button:disabled {
   padding: 18px 8px 10px;
 }
 
+body.flip-light .table-felt {
+  background: radial-gradient(ellipse at 50% 28%, #54a86c, #27724a 58%, #174631 100%);
+  box-shadow: inset 0 0 64px rgba(40, 25, 6, 0.28), inset 0 0 0 2px rgba(255, 229, 154, 0.28);
+}
+
+body.flip-dark .table-rim {
+  background: linear-gradient(180deg, #526078, #252b42 58%, #111526);
+}
+
+body.flip-dark .table-felt {
+  background:
+    radial-gradient(circle at 28% 22%, rgba(255,255,255,.8) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 66%, rgba(107,211,255,.75) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 38%, #263c61, #171f3d 58%, #0b1025 100%);
+  background-size: 160px 160px, 210px 210px, auto;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.64), inset 0 0 0 2px rgba(137, 119, 255, 0.26);
+}
+
+.table-rim,
+.table-felt {
+  transition: background 520ms ease, box-shadow 520ms ease;
+}
+
+body.flip-light {
+  background:
+    radial-gradient(900px 520px at 50% -4%, rgba(255, 232, 159, 0.28), transparent 68%),
+    radial-gradient(760px 520px at 15% 105%, rgba(90, 196, 140, 0.2), transparent 64%),
+    linear-gradient(180deg, #153c2b, #0a1812 74%);
+}
+
+body.flip-dark {
+  background:
+    radial-gradient(circle at 14% 12%, rgba(255,255,255,0.82) 0 1px, transparent 2px),
+    radial-gradient(circle at 78% 22%, rgba(126,208,255,0.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 42% 8%, rgba(255,189,230,0.75) 0 1px, transparent 2px),
+    radial-gradient(900px 650px at 50% 30%, rgba(77, 60, 150, 0.24), transparent 70%),
+    linear-gradient(180deg, #080b22, #080d18 68%, #05080d);
+  background-size: 190px 190px, 240px 240px, 310px 310px, auto, auto;
+}
+
 .challenge-panel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
@@ -719,6 +763,14 @@ button:disabled {
   background:
     radial-gradient(ellipse at 50% 52%, rgba(46, 133, 82, 0.92), rgba(20, 63, 39, 0.95) 58%, rgba(10, 24, 17, 0.98) 100%),
     var(--panel);
+}
+
+body.flip-dark .deal-table {
+  background:
+    radial-gradient(circle at 25% 20%, rgba(255,255,255,.72) 0 1px, transparent 2px),
+    radial-gradient(circle at 75% 65%, rgba(120,211,255,.62) 0 1px, transparent 2px),
+    radial-gradient(ellipse at 50% 52%, rgba(42, 57, 104, 0.96), rgba(17, 25, 57, 0.98) 62%, #080d20 100%);
+  background-size: 180px 180px, 230px 230px, auto;
 }
 
 .deal-heading {
@@ -1252,6 +1304,104 @@ button.card-face.playable:active {
   color: #17110a;
 }
 
+.card-orange {
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 205, 112, 0.78), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(255, 86, 32, 0.46), transparent 58%),
+    linear-gradient(145deg, #ffac3d 0%, #f36a1b 50%, #a42c16 100%);
+}
+
+.card-cyan {
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(154, 250, 255, 0.8), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(23, 120, 210, 0.42), transparent 58%),
+    linear-gradient(145deg, #56e8f2 0%, #19b9d1 50%, #12618d 100%);
+}
+
+.card-purple {
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(218, 177, 255, 0.76), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(86, 40, 176, 0.5), transparent 58%),
+    linear-gradient(145deg, #b483ff 0%, #784bd0 50%, #3d237e 100%);
+}
+
+.card-pink {
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 185, 225, 0.8), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(196, 26, 111, 0.48), transparent 58%),
+    linear-gradient(145deg, #ff8bc8 0%, #e84999 50%, #8e235f 100%);
+}
+
+.card-wild-color-label {
+  font-size: calc(var(--card-width) * 0.1);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.flip-transition-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: rgba(3, 6, 14, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.flip-transition-ring {
+  display: grid;
+  width: min(52vw, 420px);
+  aspect-ratio: 1;
+  place-items: center;
+  border: 3px solid rgba(255, 226, 143, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 70px rgba(116, 190, 255, 0.35), inset 0 0 70px rgba(255, 100, 188, 0.18);
+  color: #fff4c9;
+  font-family: var(--font-display, "Fredoka"), sans-serif;
+  font-size: clamp(2rem, 8vw, 5rem);
+  font-weight: 900;
+}
+
+.flip-card-animating .card-face,
+.flip-card-animating .deal-deck {
+  animation: synchronized-card-flip 650ms cubic-bezier(.2,.72,.2,1);
+  transform-style: preserve-3d;
+}
+
+.shuffle-satellites {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 8;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.shuffle-satellite {
+  --shuffle-angle: calc((var(--shuffle-index) - 2.5) * 19deg);
+  position: absolute;
+  left: -28px;
+  top: -40px;
+  animation: shuffle-card-riffle 1.65s cubic-bezier(.25,.72,.25,1) both;
+  animation-delay: calc(var(--shuffle-index) * 70ms);
+}
+
+@keyframes shuffle-card-riffle {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(.8); opacity: 0; }
+  12% { opacity: 1; }
+  45% { transform: translate(calc((var(--shuffle-index) - 2.5) * 24px), -72px) rotate(var(--shuffle-angle)) scale(1); opacity: 1; }
+  72% { transform: translate(calc((2.5 - var(--shuffle-index)) * 18px), -18px) rotate(calc(var(--shuffle-angle) * -0.5)) scale(.92); opacity: 1; }
+}
+
+@keyframes synchronized-card-flip {
+  0% { transform: rotateY(0deg) scale(1); }
+  48% { transform: rotateY(88deg) scale(0.92); filter: brightness(1.55); }
+  52% { transform: rotateY(92deg) scale(0.92); filter: brightness(1.55); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+
 /* Onyx with subtle damask pattern + faint gold vignette. No rainbow. */
 .card-wild {
   background:
@@ -1268,6 +1418,22 @@ button.card-face.playable:active {
     radial-gradient(circle at 50% 42%, rgba(242, 193, 78, 0.55), transparent 52%),
     repeating-linear-gradient(135deg, #1f3128 0 10px, #16241c 10px 20px),
     linear-gradient(180deg, #1c2c24, #0f1814);
+}
+
+body.flip-dark .card-wild {
+  background:
+    radial-gradient(90% 75% at 23% 18%, rgba(255, 126, 46, 0.42), transparent 46%),
+    radial-gradient(88% 72% at 80% 20%, rgba(49, 220, 239, 0.42), transparent 50%),
+    radial-gradient(88% 76% at 24% 86%, rgba(154, 98, 255, 0.36), transparent 48%),
+    radial-gradient(82% 70% at 82% 84%, rgba(255, 83, 177, 0.34), transparent 48%),
+    linear-gradient(145deg, #29243d 0%, #11101f 50%, #05050d 100%);
+}
+
+body.flip-dark .card-back {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(143, 118, 255, 0.58), transparent 52%),
+    repeating-linear-gradient(135deg, #202342 0 10px, #12162e 10px 20px),
+    linear-gradient(180deg, #262a50, #0b0e22);
 }
 
 /* ---------- Cartouche (heraldic plaque inside every card) ----------

@@ -161,7 +161,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                   })}
                 </div>
                 <p className="mt-2.5 text-center text-[11px] leading-relaxed text-[var(--muted)]">
-                  {t("roundEnd.scoringRule")}
+                  {t(snapshot.settings.modeId === "flip" ? "roundEnd.scoringRuleFlip" : "roundEnd.scoringRule")}
                   <br />
                   {t("roundEnd.scoringRuleNote")}
                 </p>

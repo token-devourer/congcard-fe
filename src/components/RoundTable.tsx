@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
+import type { GameSnapshot, PendingStack, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
@@ -26,7 +26,11 @@ const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
   yellow: "var(--yellow)",
   green: "var(--green)",
-  blue: "var(--blue)"
+  blue: "var(--blue)",
+  orange: "var(--orange)",
+  cyan: "var(--cyan)",
+  purple: "var(--purple)",
+  pink: "var(--pink)"
 };
 
 interface RoundTableProps {
@@ -66,13 +70,15 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const stackToTake = snapshot.pendingStack?.targetPlayerId === snapshot.self?.id ? snapshot.pendingStack : undefined;
   const drawLabel =
     stackToTake
-      ? t("board.takeStack", { count: stackToTake.totalDraw })
+      ? stackToTake.kind === "wildColor" && stackToTake.targetColor
+        ? t("board.takeColorStack", { count: stackToTake.totalDraw, color: t(`colors.${stackToTake.targetColor}`) })
+        : t("board.takeStack", { count: stackToTake.totalDraw })
       : t("board.draw");
 
   const centerPile = (
     <div className="grid justify-items-center gap-2.5">
       <TurnChip player={activePlayer} isMyTurn={isMyTurn} deadline={snapshot.turnDeadline} />
-      {snapshot.pendingStack ? <StackPenaltyChip totalDraw={snapshot.pendingStack.totalDraw} kind={snapshot.pendingStack.kind} /> : null}
+      {snapshot.pendingStack ? <StackPenaltyChip stack={snapshot.pendingStack} /> : null}
 
       <div className="flex items-center justify-center gap-4">
         <motion.button
@@ -206,17 +212,26 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
 }
 
 
-function StackPenaltyChip({ totalDraw, kind }: { totalDraw: number; kind: "draw2" | "wild4" }) {
+function StackPenaltyChip({ stack }: { stack: PendingStack }) {
   const t = useTranslations();
+  const labels: Record<PendingStack["kind"], string> = {
+    draw2: "+2",
+    draw5: "+5",
+    wild3: "+3",
+    wild4: "+4",
+    wildColor: stack.targetColor ? t(`colors.${stack.targetColor}`) : "Wild"
+  };
 
   return (
     <motion.div
-      key={totalDraw}
+      key={`${stack.kind}-${stack.totalDraw}`}
       initial={{ scale: 0.72, opacity: 0, y: 8 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       className="display rounded-full border-2 border-[var(--gold)] bg-[#2a1405]/90 px-4 py-1.5 text-sm font-black text-[var(--gold)] shadow-[0_0_24px_rgba(242,193,78,0.45)]"
     >
-      {t("board.stackPenalty", { count: totalDraw, card: kind === "draw2" ? "+2" : "+4" })}
+      {stack.kind === "wildColor"
+        ? t("board.colorHuntPenalty", { count: stack.totalDraw, color: labels.wildColor })
+        : t("board.stackPenalty", { count: stack.totalDraw, card: labels[stack.kind] })}
     </motion.div>
   );
 }

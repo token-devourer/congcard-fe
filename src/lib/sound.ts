@@ -15,6 +15,11 @@ export type SoundName =
   | "drawTick"
   | "dealTick"
   | "shuffle"
+  | "shuffleSettle"
+  | "flipSweep"
+  | "flipImpact"
+  | "flipLight"
+  | "flipDark"
   | "opening"
   | "dealComplete"
   | "penalty"
@@ -290,11 +295,37 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "shuffle": {
-      for (let index = 0; index < 9; index += 1) {
-        noise(ctx, t + index * 0.16, { dur: 0.1, gain: 0.12 + index * 0.008, hp: 700 + index * 90, lp: 5200 });
-        tone(ctx, t + index * 0.16, { freq: 180 + index * 24, dur: 0.08, type: "triangle", gain: 0.055, lp: 1800 });
+      for (let index = 0; index < 12; index += 1) {
+        noise(ctx, t + index * 0.12, { dur: 0.085, gain: 0.12 + index * 0.006, hp: 700 + index * 110, lp: 6200 });
+        tone(ctx, t + index * 0.12, { freq: 170 + index * 28, dur: 0.075, type: "triangle", gain: 0.06, lp: 2100 });
       }
-      tone(ctx, t + 1.45, { freq: 659, dur: 0.3, type: "sine", gain: 0.12, lp: 5400 });
+      break;
+    }
+    case "shuffleSettle": {
+      noise(ctx, t, { dur: 0.12, gain: 0.22, hp: 180, lp: 2200 });
+      tone(ctx, t, { freq: 150, dur: 0.2, type: "triangle", gain: 0.2, sweepTo: 95, lp: 1500 });
+      tone(ctx, t + 0.05, { freq: 659, dur: 0.28, type: "sine", gain: 0.1, lp: 5600 });
+      break;
+    }
+    case "flipSweep": {
+      const { ratio } = pitchedLevel(level);
+      noise(ctx, t, { dur: 0.34, gain: 0.18, hp: 500, lp: 7000 });
+      tone(ctx, t, { freq: 180 * ratio, dur: 0.38, type: "sawtooth", gain: 0.14, sweepTo: 780 * ratio, lp: 5200 });
+      break;
+    }
+    case "flipImpact": {
+      const { ratio } = pitchedLevel(level);
+      noise(ctx, t, { dur: 0.13, gain: 0.32, hp: 120, lp: 4200 });
+      tone(ctx, t, { freq: 130 * ratio, dur: 0.28, type: "square", gain: 0.2, sweepTo: 70 * ratio, lp: 1300 });
+      tone(ctx, t + 0.02, { freq: 520 * ratio, dur: 0.18, type: "triangle", gain: 0.12, lp: 5200 });
+      break;
+    }
+    case "flipLight": {
+      [523, 659, 784, 1046].forEach((freq, index) => tone(ctx, t + index * 0.055, { freq, dur: 0.35, type: "sine", gain: 0.11, lp: 7600 }));
+      break;
+    }
+    case "flipDark": {
+      [220, 185, 147].forEach((freq, index) => tone(ctx, t + index * 0.08, { freq, dur: 0.5, type: "triangle", gain: 0.12, lp: 2200, sweepTo: freq * 0.82 }));
       break;
     }
     case "opening": {

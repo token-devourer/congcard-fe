@@ -14,8 +14,12 @@ const CARD_VALUE_KEYS: Record<string, string> = {
   skip: "log.valSkip",
   reverse: "log.valReverse",
   draw2: "log.valDraw2",
+  draw5: "log.valDraw5",
+  flip: "log.valFlip",
   wild: "log.valWild",
-  wild4: "log.valWild4"
+  wild3: "log.valWild3",
+  wild4: "log.valWild4",
+  wildColor: "log.valWildColor"
 };
 
 function cardName(color: string | undefined, value: string, t: Translate): string {
@@ -44,14 +48,14 @@ const PATTERNS: Pattern[] = [
   { re: /^Game paused until at least two active players return\.$/, key: "gamePaused", values: () => ({}) },
   { re: /^Game resumed\.$/, key: "gameResumed", values: () => ({}) },
   {
-    re: /^(.+) played a batch of (\d+) (\d|skip|reverse|draw2|wild4|wild) cards\.$/,
+    re: /^(.+) played a batch of (\d+) (\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild) cards\.$/,
     key: "playedBatch",
     values: (match, t) => ({ name: match[1], count: Number(match[2]), value: cardName(undefined, match[3], t) })
   },
   { re: /^(\d+) players were skipped by the batch\.$/, key: "batchSkipped", values: (match) => ({ count: Number(match[1]) }) },
   { re: /^Turn direction changed (\d+) times\.$/, key: "batchReversed", values: (match) => ({ count: Number(match[1]) }) },
   {
-    re: /^(.+) played (?:(red|yellow|green|blue) )?(\d|skip|reverse|draw2|wild4|wild)\.$/,
+    re: /^(.+) played (?:(red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild)\.$/,
     key: "played",
     values: (match, t) => ({ name: match[1], card: cardName(match[2], match[3], t) })
   },
@@ -59,6 +63,7 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) auto-drew one card while away\.$/, key: "autoDrewOneAway" },
   { re: /^(.+) auto-drew one card while disconnected\.$/, key: "autoDrewOne" },
   { re: /^(.+) drew two cards\.$/, key: "drewTwo" },
+  { re: /^(.+) drew (\d+) cards to find (?:\d+ )?(red|yellow|green|blue|orange|cyan|purple|pink)(?: cards?)?\.$/, key: "drewForColor", values: (match, t) => ({ name: match[1], count: Number(match[2]), color: t(`colors.${match[3]}`) }) },
   { re: /^(.+) passed because no cards were left\.$/, key: "passedEmpty" },
   { re: /^(.+) auto-passed while away\.$/, key: "autoPassedAway" },
   { re: /^(.+) auto-passed while disconnected\.$/, key: "autoPassed" },
@@ -68,7 +73,7 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) was skipped\.$/, key: "skipped" },
   { re: /^Turn direction changed\.$/, key: "reversed", values: () => ({}) },
   {
-    re: /^Active color is (red|yellow|green|blue)\.$/,
+    re: /^Active color is (red|yellow|green|blue|orange|cyan|purple|pink)\.$/,
     key: "activeColor",
     values: (match, t) => ({ color: t(`colors.${match[1]}`) })
   },
@@ -94,7 +99,8 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) is ready\.$/, key: "ready" },
   { re: /^(.+) was kicked from the room\.$/, key: "kicked" },
   { re: /^(.+) is now the host\.$/, key: "newHost" },
-  { re: /^Room settings were updated\.$/, key: "settingsUpdated", values: () => ({}) }
+  { re: /^Room settings were updated\.$/, key: "settingsUpdated", values: () => ({}) },
+  { re: /^(.+) flipped the deck (\d+) times?\.$/, key: "flipped", values: (match) => ({ name: match[1], count: Number(match[2]) }) }
 ];
 
 export function translateLog(message: string, t: Translate): string {

@@ -2,17 +2,19 @@
 
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { Color } from "@congcard/shared";
-import { COLORS } from "@congcard/shared";
+import type { Color, FlipSide } from "@congcard/shared";
+import { DARK_COLORS, LIGHT_COLORS } from "@congcard/shared";
 
 interface ColorPickerProps {
   disabled?: boolean;
   onPick: (color: Color) => void;
   onCancel: () => void;
+  flipSide?: FlipSide;
 }
 
-export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerProps) {
+export function ColorPicker({ disabled = false, onPick, onCancel, flipSide }: ColorPickerProps) {
   const t = useTranslations();
+  const colors = flipSide === "dark" ? DARK_COLORS : LIGHT_COLORS;
 
   return (
     <motion.div
@@ -34,7 +36,7 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
       >
         <h2 className="display text-center text-[clamp(1.5rem,7vw,2rem)] font-black">{t("colorPicker.title")}</h2>
         <div className="grid grid-cols-2 gap-3">
-          {COLORS.map((color, index) => (
+          {colors.map((color, index) => (
             <motion.button
               key={color}
               initial={{ scale: 0, opacity: 0 }}
@@ -43,7 +45,7 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
               whileHover={{ scale: 1.06 }}
               whileTap={{ scale: 0.94 }}
               className={`card-${color} display h-[clamp(72px,18dvh,96px)] rounded-xl border-2 border-white/30 text-[clamp(1rem,4.8vw,1.25rem)] font-black ${
-                color === "yellow" ? "text-[#221706]" : "text-white"
+                color === "yellow" || color === "cyan" ? "text-[#221706]" : "text-white"
               }`}
               style={{ boxShadow: "var(--shadow-pop)" }}
               disabled={disabled}

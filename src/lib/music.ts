@@ -152,7 +152,7 @@ export function musicSceneForSnapshot(snapshot: GameSnapshot | null): MusicScene
   if (!snapshot) return null;
   if (snapshot.phase === "lobby") return "lobby";
   if (snapshot.phase !== "dealing" && snapshot.phase !== "playing") return null;
-  return snapshot.settings.modeOptions["flipSide"] === "dark" ? "flipDark" : "play";
+  return snapshot.settings.modeId === "flip" && snapshot.flipSide === "dark" ? "flipDark" : "play";
 }
 
 export function setMusicScene(scene: MusicScene | null): void {

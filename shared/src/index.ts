@@ -1,7 +1,10 @@
 import { z } from "zod";
 
-export const COLORS = ["red", "yellow", "green", "blue"] as const;
+export const LIGHT_COLORS = ["red", "yellow", "green", "blue"] as const;
+export const DARK_COLORS = ["orange", "cyan", "purple", "pink"] as const;
+export const COLORS = [...LIGHT_COLORS, ...DARK_COLORS] as const;
 export type Color = (typeof COLORS)[number];
+export type FlipSide = "light" | "dark";
 
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 export const ROOM_CODE_LENGTH = 6;
@@ -40,8 +43,12 @@ export const CARD_VALUES = [
   "skip",
   "reverse",
   "draw2",
+  "draw5",
+  "flip",
   "wild",
-  "wild4"
+  "wild3",
+  "wild4",
+  "wildColor"
 ] as const;
 
 export type CardValue = (typeof CARD_VALUES)[number];
@@ -64,10 +71,11 @@ export interface Card {
   color: Color | null;
   value: CardValue;
   deckIndex: number;
+  side?: FlipSide;
 }
 
 export interface RoomSettings {
-  modeId: "standard";
+  modeId: "standard" | "flip";
   maxPlayers: number;
   turnTimeoutSec: number;
   scoreTarget: ScoreTarget;
@@ -137,6 +145,7 @@ export interface PublicViewer {
 }
 
 export interface PendingChallenge {
+  kind?: "wild3" | "wild4";
   offenderId: string;
   challengerId: string;
   declaredColor: Color;
@@ -153,9 +162,10 @@ export interface OneWindow {
 }
 
 export interface PendingStack {
-  kind: "draw2" | "wild4";
+  kind: "draw2" | "draw5" | "wild3" | "wild4" | "wildColor";
   targetPlayerId: string;
   totalDraw: number;
+  targetColor?: Color;
   challengeable?: boolean;
   offenderId?: string;
   declaredColor?: Color;
@@ -171,6 +181,16 @@ export interface PendingBatchPlay {
   startsAt: number;
   cardIntervalMs: number;
   resolvesAt: number;
+}
+
+export interface PendingFlip {
+  id: number;
+  playerId: string;
+  fromSide: FlipSide;
+  toSide: FlipSide;
+  transitionTimes: number[];
+  resolvesAt: number;
+  opening?: boolean;
 }
 
 export type RoundDealStage = "shuffleChoice" | "manual" | "auto" | "opening";
@@ -271,6 +291,8 @@ export interface GameSnapshot {
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
   pendingBatchPlay?: PendingBatchPlay;
+  flipSide?: FlipSide;
+  pendingFlip?: PendingFlip;
   roundDeal?: RoundDealState;
   pauseReason?: PauseReason;
   oneWindow?: OneWindow;
@@ -298,7 +320,7 @@ export interface TurnContext {
 }
 
 export interface GameMode {
-  id: "standard";
+  id: "standard" | "flip";
   initialHandSize: number;
   buildDeck(playerCount: number, deckBoxes?: number): Card[];
   isPlayable(card: Card, ctx: TurnContext): boolean;
@@ -325,7 +347,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
 };
 
 export const roomSettingsSchema = z.object({
-  modeId: z.literal("standard").default("standard"),
+  modeId: z.enum(["standard", "flip"]).default("standard"),
   maxPlayers: z.number().int().min(2).max(10).default(10),
   turnTimeoutSec: z.number().int().min(15).max(60).default(30),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).default(0),
@@ -343,7 +365,7 @@ export const roomSettingsSchema = z.object({
 });
 
 export const roomSettingsUpdateSchema = z.object({
-  modeId: z.literal("standard").optional(),
+  modeId: z.enum(["standard", "flip"]).optional(),
   maxPlayers: z.number().int().min(2).max(10).optional(),
   turnTimeoutSec: z.number().int().min(15).max(60).optional(),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).optional(),

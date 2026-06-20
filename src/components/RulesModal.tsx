@@ -19,6 +19,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const t = useTranslations("rules");
   const deckBoxes = settings?.deckBoxes ?? 1;
   const lastStand = settings?.scoreTarget === "lastStand";
+  const flipMode = settings?.modeId === "flip";
   const wild4RuleKey = settings?.stackingEnabled
     ? "actionWild4Stacking"
     : settings?.challengeEnabled ?? true
@@ -90,11 +91,11 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
             <section className="space-y-2">
               <h2 className="display text-xl font-bold">{t("settingsTitle")}</h2>
               <ul className="list-disc space-y-2 pl-5 text-[var(--muted)]">
-                <li>{t("modeRule")}</li>
+                <li>{t(flipMode ? "modeFlipRule" : "modeRule")}</li>
                 <li>{lastStand ? t("lastStandOn") : t("scoreRule")}</li>
                 <li>{settings?.jumpInEnabled ? t("jumpInOn") : t("jumpInOff")}</li>
                 <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
-                <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
+                <li>{settings?.challengeEnabled ?? true ? t(flipMode ? "challengeFlipOn" : "challengeOn") : t(flipMode ? "challengeFlipOff" : "challengeOff")}</li>
                 <li>{settings?.callEnabled ?? true ? t("callOn") : t("callOff")}</li>
                 <li>{settings?.batchEnabled ? t("batchOn") : t("batchOff")}</li>
                 <li>{settings?.keyboardShortcutsEnabled ?? true ? t("shortcutsOn") : t("shortcutsOff")}</li>
@@ -102,7 +103,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 {settings?.absentPlayerAction === "autoplay" ? (
                   <li>{settings.autoPlayCallOne ? t("autoPlayOneOn") : t("autoPlayOneOff")}</li>
                 ) : null}
-                <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
+                <li>{t(flipMode ? "deckBoxesFlipRule" : "deckBoxesRule", { count: deckBoxes })}</li>
               </ul>
             </section>
 
@@ -111,9 +112,11 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
               <ul className="list-disc space-y-2 pl-5 text-[var(--muted)]">
                 <li>{t("actionSkip")}</li>
                 <li>{t("actionReverse")}</li>
-                <li>{t("actionDraw2")}</li>
+                <li>{t(flipMode ? "actionFlipDraws" : "actionDraw2")}</li>
+                {flipMode ? <li>{t("actionFlip")}</li> : null}
+                {flipMode ? <li>{t("actionWildColor")}</li> : null}
                 <li>{t("actionWild")}</li>
-                <li>{t(wild4RuleKey)}</li>
+                {!flipMode ? <li>{t(wild4RuleKey)}</li> : null}
               </ul>
             </section>
 

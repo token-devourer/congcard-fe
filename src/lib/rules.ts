@@ -1,4 +1,4 @@
-import type { Card, GameSnapshot } from "@congcard/shared";
+import type { Card, GameSnapshot, PendingStack } from "@congcard/shared";
 
 export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean {
   if (
@@ -7,6 +7,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     snapshot.phase !== "playing" ||
     snapshot.pauseReason ||
     snapshot.pendingBatchPlay ||
+    snapshot.pendingFlip ||
     snapshot.oneWindow
   ) {
     return false;
@@ -61,13 +62,16 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
   return handCard.color === snapshot.activeColor || handCard.value === snapshot.discardTop.value;
 }
 
-function canStackCard(card: Card, kind: "draw2" | "wild4"): boolean {
-  return kind === "draw2" ? card.value === "draw2" : card.value === "wild4";
+function canStackCard(card: Card, kind: PendingStack["kind"]): boolean {
+  return card.value === kind;
 }
 
 function stackDrawAmount(card: Card): number | null {
   if (card.value === "draw2") return 2;
+  if (card.value === "draw5") return 5;
+  if (card.value === "wild3") return 3;
   if (card.value === "wild4") return 4;
+  if (card.value === "wildColor") return 1;
   return null;
 }
 
@@ -85,7 +89,7 @@ export function playableCardInHand(snapshot: GameSnapshot | null, card: Card | n
 }
 
 export function needsColor(card: Card): boolean {
-  return card.value === "wild" || card.value === "wild4";
+  return card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
 }
 
 export function cardText(card: Card): string {
@@ -97,8 +101,12 @@ export function cardText(card: Card): string {
     skip: "Skip",
     reverse: "Reverse",
     draw2: "+2",
+    draw5: "+5",
+    flip: "Flip",
     wild: "Wild",
-    wild4: "+4"
+    wild3: "+3",
+    wild4: "+4",
+    wildColor: "Wild Color"
   };
 
   return labels[String(card.value)] ?? String(card.value);

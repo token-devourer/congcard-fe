@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
@@ -92,6 +93,15 @@ export function RoundDealBoard({ snapshot, send }: RoundDealBoardProps) {
             transition={{ duration: 1.8, delay: eventDelay, ease: "easeInOut" }}
           >
             <CardView hidden />
+            {deal.event?.kind === "shuffle" ? (
+              <span className="shuffle-satellites" aria-hidden="true">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <span key={index} className="shuffle-satellite" style={{ "--shuffle-index": index } as CSSProperties}>
+                    <CardView hidden small />
+                  </span>
+                ))}
+              </span>
+            ) : null}
             <span>{snapshot.drawPileCount}</span>
           </motion.div>
 

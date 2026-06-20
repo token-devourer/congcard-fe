@@ -54,7 +54,9 @@ describe("groupHand", () => {
       card("yellow-4", "yellow", 4)
     ]);
 
-    expect(groupHand(state).map((group) => group.id)).toEqual(["red", "yellow", "green", "blue", "wild"]);
+    expect(groupHand(state).map((group) => group.id)).toEqual([
+      "red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "wild"
+    ]);
   });
 
   it("orders playable cards before non-playable cards inside each pile", () => {

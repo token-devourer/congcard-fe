@@ -10,14 +10,22 @@ const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
   yellow: "var(--yellow)",
   green: "var(--green)",
-  blue: "var(--blue)"
+  blue: "var(--blue)",
+  orange: "var(--orange)",
+  cyan: "var(--cyan)",
+  purple: "var(--purple)",
+  pink: "var(--pink)"
 };
 
 const COLOR_WASH: Record<string, string> = {
   red: "rgba(224, 73, 60, 0.4)",
   yellow: "rgba(238, 188, 58, 0.42)",
   green: "rgba(47, 155, 103, 0.4)",
-  blue: "rgba(61, 126, 219, 0.42)"
+  blue: "rgba(61, 126, 219, 0.42)",
+  orange: "rgba(244, 123, 32, 0.42)",
+  cyan: "rgba(35, 191, 213, 0.42)",
+  purple: "rgba(130, 87, 216, 0.42)",
+  pink: "rgba(232, 79, 154, 0.42)"
 };
 
 const BURST_POINTS = [
@@ -221,7 +229,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
   if (event.type === "colorChange") {
     return (
       <div className="absolute inset-0 z-[1] grid place-items-center">
-        {(["red", "yellow", "green", "blue"] as const).map((color, index) => (
+        {(["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink"] as const).map((color, index) => (
           <motion.div
             key={color}
             className="absolute h-24 w-24 rounded-full"
@@ -230,8 +238,8 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
             animate={{
               scale: [0.25, 1.2, 0.7],
               opacity: [0, color === event.color ? 0.86 : 0.4, 0],
-              x: Math.cos((index / 4) * Math.PI * 2) * 150,
-              y: Math.sin((index / 4) * Math.PI * 2) * 96
+              x: Math.cos((index / 8) * Math.PI * 2) * 150,
+              y: Math.sin((index / 8) * Math.PI * 2) * 96
             }}
             transition={{ duration: 1.45, ease: "easeOut" }}
           />
@@ -302,12 +310,14 @@ function toastContent(
       return {
         label: t("events.colorChange", { color: t(`colors.${event.color}`) }),
         background: COLOR_VAR[event.color] ?? "var(--gold)",
-        color: event.color === "yellow" ? "#221706" : "white"
+        color: event.color === "yellow" || event.color === "cyan" ? "#221706" : "white"
       };
     case "stack":
       return {
-        label: `+${event.totalDraw}`,
-        sublabel: t("events.stackPenalty"),
+        label: event.kind === "wildColor" ? `x${event.totalDraw}` : `+${event.totalDraw}`,
+        sublabel: event.kind === "wildColor" && event.targetColor
+          ? t("events.colorHunt", { color: t(`colors.${event.targetColor}`) })
+          : t("events.stackPenalty"),
         background: "linear-gradient(180deg, #fff0a8, #ffc533 56%, #b66f08)",
         color: "#211405"
       };

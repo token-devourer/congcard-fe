@@ -91,8 +91,12 @@ export function batchValueText(value: CardValue): string {
     skip: "Skip",
     reverse: "Reverse",
     draw2: "+2",
+    draw5: "+5",
+    flip: "Flip",
     wild: "Wild",
-    wild4: "Wild +4"
+    wild3: "Wild +3",
+    wild4: "Wild +4",
+    wildColor: "Wild Color"
   };
   return labels[value];
 }
