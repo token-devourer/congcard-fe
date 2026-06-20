@@ -13,6 +13,10 @@ export type SoundName =
   | "matchChain"
   | "batchFinale"
   | "drawTick"
+  | "dealTick"
+  | "shuffle"
+  | "opening"
+  | "dealComplete"
   | "penalty"
   | "skip"
   | "reverse"
@@ -276,6 +280,34 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       tone(ctx, t, { freq: root, dur: 0.055, type: "triangle", gain: 0.12 + pitchLevel * 0.018, lp: 5200 });
       tone(ctx, t + 0.04, { freq: root * 1.5, dur: 0.08, type: "sine", gain: 0.07 + pitchLevel * 0.012, lp: 6500 });
       noise(ctx, t, { dur: 0.035, gain: 0.045 + pitchLevel * 0.01, hp: 2600, lp: 9000 });
+      break;
+    }
+    case "dealTick": {
+      const { level: pitchLevel, ratio } = pitchedLevel(level);
+      const root = 392 * ratio;
+      tone(ctx, t, { freq: root, dur: 0.065, type: "triangle", gain: 0.1 + pitchLevel * 0.012, lp: 4600 });
+      noise(ctx, t, { dur: 0.028, gain: 0.04, hp: 1800, lp: 7200 });
+      break;
+    }
+    case "shuffle": {
+      for (let index = 0; index < 9; index += 1) {
+        noise(ctx, t + index * 0.16, { dur: 0.1, gain: 0.12 + index * 0.008, hp: 700 + index * 90, lp: 5200 });
+        tone(ctx, t + index * 0.16, { freq: 180 + index * 24, dur: 0.08, type: "triangle", gain: 0.055, lp: 1800 });
+      }
+      tone(ctx, t + 1.45, { freq: 659, dur: 0.3, type: "sine", gain: 0.12, lp: 5400 });
+      break;
+    }
+    case "opening": {
+      tone(ctx, t, { freq: 392, dur: 0.12, type: "triangle", gain: 0.16, lp: 4400 });
+      tone(ctx, t + 0.1, { freq: 587, dur: 0.24, type: "sine", gain: 0.18, lp: 6200 });
+      noise(ctx, t + 0.08, { dur: 0.06, gain: 0.09, hp: 2200, lp: 8200 });
+      break;
+    }
+    case "dealComplete": {
+      [523, 659, 784].forEach((freq, index) => {
+        tone(ctx, t + index * 0.07, { freq, dur: 0.3, type: "triangle", gain: 0.14, lp: 6000 });
+      });
+      tone(ctx, t + 0.14, { freq: 1046, dur: 0.42, type: "sine", gain: 0.1, lp: 7600 });
       break;
     }
     case "matchChain": {

@@ -9,7 +9,7 @@ import { useRoomStore } from "@/lib/store";
 
 type Flight =
   | { kind: "card"; card: Card; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number; batchTotal?: number }
-  | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number }
+  | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number; dealing?: boolean }
   | { kind: "token"; from: string; to: string; delay?: number };
 
 const MAX_DRAW_FLIGHTS = 12;
@@ -21,6 +21,7 @@ export function FlightLayer() {
   const layerRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<GameSnapshot | null>(null);
   const animatedBatchIds = useRef(new Set<number>());
+  const animatedDealIds = useRef(new Set<number>());
   const [reducedMotion, setReducedMotion] = useState(false);
   const snapshot = useRoomStore((state) => state.snapshot);
   const clockOffset = useRoomStore((state) => state.clockOffset);
@@ -38,13 +39,13 @@ export function FlightLayer() {
     prevRef.current = snapshot;
 
     const layer = layerRef.current;
-    if (!snapshot || !prev || !layer) {
+    if (!snapshot || !layer) {
       return;
     }
 
-    if (prev.code !== snapshot.code) {
+    if (prev && prev.code !== snapshot.code) {
       animatedBatchIds.current.clear();
-      return;
+      animatedDealIds.current.clear();
     }
 
     if (reducedMotion) {
@@ -52,6 +53,37 @@ export function FlightLayer() {
     }
 
     const flights: Flight[] = [];
+    const dealEvent = snapshot.roundDeal?.event;
+    if (dealEvent && !animatedDealIds.current.has(dealEvent.id)) {
+      animatedDealIds.current.add(dealEvent.id);
+      const serverNow = Date.now() + clockOffset;
+      if (dealEvent.kind === "shuffle") {
+        window.setTimeout(() => playSound("shuffle"), Math.max(0, dealEvent.startsAt - serverNow));
+      } else if (dealEvent.kind === "deal") {
+        dealEvent.targetPlayerIds.forEach((targetPlayerId, index) => {
+          flights.push({
+            kind: "back",
+            from: "draw",
+            to: targetPlayerId === snapshot.self?.id ? "hand" : `seat:${targetPlayerId}`,
+            delay: Math.max(0, dealEvent.startsAt + index * dealEvent.cardIntervalMs - serverNow) / 1000,
+            drawIndex: index + 1,
+            drawTotal: dealEvent.targetPlayerIds.length,
+            dealing: true
+          });
+        });
+      } else {
+        const delay = Math.max(0, dealEvent.startsAt - serverNow) / 1000;
+        flights.push({ kind: "card", card: dealEvent.card, from: "draw", to: "discard", delay });
+        window.setTimeout(() => playSound("opening"), Math.max(0, dealEvent.startsAt - serverNow));
+        window.setTimeout(() => playSound("dealComplete"), Math.max(0, dealEvent.resolvesAt - serverNow));
+      }
+    }
+    if (!prev || prev.code !== snapshot.code) {
+      for (const flight of flights) {
+        spawnFlight(layer, flight);
+      }
+      return;
+    }
     const sameRound =
       prev.roundNumber === snapshot.roundNumber && prev.phase === "playing" && snapshot.phase === "playing";
 
@@ -164,7 +196,7 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
     }
   } else if (flight.kind === "back") {
     el.className = "card-face small card-back";
-    if (flight.drawTotal && flight.drawTotal > 1 && flight.drawIndex) {
+    if (!flight.dealing && flight.drawTotal && flight.drawTotal > 1 && flight.drawIndex) {
       const badge = document.createElement("span");
       badge.className = "flight-draw-badge";
       badge.textContent = `+${flight.drawIndex}`;
@@ -190,7 +222,7 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const fadeDuration = flight.kind === "back" ? 0.18 : 0.16;
   if (flight.kind === "back") {
     const pitchLevel = Math.min(8, Math.max(1, flight.drawIndex ?? 1));
-    window.setTimeout(() => playSound("drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
+    window.setTimeout(() => playSound(flight.dealing ? "dealTick" : "drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
   } else if (flight.kind === "card" && flight.pitchLevel) {
     const delayMs = Math.max(0, (flight.delay ?? 0) * 1000);
     window.setTimeout(() => playSound("matchChain", flight.pitchLevel), delayMs);

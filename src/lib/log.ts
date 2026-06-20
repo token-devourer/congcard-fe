@@ -30,6 +30,10 @@ function cardName(color: string | undefined, value: string, t: Translate): strin
 // Order matters: more specific templates first ("timed out and drew one card"
 // would otherwise be swallowed by "drew one card").
 const PATTERNS: Pattern[] = [
+  { re: /^Round (\d+) dealing started\.$/, key: "dealingStarted", values: (match) => ({ number: Number(match[1]) }) },
+  { re: /^(.+) began dealing\.$/, key: "beganDealing" },
+  { re: /^(.+) reshuffled the deck\.$/, key: "reshuffledRoundDeck" },
+  { re: /^(.+) is now the dealer\.$/, key: "newDealer" },
   { re: /^(.+) timed out and drew one card\.$/, key: "timedOut" },
   { re: /^(.+) lost the challenge and drew (\d+) cards\.$/, key: "lostChallenge", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^(.+) won the challenge\.$/, key: "wonChallenge" },
@@ -107,6 +111,7 @@ export function translateLog(message: string, t: Translate): string {
 
 export const LOG_ICON: Record<string, string> = {
   batch: "*",
+  deal: "#",
   room: "👥",
   play: "🎴",
   draw: "🃏",

@@ -158,6 +158,28 @@
       "spectator": "spectator"
     }
   },
+  "dealing": {
+    "roundSetup": "Round {round} setup",
+    "chooseAction": "Shuffle or deal",
+    "manualTitle": "Choose who gets the next card",
+    "autoTitle": "Dealing cards",
+    "openingTitle": "Opening the round",
+    "readyCount": "Ready {ready} / {total}",
+    "autoIn": "Auto Deal in {seconds}s",
+    "dealer": "Dealer",
+    "ready": "Ready",
+    "playerReady": "{name} is ready",
+    "dealTo": "Deal one card to {name}",
+    "reshuffle": "Reshuffle",
+    "dealCards": "Deal cards",
+    "autoDeal": "Auto Deal",
+    "waitingDealer": "Waiting for {name} to deal.",
+    "waitingActiveDealer": "Waiting for an active dealer.",
+    "autoDealing": "Cards are being dealt face down.",
+    "opening": "Flipping the opening card...",
+    "yourCards": "Your face-down cards",
+    "faceDownCount": "{count} face-down cards"
+  },
   "batch": {
     "open": "Batch",
     "title": "Batch Cards",
@@ -202,6 +224,10 @@
     "kicked": "{name} was kicked from the room.",
     "newHost": "{name} is now the host.",
     "roundStarted": "Round {number} started.",
+    "dealingStarted": "Round {number} dealing started.",
+    "beganDealing": "{name} began dealing.",
+    "reshuffledRoundDeck": "{name} reshuffled the deck.",
+    "newDealer": "{name} is now the dealer.",
     "played": "{name} played {card}.",
     "playedBatch": "{name} played {count} {value} cards as a batch.",
     "cardWithColor": "{color} {value}",
@@ -265,7 +291,13 @@
     "batchDisabled": "Batch Cards are disabled for this room.",
     "invalidBatch": "Select at least two cards with the same value.",
     "batchAfterDraw": "Batch Cards cannot be played after drawing.",
-    "batchInProgress": "Wait for the current batch to finish."
+    "batchInProgress": "Wait for the current batch to finish.",
+    "notDealer": "Only the assigned dealer can do that.",
+    "dealUnavailable": "Wait for the current dealing action to finish.",
+    "shuffleUnavailable": "The deck can only be reshuffled before dealing starts.",
+    "handReady": "That player already has seven cards.",
+    "notDealing": "The round is not being dealt right now.",
+    "roundSetupActive": "Players cannot be kicked while cards are being dealt."
   },
   "challenge": {
     "title": "Wild +4 challenge",

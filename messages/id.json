@@ -158,6 +158,28 @@
       "spectator": "penonton"
     }
   },
+  "dealing": {
+    "roundSetup": "Persiapan ronde {round}",
+    "chooseAction": "Kocok atau bagikan",
+    "manualTitle": "Pilih penerima kartu berikutnya",
+    "autoTitle": "Membagikan kartu",
+    "openingTitle": "Membuka ronde",
+    "readyCount": "Siap {ready} / {total}",
+    "autoIn": "Auto Deal dalam {seconds} dtk",
+    "dealer": "Pembagi",
+    "ready": "Siap",
+    "playerReady": "{name} sudah siap",
+    "dealTo": "Bagikan satu kartu ke {name}",
+    "reshuffle": "Kocok ulang",
+    "dealCards": "Bagikan kartu",
+    "autoDeal": "Auto Deal",
+    "waitingDealer": "Menunggu {name} membagikan kartu.",
+    "waitingActiveDealer": "Menunggu pembagi yang aktif.",
+    "autoDealing": "Kartu sedang dibagikan dalam kondisi tertutup.",
+    "opening": "Membuka kartu awal...",
+    "yourCards": "Kartu tertutupmu",
+    "faceDownCount": "{count} kartu tertutup"
+  },
   "batch": {
     "open": "Batch",
     "title": "Batch Cards",
@@ -202,6 +224,10 @@
     "kicked": "{name} dikeluarkan dari ruangan.",
     "newHost": "{name} kini menjadi host.",
     "roundStarted": "Ronde {number} dimulai.",
+    "dealingStarted": "Pembagian ronde {number} dimulai.",
+    "beganDealing": "{name} mulai membagikan kartu.",
+    "reshuffledRoundDeck": "{name} mengocok ulang deck.",
+    "newDealer": "{name} sekarang menjadi pembagi.",
     "played": "{name} memainkan {card}.",
     "playedBatch": "{name} memainkan {count} kartu {value} sebagai batch.",
     "cardWithColor": "{value} {color}",
@@ -265,7 +291,13 @@
     "batchDisabled": "Batch Cards dinonaktifkan untuk room ini.",
     "invalidBatch": "Pilih minimal dua kartu dengan value yang sama.",
     "batchAfterDraw": "Batch Cards tidak dapat dimainkan setelah mengambil kartu.",
-    "batchInProgress": "Tunggu batch saat ini selesai."
+    "batchInProgress": "Tunggu batch saat ini selesai.",
+    "notDealer": "Hanya pembagi yang ditunjuk yang bisa melakukan itu.",
+    "dealUnavailable": "Tunggu aksi pembagian saat ini selesai.",
+    "shuffleUnavailable": "Deck hanya bisa dikocok ulang sebelum pembagian dimulai.",
+    "handReady": "Pemain itu sudah memiliki tujuh kartu.",
+    "notDealing": "Ronde tidak sedang dalam tahap pembagian.",
+    "roundSetupActive": "Pemain tidak bisa dikeluarkan saat kartu sedang dibagikan."
   },
   "challenge": {
     "title": "Tantangan Wild +4",

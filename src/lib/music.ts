@@ -151,7 +151,7 @@ export function setMusicMuted(muted: boolean): void {
 export function musicSceneForSnapshot(snapshot: GameSnapshot | null): MusicScene | null {
   if (!snapshot) return null;
   if (snapshot.phase === "lobby") return "lobby";
-  if (snapshot.phase !== "playing") return null;
+  if (snapshot.phase !== "dealing" && snapshot.phase !== "playing") return null;
   return snapshot.settings.modeOptions["flipSide"] === "dark" ? "flipDark" : "play";
 }
 

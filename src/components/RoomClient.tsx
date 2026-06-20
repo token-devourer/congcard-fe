@@ -29,6 +29,7 @@ import { LanguageToggle } from "./LanguageToggle";
 import { MusicLayer } from "./MusicLayer";
 import { AudioControls } from "./AudioControls";
 import { RoundEndOverlay } from "./RoundEndOverlay";
+import { RoundDealBoard } from "./RoundDealBoard";
 import { RoundTable } from "./RoundTable";
 import { RulesModal } from "./RulesModal";
 import { TurnBanner } from "./TurnBanner";
@@ -329,6 +330,8 @@ export function RoomClient({ code }: RoomClientProps) {
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
       ) : snapshot.phase === "lobby" ? (
         <Lobby snapshot={snapshot} code={code} send={send} />
+      ) : snapshot.phase === "dealing" ? (
+        <RoundDealBoard snapshot={snapshot} send={send} />
       ) : (
         <Board
           snapshot={snapshot}
@@ -372,6 +375,12 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   invalid_batch: "errors.invalidBatch",
   batch_after_draw: "errors.batchAfterDraw",
   batch_in_progress: "errors.batchInProgress",
+  not_dealer: "errors.notDealer",
+  deal_unavailable: "errors.dealUnavailable",
+  shuffle_unavailable: "errors.shuffleUnavailable",
+  hand_ready: "errors.handReady",
+  not_dealing: "errors.notDealing",
+  round_setup_active: "errors.roundSetupActive",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -956,7 +965,7 @@ export function Board({
           />
           <div
             ref={anchorRef("hand")}
-            className={`hand-panel panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
+            className={`hand-panel hand-reveal panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
           >
             {isPlayer && !finished ? (
               <>
