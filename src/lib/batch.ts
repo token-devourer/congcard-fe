@@ -1,10 +1,42 @@
-import type { Card, CardValue, GameSnapshot } from "@congcard/shared";
+import { COLORS, type Card, type CardValue, type Color, type GameSnapshot } from "@congcard/shared";
 import { canPlayCard } from "./rules";
 
 export interface BatchCardGroup {
   value: CardValue;
   cards: Card[];
   playableStarterIds: Set<string>;
+}
+
+export interface BatchColorGroup {
+  color: Color | null;
+  cards: Card[];
+}
+
+export function groupBatchCardsByColor(cards: Card[], activeColor?: Color): BatchColorGroup[] {
+  const colorOrder: Array<Color | null> = [
+    ...(activeColor ? [activeColor] : []),
+    ...COLORS.filter((color) => color !== activeColor),
+    null
+  ];
+
+  return colorOrder
+    .map((color) => ({
+      color,
+      cards: cards
+        .filter((card) => card.color === color)
+        .sort((left, right) => left.deckIndex - right.deckIndex || left.id.localeCompare(right.id))
+    }))
+    .filter((group) => group.cards.length > 0);
+}
+
+export function defaultBatchCardIds(colorGroups: BatchColorGroup[], playableStarterIds: Set<string>): string[] {
+  const orderedIds = colorGroups.flatMap((group) => group.cards.map((card) => card.id));
+  const starterId = orderedIds.find((id) => playableStarterIds.has(id));
+  if (!starterId) {
+    return [];
+  }
+
+  return [starterId, ...orderedIds.filter((id) => id !== starterId)];
 }
 
 export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): BatchCardGroup[] {

@@ -165,6 +165,9 @@
     "chooseOrder": "Select cards in placement order. The last card stays on top.",
     "cardCount": "{count} available",
     "selectCard": "Select {card} for batch",
+    "all": "All",
+    "activeColor": "Active",
+    "wildColor": "Wild",
     "clear": "Clear",
     "play": "Play {count} cards"
   },

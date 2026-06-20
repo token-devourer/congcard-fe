@@ -605,13 +605,61 @@ button:disabled {
 }
 
 .batch-card-list {
-  display: flex;
-  align-items: end;
-  justify-content: flex-start;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 184px), 1fr));
+  align-items: start;
   gap: 12px;
   max-width: 100%;
-  overflow-x: auto;
+  max-height: min(330px, 38dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 18px 8px 10px;
+}
+
+.batch-color-group {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 10px;
+}
+
+.batch-color-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.batch-color-swatch {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 3px;
+}
+
+.batch-active-badge {
+  margin-left: auto;
+  border-radius: 999px;
+  background: rgba(242, 193, 78, 0.15);
+  color: var(--gold);
+  padding: 2px 7px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.batch-color-cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-start;
+  gap: 14px 10px;
 }
 
 .batch-card-choice {

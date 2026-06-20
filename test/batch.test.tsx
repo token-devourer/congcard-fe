@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Card, GameSnapshot } from "@congcard/shared";
 import messages from "../messages/en.json";
 import { Hand } from "../src/components/Hand";
-import { batchCardGroups } from "../src/lib/batch";
+import { batchCardGroups, defaultBatchCardIds, groupBatchCardsByColor } from "../src/lib/batch";
 
 function card(id: string, color: Card["color"], value: Card["value"]): Card {
   return { id, color, value, deckIndex: 0 };
@@ -108,6 +108,19 @@ describe("Batch Cards", () => {
     ]);
   });
 
+  it("groups tray cards by color with the active color first", () => {
+    const groups = groupBatchCardsByColor(snapshot().self!.hand.slice(0, 3), "blue");
+
+    expect(groups.map((group) => group.color)).toEqual(["blue", "red", "green"]);
+    expect(groups.map((group) => group.cards.map((item) => item.id))).toEqual([["blue-5"], ["red-5"], ["green-5"]]);
+  });
+
+  it("builds a complete default selection with a legal starter first", () => {
+    const groups = groupBatchCardsByColor(snapshot().self!.hand.slice(0, 3), "blue");
+
+    expect(defaultBatchCardIds(groups, new Set(["red-5"]))).toEqual(["red-5", "blue-5", "green-5"]);
+  });
+
   it("opens and closes Batch selection from shortcut commands", () => {
     const view = render(
       <NextIntlClientProvider locale="en" messages={messages}>
@@ -137,5 +150,32 @@ describe("Batch Cards", () => {
 
     expect(screen.queryByRole("region", { name: "Batch Cards" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Batch" })).toHaveAttribute("aria-keyshortcuts", "B");
+  });
+
+  it("selects every card in the displayed default order", () => {
+    const onPlayBatch = vi.fn();
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Hand snapshot={snapshot()} isMyTurn onPlay={vi.fn()} onPlayBatch={onPlayBatch} onPassDrawn={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Batch" }));
+    fireEvent.click(screen.getByRole("button", { name: /5.*3 available/i }));
+
+    const tray = screen.getByTestId("batch-color-tray");
+    expect(tray.firstElementChild).toHaveAttribute("data-testid", "batch-color-group-red");
+
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Play 3 cards" }));
+
+    expect(onPlayBatch).toHaveBeenCalledWith([
+      expect.objectContaining({ id: "red-5" }),
+      expect.objectContaining({ id: "green-5" }),
+      expect.objectContaining({ id: "blue-5" })
+    ]);
   });
 });
