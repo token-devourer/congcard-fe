@@ -62,14 +62,18 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
   },
   play: {
     bpm: 104,
-    lengthSteps: 64,
+    lengthSteps: 128,
     notes: [
       // Sustained bass pad over a bright I-V-vi-IV (C - G - Am - F).
       note(0, 130.81, 7, "sine", 0.04, 1950), note(16, 98, 7, "sine", 0.04, 1900),
       note(32, 110, 7, "sine", 0.04, 1950), note(48, 87.31, 7, "sine", 0.04, 1850),
+      note(64, 110, 7, "sine", 0.039, 1900), note(80, 87.31, 7, "sine", 0.039, 1850),
+      note(96, 130.81, 7, "sine", 0.04, 1950), note(112, 98, 7, "sine", 0.039, 1900),
       // Off-beat bass bounce for drive.
       note(8, 130.81, 2, "triangle", 0.03, 1700), note(24, 196, 2, "triangle", 0.03, 1700),
       note(40, 220, 2, "triangle", 0.03, 1700), note(56, 174.61, 2, "triangle", 0.03, 1700),
+      note(72, 220, 2, "triangle", 0.029, 1650), note(88, 174.61, 2, "triangle", 0.029, 1650),
+      note(104, 261.63, 2, "triangle", 0.03, 1700), note(120, 196, 2, "triangle", 0.029, 1650),
       // Bright bouncing arpeggio melody.
       note(0, 523.25, 2, "triangle", 0.028, 4000), note(4, 659.25, 2, "triangle", 0.027, 4200),
       note(8, 783.99, 2, "triangle", 0.028, 4400), note(12, 659.25, 2, "triangle", 0.025, 4200),
@@ -79,14 +83,25 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(40, 659.25, 2, "triangle", 0.028, 4200), note(44, 523.25, 2, "triangle", 0.025, 4000),
       note(48, 523.25, 2, "triangle", 0.028, 4000), note(52, 698.46, 2, "triangle", 0.027, 4300),
       note(56, 880, 2, "triangle", 0.028, 4600), note(60, 698.46, 3, "triangle", 0.025, 4300),
+      // Second phrase keeps the same energy but rotates the contour so the loop feels longer.
+      note(64, 659.25, 2, "triangle", 0.027, 4200), note(68, 783.99, 2, "triangle", 0.026, 4400),
+      note(72, 880, 2, "triangle", 0.027, 4550), note(76, 783.99, 2, "triangle", 0.025, 4400),
+      note(80, 523.25, 2, "triangle", 0.027, 3950), note(84, 659.25, 2, "triangle", 0.026, 4200),
+      note(88, 783.99, 2, "triangle", 0.027, 4400), note(92, 659.25, 2, "triangle", 0.025, 4200),
+      note(96, 493.88, 2, "triangle", 0.027, 3900), note(100, 659.25, 2, "triangle", 0.026, 4200),
+      note(104, 783.99, 2, "triangle", 0.027, 4400), note(108, 659.25, 2, "triangle", 0.025, 4200),
+      note(112, 587.33, 2, "triangle", 0.027, 4000), note(116, 783.99, 2, "triangle", 0.026, 4400),
+      note(120, 987.77, 2, "triangle", 0.027, 4600), note(124, 880, 3, "triangle", 0.024, 4450),
       // Sparkle bells one octave up at the tail of each bar.
       note(14, 1318.51, 2, "sine", 0.013, 6500), note(30, 1567.98, 2, "sine", 0.013, 6800),
-      note(46, 1318.51, 2, "sine", 0.013, 6500), note(62, 1396.91, 2, "sine", 0.013, 6800)
+      note(46, 1318.51, 2, "sine", 0.013, 6500), note(62, 1396.91, 2, "sine", 0.013, 6800),
+      note(78, 1174.66, 2, "sine", 0.012, 6200), note(94, 1318.51, 2, "sine", 0.012, 6500),
+      note(110, 1567.98, 2, "sine", 0.012, 6800), note(126, 1318.51, 2, "sine", 0.012, 6500)
     ]
   },
   flipDark: {
     bpm: 66,
-    lengthSteps: 64,
+    lengthSteps: 128,
     notes: [
       note(0, 73.42, 14, "sine", 0.048, 1300), note(0, 146.83, 14, "triangle", 0.022, 1900),
       note(0, 174.61, 14, "sine", 0.016, 1800), note(16, 58.27, 14, "sine", 0.048, 1250),
@@ -94,8 +109,18 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(32, 65.41, 14, "sine", 0.048, 1300), note(32, 130.81, 14, "triangle", 0.022, 1900),
       note(32, 155.56, 14, "sine", 0.016, 1800), note(48, 55, 14, "sine", 0.048, 1200),
       note(48, 110, 14, "triangle", 0.022, 1800), note(48, 130.81, 14, "sine", 0.016, 1700),
+      note(64, 69.3, 14, "sine", 0.047, 1280), note(64, 138.59, 14, "triangle", 0.021, 1880),
+      note(64, 164.81, 14, "sine", 0.015, 1780), note(80, 61.74, 14, "sine", 0.047, 1230),
+      note(80, 123.47, 14, "triangle", 0.021, 1830), note(80, 146.83, 14, "sine", 0.015, 1730),
+      note(96, 82.41, 14, "sine", 0.047, 1320), note(96, 164.81, 14, "triangle", 0.021, 1920),
+      note(96, 196, 14, "sine", 0.015, 1820), note(112, 65.41, 14, "sine", 0.047, 1260),
+      note(112, 130.81, 14, "triangle", 0.021, 1860), note(112, 155.56, 14, "sine", 0.015, 1760),
       note(10, 293.66, 3, "sine", 0.015, 2400), note(26, 233.08, 3, "sine", 0.015, 2200),
-      note(42, 261.63, 3, "sine", 0.015, 2300), note(58, 220, 4, "sine", 0.015, 2100)
+      note(42, 261.63, 3, "sine", 0.015, 2300), note(58, 220, 4, "sine", 0.015, 2100),
+      note(74, 246.94, 3, "sine", 0.014, 2250), note(90, 207.65, 3, "sine", 0.014, 2100),
+      note(106, 277.18, 3, "sine", 0.014, 2350), note(122, 233.08, 4, "sine", 0.014, 2200),
+      note(6, 392, 2, "sine", 0.009, 3200), note(38, 349.23, 2, "sine", 0.009, 3000),
+      note(70, 415.3, 2, "sine", 0.009, 3200), note(102, 369.99, 2, "sine", 0.009, 3050)
     ]
   }
 };
