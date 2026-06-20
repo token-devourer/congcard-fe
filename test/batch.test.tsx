@@ -180,4 +180,21 @@ describe("Batch Cards", () => {
       expect.objectContaining({ id: "blue-5" })
     ]);
   });
+
+  it("orders actions as Clear, All, then Play", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Hand snapshot={snapshot()} isMyTurn onPlay={vi.fn()} onPlayBatch={vi.fn()} onPassDrawn={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Batch" }));
+    fireEvent.click(screen.getByRole("button", { name: /5.*3 available/i }));
+
+    expect(within(screen.getByTestId("batch-actions")).getAllByRole("button").map((button) => button.textContent)).toEqual([
+      "Clear",
+      "All",
+      "Play 0 cards"
+    ]);
+  });
 });

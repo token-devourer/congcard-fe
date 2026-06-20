@@ -302,13 +302,12 @@
   "challenge": {
     "title": "Tantangan Wild +4",
     "declared": "{name} memainkan +4 dan memilih warna {color}.",
-    "basis": "Seorang pemain hanya boleh memainkan Wild +4 kalau dia tidak punya kartu yang cocok dengan warna yang aktif sebelum +4 itu. Dengan menantang, kamu menuduh {name} sebenarnya masih punya kartu warna sebelumnya dan memainkan +4 secara curang.",
-    "explainAccept": "Terima kartu: lewati tantangan dan tarik {count}.",
-    "explainWin": "Tantang & menang: kalau {name} memang menyimpan kartu warna sebelumnya, +4-nya tidak sah — {name} yang menarik {count} kartu, bukan kamu.",
-    "explainLose": "Tantang & kalah: kalau {name} benar-benar tidak punya kartu warna itu, +4-nya sah — tantanganmu salah dan kamu menarik {count} kartu.",
-    "explainStack": "Atau stack kartu Wild +4 dari tanganmu untuk meneruskan penaltinya.",
+    "prompt": "Apakah {name} masih punya warna aktif sebelumnya?",
+    "outcome": "Benar: {name} menarik {count}. Salah: kamu menarik {loseCount}.",
+    "stackHint": "Kamu juga bisa memainkan satu Wild +4 atau memakai Batch +4.",
     "accept": "Ambil {count}",
-    "challenge": "Tantang!"
+    "challenge": "Tantang!",
+    "batchStack": "Batch +4"
   },
   "colorPicker": {
     "title": "Pilih warna"

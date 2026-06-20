@@ -614,6 +614,92 @@ button:disabled {
   padding: 18px 8px 10px;
 }
 
+.challenge-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.8fr);
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(224, 73, 60, 0.55);
+  border-radius: 14px;
+  padding: 10px;
+  background: linear-gradient(135deg, rgba(53, 20, 22, 0.92), rgba(12, 20, 16, 0.96));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3), 0 0 20px rgba(224, 73, 60, 0.12);
+}
+
+.challenge-copy {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.challenge-mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  background: #111914;
+  color: var(--gold-strong);
+  font-family: var(--font-display, "Fredoka"), sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 0 16px rgba(242, 193, 78, 0.22);
+}
+
+.challenge-outcome {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.challenge-outcome span {
+  color: var(--gold-strong);
+}
+
+.challenge-deadline,
+.challenge-actions {
+  grid-column: 1 / -1;
+}
+
+.challenge-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.challenge-actions.has-batch {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .challenge-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .challenge-outcome,
+  .challenge-deadline,
+  .challenge-actions {
+    grid-column: 1;
+  }
+
+  .challenge-actions,
+  .challenge-actions.has-batch {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .challenge-actions.has-batch > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
 .deal-board {
   display: grid;
   min-height: calc(100dvh - 104px);

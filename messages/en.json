@@ -302,13 +302,12 @@
   "challenge": {
     "title": "Wild +4 challenge",
     "declared": "{name} played a +4 and chose {color}.",
-    "basis": "A player may only play a Wild +4 when they have no card matching the color that was active before it. By challenging, you are claiming {name} still had a card of that previous color and played the +4 unfairly.",
-    "explainAccept": "Take the cards: skip the challenge and draw {count}.",
-    "explainWin": "Challenge and win: if {name} really did hold a card of the previous color, the +4 was illegal — {name} takes {count} cards instead of you.",
-    "explainLose": "Challenge and lose: if {name} truly had no card of that color, the +4 was fair — your challenge was wrong and you draw {count} cards.",
-    "explainStack": "Or stack a Wild +4 from your hand to pass the penalty on.",
+    "prompt": "Did {name} still hold the previous active color?",
+    "outcome": "Correct: {name} draws {count}. Wrong: you draw {loseCount}.",
+    "stackHint": "You can also play one Wild +4 or use Batch +4.",
     "accept": "Take {count}",
-    "challenge": "Challenge!"
+    "challenge": "Challenge!",
+    "batchStack": "Batch +4"
   },
   "colorPicker": {
     "title": "Choose a color"

@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot } from "@congcard/shared";
 import { useNow } from "@/lib/useNow";
-import { CardView } from "./CardView";
 
 const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
@@ -17,9 +16,17 @@ interface ChallengeModalProps {
   snapshot: GameSnapshot;
   send: (type: string, payload?: unknown) => void;
   actionLocked?: boolean;
+  canBatchStack?: boolean;
+  onBatchStack?: () => void;
 }
 
-export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = false }: ChallengeModalProps) {
+export function ChallengeModal({
+  snapshot,
+  send,
+  actionLocked: eventLocked = false,
+  canBatchStack = false,
+  onBatchStack
+}: ChallengeModalProps) {
   const t = useTranslations();
   const pending = snapshot.pendingChallenge;
   const forMe = Boolean(pending && pending.challengerId === snapshot.self?.id);
@@ -38,64 +45,58 @@ export function ChallengeModal({ snapshot, send, actionLocked: eventLocked = fal
   return (
     <AnimatePresence>
       {pending && forMe ? (
-        <motion.div
+        <motion.section
           key="challenge"
-          // No blocking backdrop: clicks pass through to the board so the
-          // player can still hit ONE/CATCH while the challenge is pending.
-          className="pointer-events-none fixed inset-0 z-50 grid place-items-center overflow-y-auto p-3 sm:p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          className="challenge-panel"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          role="region"
+          aria-label={t("challenge.title")}
+          aria-live="polite"
         >
-          <motion.div
-            initial={{ scale: 0.7, y: 30 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 24 }}
-            className="mobile-modal modal-compact panel pointer-events-auto grid gap-3 p-4 shadow-[var(--shadow-pop)]"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="flex items-center gap-4">
-              <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ repeat: Infinity, duration: 1.6 }}>
-                <CardView small card={{ id: "challenge-wild4", color: null, value: "wild4", deckIndex: 0 }} />
-              </motion.div>
-              <div>
-                <h2 className="display text-2xl font-black">{t("challenge.title")}</h2>
-                <p className="mt-1 text-sm text-[var(--muted)]">
-                  {t("challenge.declared", {
-                    name: offender?.nickname ?? "?",
-                    color: t(`colors.${pending.declaredColor}`)
-                  })}
-                </p>
+          <div className="challenge-copy">
+            <div className="challenge-mark" aria-hidden="true">+4</div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="display text-lg font-black">{t("challenge.title")}</h2>
                 <span
-                  className="mt-2 inline-block h-5 w-12 rounded-full border border-white/30"
+                  className="inline-block h-4 w-10 rounded-full border border-white/30"
                   style={{ background: COLOR_VAR[pending.declaredColor] }}
                   aria-label={t(`colors.${pending.declaredColor}`)}
                 />
               </div>
+              <p className="text-xs text-[var(--muted)]">
+                {t("challenge.declared", {
+                  name: offender?.nickname ?? "?",
+                  color: t(`colors.${pending.declaredColor}`)
+                })}
+              </p>
+              <p className="mt-1 text-sm font-bold">{t("challenge.prompt", { name: offender?.nickname ?? "?" })}</p>
             </div>
+          </div>
 
-            <ul className="grid gap-1.5 rounded-lg bg-black/25 p-3 text-sm">
-              <li>{t("challenge.basis", { name: offender?.nickname ?? "?" })}</li>
-              <li>{t("challenge.explainAccept", { count: stackTotal })}</li>
-              <li>{t("challenge.explainWin", { name: offender?.nickname ?? "?", count: stackTotal })}</li>
-              <li>{t("challenge.explainLose", { name: offender?.nickname ?? "?", count: stackTotal + 2 })}</li>
-              {canStackWild4 ? <li>{t("challenge.explainStack")}</li> : null}
-            </ul>
+          <div className="challenge-outcome">
+            {t("challenge.outcome", { name: offender?.nickname ?? "?", count: stackTotal, loseCount: stackTotal + 2 })}
+            {canStackWild4 ? <span>{t("challenge.stackHint")}</span> : null}
+          </div>
 
-            <DeadlineBar deadline={snapshot.turnDeadline} totalSec={snapshot.settings.turnTimeoutSec} />
+          <DeadlineBar deadline={snapshot.turnDeadline} totalSec={snapshot.settings.turnTimeoutSec} />
 
-            <div className="grid grid-cols-2 gap-3">
-              <button className="button secondary !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: false })}>
-                {t("challenge.accept", { count: stackTotal })}
+          <div className={`challenge-actions ${canBatchStack ? "has-batch" : ""}`}>
+            <button className="button secondary !min-h-10 !px-3 text-sm" disabled={actionLocked} onClick={() => send("game.challenge", { accept: false })}>
+              {t("challenge.accept", { count: stackTotal })}
+            </button>
+            <button className="button danger !min-h-10 !px-3 text-sm" disabled={actionLocked} onClick={() => send("game.challenge", { accept: true })}>
+              {t("challenge.challenge")}
+            </button>
+            {canBatchStack ? (
+              <button className="button !min-h-10 !px-3 text-sm" disabled={actionLocked} onClick={onBatchStack} aria-keyshortcuts="B">
+                {t("challenge.batchStack")}
               </button>
-              <button className="button danger !min-h-12" disabled={actionLocked} onClick={() => send("game.challenge", { accept: true })}>
-                {t("challenge.challenge")}
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
+            ) : null}
+          </div>
+        </motion.section>
       ) : null}
     </AnimatePresence>
   );
@@ -111,7 +112,7 @@ function DeadlineBar({ deadline, totalSec }: { deadline?: number; totalSec: numb
   const fraction = Math.max(0, Math.min(1, (deadline - now) / (totalSec * 1000)));
 
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-black/40">
+    <div className="challenge-deadline h-2 overflow-hidden rounded-full bg-black/40">
       <div
         className="h-full w-full origin-left rounded-full"
         style={{

@@ -783,7 +783,13 @@ export function Board({
   const catchShortcutTarget =
     oneTarget && isShortcutWindowOpen(oneWindow, now) ? oneTarget : undefined;
   const canPass = Boolean(isMyTurn && snapshot.self?.drawnCardId && !actionLocked && !batchSelecting && !selectedCard);
-  const canBatch = !selectedCard && !snapshot.pendingChallenge && batchCardGroups(snapshot, actionLocked).length > 0;
+  const canBatch = !selectedCard && batchCardGroups(snapshot, actionLocked).length > 0;
+  const canBatchChallengeStack = Boolean(
+    canBatch &&
+      snapshot.pendingChallenge?.challengerId === snapshot.self?.id &&
+      snapshot.pendingStack?.challengeable &&
+      snapshot.pendingStack.targetPlayerId === snapshot.self?.id
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -963,6 +969,15 @@ export function Board({
             }
             onCatch={(targetId) => send("game.catchOne", { targetId })}
           />
+          {isPlayer && !finished && !playerAway && !paused ? (
+            <ChallengeModal
+              snapshot={snapshot}
+              send={send}
+              actionLocked={eventLocked || batchSelecting || batchResolving || playerAway || paused || Boolean(selectedCard)}
+              canBatchStack={canBatchChallengeStack}
+              onBatchStack={() => setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }))}
+            />
+          ) : null}
           <div
             ref={anchorRef("hand")}
             className={`hand-panel hand-reveal panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
@@ -998,9 +1013,6 @@ export function Board({
       <TurnBanner />
       <TurnAlertLayer isMyTurn={isMyTurn} isAway={playerAway} roomCode={snapshot.code} />
       <GameEventOverlay />
-      {isPlayer && !finished && !playerAway && !paused ? (
-        <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked || batchSelecting || batchResolving} />
-      ) : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}

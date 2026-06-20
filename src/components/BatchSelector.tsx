@@ -188,7 +188,10 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
                     })}
                   </AnimatePresence>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap justify-center gap-2" data-testid="batch-actions">
+                  <button type="button" className="button secondary !min-h-9 !px-4 text-sm" onClick={() => chooseGroup(value)}>
+                    {t("batch.clear")}
+                  </button>
                   <button
                     type="button"
                     className="button secondary !min-h-9 !px-4 text-sm"
@@ -196,9 +199,6 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
                     onClick={() => setSelectedIds(allCardIds)}
                   >
                     {t("batch.all")}
-                  </button>
-                  <button type="button" className="button secondary !min-h-9 !px-4 text-sm" onClick={() => chooseGroup(value)}>
-                    {t("batch.clear")}
                   </button>
                   <button type="button" className="button !min-h-9 !px-4 text-sm" disabled={selectedCards.length < 2} onClick={confirm}>
                     {t("batch.play", { count: selectedCards.length })}
