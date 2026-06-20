@@ -309,8 +309,10 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
     }
     case "flipSweep": {
       const { ratio } = pitchedLevel(level);
-      noise(ctx, t, { dur: 0.34, gain: 0.18, hp: 500, lp: 7000 });
-      tone(ctx, t, { freq: 180 * ratio, dur: 0.38, type: "sawtooth", gain: 0.14, sweepTo: 780 * ratio, lp: 5200 });
+      noise(ctx, t, { dur: 0.24, gain: 0.18, hp: 700, lp: 7200 });
+      noise(ctx, t + 0.07, { dur: 0.16, gain: 0.1, hp: 1200, lp: 8200 });
+      tone(ctx, t + 0.015, { freq: 293.66 * ratio, dur: 0.13, type: "triangle", gain: 0.05, lp: 3200 });
+      tone(ctx, t + 0.09, { freq: 392 * ratio, dur: 0.16, type: "sine", gain: 0.045, lp: 4200 });
       break;
     }
     case "flipImpact": {
@@ -321,11 +323,33 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "flipLight": {
-      [523, 659, 784, 1046].forEach((freq, index) => tone(ctx, t + index * 0.055, { freq, dur: 0.35, type: "sine", gain: 0.11, lp: 7600 }));
+      const { ratio } = pitchedLevel(level);
+      [523.25, 587.33, 659.25, 783.99].forEach((freq, index) => {
+        tone(ctx, t + index * 0.07, {
+          freq: freq * ratio,
+          dur: 0.24 + index * 0.02,
+          type: "triangle",
+          gain: 0.095,
+          lp: 7600,
+          attack: 0.004
+        });
+      });
+      tone(ctx, t + 0.23, { freq: 1046.5 * ratio, dur: 0.36, type: "sine", gain: 0.08, lp: 8600, attack: 0.005 });
       break;
     }
     case "flipDark": {
-      [220, 185, 147].forEach((freq, index) => tone(ctx, t + index * 0.08, { freq, dur: 0.5, type: "triangle", gain: 0.12, lp: 2200, sweepTo: freq * 0.82 }));
+      const { ratio } = pitchedLevel(level);
+      [392, 329.63, 293.66, 261.63].forEach((freq, index) => {
+        tone(ctx, t + index * 0.075, {
+          freq: freq * ratio,
+          dur: 0.26 + index * 0.025,
+          type: "triangle",
+          gain: 0.1,
+          lp: 2600,
+          attack: 0.004
+        });
+      });
+      tone(ctx, t + 0.06, { freq: 196 * ratio, dur: 0.42, type: "sine", gain: 0.07, lp: 1800, attack: 0.005 });
       break;
     }
     case "opening": {
