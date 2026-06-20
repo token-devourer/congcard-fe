@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { beforeEach, describe, expect, it } from "vitest";
 import { mergeRoomSettings, type GameSnapshot } from "@congcard/shared";
 import messages from "../messages/en.json";
-import { MusicToggle } from "../src/components/MusicToggle";
+import { AudioControls } from "../src/components/AudioControls";
 import { MUSIC_TRACKS, musicSceneForSnapshot } from "../src/lib/music";
 
 function snapshot(phase: GameSnapshot["phase"], flipSide?: "dark"): GameSnapshot {
@@ -35,7 +35,7 @@ describe("synth music", () => {
 
   it("defines restrained oscillator-only tracks", () => {
     expect(MUSIC_TRACKS.lobby.bpm).toBe(70);
-    expect(MUSIC_TRACKS.play.bpm).toBe(96);
+    expect(MUSIC_TRACKS.play.bpm).toBe(104);
     expect(MUSIC_TRACKS.flipDark.bpm).toBe(66);
     for (const track of Object.values(MUSIC_TRACKS)) {
       expect(track.notes.length).toBeGreaterThan(0);
@@ -47,10 +47,11 @@ describe("synth music", () => {
   it("enables music by default and persists an independent mute choice", async () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages}>
-        <MusicToggle />
+        <AudioControls />
       </NextIntlClientProvider>
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Audio" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Music on" })).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Music on" }));
     expect(screen.getByRole("button", { name: "Music off" })).toBeInTheDocument();

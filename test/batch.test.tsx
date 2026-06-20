@@ -61,8 +61,17 @@ describe("Batch Cards", () => {
     expect([...groups[0]!.playableStarterIds]).toEqual(["red-5"]);
   });
 
-  it("does not offer batches after drawing or outside the active turn", () => {
-    expect(batchCardGroups(snapshot({ self: { id: "me", role: "player", hand: snapshot().self!.hand, drawnCardId: "red-5" } }))).toEqual([]);
+  it("offers a batch starting with the drawn card after drawing", () => {
+    const groups = batchCardGroups(
+      snapshot({ self: { id: "me", role: "player", hand: snapshot().self!.hand, drawnCardId: "red-5" } })
+    );
+
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.value).toBe(5);
+    expect([...groups[0]!.playableStarterIds]).toEqual(["red-5"]);
+  });
+
+  it("does not offer batches outside the active turn", () => {
     expect(batchCardGroups(snapshot({ currentPlayerId: "other" }))).toEqual([]);
   });
 

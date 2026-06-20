@@ -25,11 +25,10 @@ import { GameEventOverlay } from "./GameEventOverlay";
 import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
 import { MusicLayer } from "./MusicLayer";
-import { MusicToggle } from "./MusicToggle";
+import { AudioControls } from "./AudioControls";
 import { RoundEndOverlay } from "./RoundEndOverlay";
 import { RoundTable } from "./RoundTable";
 import { RulesModal } from "./RulesModal";
-import { SoundToggle } from "./SoundToggle";
 import { TurnBanner } from "./TurnBanner";
 import { TurnAlertLayer } from "./TurnAlertLayer";
 import { NotifyToggle } from "./NotifyToggle";
@@ -279,8 +278,7 @@ export function RoomClient({ code }: RoomClientProps) {
               {selfPlayer.away ? t("room.return") : t("room.away")}
             </button>
           ) : null}
-          <SoundToggle />
-          <MusicToggle />
+          <AudioControls />
           <NotifyToggle />
           <LanguageToggle />
           <button

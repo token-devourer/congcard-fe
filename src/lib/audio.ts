@@ -1,7 +1,30 @@
+import { safeGet, safeSet } from "./storage";
+
 const SFX_MASTER = 0.55;
+const SFX_VOLUME_KEY = "congcard:sfx-volume";
 
 let audioContext: AudioContext | null = null;
 let sfxGain: GainNode | null = null;
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+export function getSfxVolume(): number {
+  const raw = safeGet(SFX_VOLUME_KEY);
+  if (raw === null) return 1;
+  const value = Number.parseFloat(raw);
+  return Number.isFinite(value) ? clamp01(value) : 1;
+}
+
+export function setSfxVolume(volume: number): void {
+  const value = clamp01(volume);
+  safeSet(SFX_VOLUME_KEY, String(value));
+  if (sfxGain && audioContext) {
+    // Short ramp avoids a click when the user drags the slider.
+    sfxGain.gain.setTargetAtTime(SFX_MASTER * value, audioContext.currentTime, 0.02);
+  }
+}
 
 export function audioAvailable(): boolean {
   return typeof window !== "undefined" && Boolean(window.AudioContext ?? window.webkitAudioContext);
@@ -16,7 +39,7 @@ export function sharedAudioContext(): AudioContext {
 
     audioContext = new AudioContextConstructor();
     sfxGain = audioContext.createGain();
-    sfxGain.gain.value = SFX_MASTER;
+    sfxGain.gain.value = SFX_MASTER * getSfxVolume();
     sfxGain.connect(audioContext.destination);
   }
 

@@ -9,7 +9,11 @@
     "musicOn": "Musik aktif",
     "musicOff": "Musik mati",
     "notifyOn": "Notif giliran aktif",
-    "notifyOff": "Notif giliran mati"
+    "notifyOff": "Notif giliran mati",
+    "audio": "Audio",
+    "music": "Musik",
+    "sfx": "Efek suara",
+    "volume": "volume"
   },
   "colors": {
     "red": "Merah",
@@ -279,6 +283,11 @@
     "gameTitle": "Permainan selesai!",
     "winner": "{name} menang!",
     "scoreboard": "Papan skor",
+    "earnedThisRound": "+{points} poin ronde ini",
+    "fromOpponents": "Dari sisa kartu lawan",
+    "cardsLeft": "{count} kartu",
+    "scoringRule": "Angka = nilai kartu · Skip/Reverse/+2 = 20 · Wild/Wild+4 = 50",
+    "scoringRuleNote": "Pemenang mengumpulkan total sisa kartu semua lawan.",
     "player": "Pemain",
     "score": "Skor",
     "place": "Urutan",

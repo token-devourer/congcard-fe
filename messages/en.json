@@ -9,7 +9,11 @@
     "musicOn": "Music on",
     "musicOff": "Music off",
     "notifyOn": "Turn alerts on",
-    "notifyOff": "Turn alerts off"
+    "notifyOff": "Turn alerts off",
+    "audio": "Audio",
+    "music": "Music",
+    "sfx": "Sound effects",
+    "volume": "volume"
   },
   "colors": {
     "red": "Red",
@@ -279,6 +283,11 @@
     "gameTitle": "Game finished!",
     "winner": "{name} wins!",
     "scoreboard": "Scoreboard",
+    "earnedThisRound": "+{points} points this round",
+    "fromOpponents": "From opponents' remaining cards",
+    "cardsLeft": "{count} cards",
+    "scoringRule": "Number = face value · Skip/Reverse/+2 = 20 · Wild/Wild+4 = 50",
+    "scoringRuleNote": "The winner collects the total of everyone else's remaining cards.",
     "player": "Player",
     "score": "Score",
     "place": "Place",

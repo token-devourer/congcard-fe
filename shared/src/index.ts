@@ -196,6 +196,22 @@ export interface GameLogEntry {
   at: number;
 }
 
+export interface RoundScorePlayer {
+  playerId: string;
+  cardCount: number;
+  handValue: number;
+  numberPoints: number;
+  actionPoints: number;
+  wildPoints: number;
+}
+
+export interface RoundScoreBreakdown {
+  winnerId: string;
+  total: number;
+  isGameEnd: boolean;
+  players: RoundScorePlayer[];
+}
+
 export interface GameSnapshot {
   seq: number;
   /** Server wall-clock at snapshot time; clients use it to offset their own
@@ -223,6 +239,7 @@ export interface GameSnapshot {
   roundWinnerId?: string;
   gameWinnerId?: string;
   lastStandPlacements?: LastStandPlacement[];
+  roundScore?: RoundScoreBreakdown;
 }
 
 export interface RoundResult {

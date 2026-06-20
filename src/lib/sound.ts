@@ -11,6 +11,7 @@ export type SoundName =
   | "wild"
   | "stack"
   | "matchChain"
+  | "batchFinale"
   | "drawTick"
   | "penalty"
   | "skip"
@@ -285,6 +286,43 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       tone(ctx, t + 0.055, { freq: root * 1.5, dur: 0.09, type: "square", gain: gain * 0.78, lp: 3000 });
       tone(ctx, t + 0.12, { freq: root * 2, dur: 0.13, type: "sine", gain: gain * 0.6, lp: 6200 });
       noise(ctx, t + 0.01, { dur: 0.045, gain: 0.08 + pitchLevel * 0.015, hp: 2200 + pitchLevel * 260, lp: 8500 });
+      break;
+    }
+    case "batchFinale": {
+      // Triumphant climax for the end of a batch: a quick ascending run into a
+      // bright sustained major chord, shimmer harmonics, and a celebratory swell.
+      // Scales grander (higher, fuller, louder) with batch size via `level`.
+      const { level: size, ratio } = pitchedLevel(level);
+      const root = 523.25 * ratio;
+      const grand = 0.18 + size * 0.02;
+
+      const run = [root * 0.5, root * 0.63, root * 0.75, root];
+      run.forEach((freq, i) => {
+        tone(ctx, t + i * 0.05, { freq, dur: 0.12, type: "triangle", gain: 0.14 + i * 0.02, lp: 6000, attack: 0.004 });
+      });
+
+      const chordStart = t + run.length * 0.05;
+      const chord = [root, root * 1.25, root * 1.5, root * 2];
+      chord.forEach((freq, i) => {
+        tone(ctx, chordStart, {
+          freq,
+          dur: 0.55 + i * 0.05,
+          type: "triangle",
+          gain: grand * (1 - i * 0.12),
+          lp: 7500,
+          detune: rand(-5, 5),
+          attack: 0.006
+        });
+      });
+      if (size >= 3) {
+        tone(ctx, chordStart, { freq: root * 0.5, dur: 0.6, type: "sine", gain: grand * 0.5, lp: 3000 });
+      }
+
+      tone(ctx, chordStart + 0.06, { freq: root * 3, dur: 0.5, type: "sine", gain: 0.07 + size * 0.008, lp: 9000 });
+      tone(ctx, chordStart + 0.12, { freq: root * 4, dur: 0.4, type: "sine", gain: 0.05, lp: 9500 });
+
+      noise(ctx, t, { dur: 0.1, gain: 0.08, hp: 3000, lp: 9000 });
+      noise(ctx, chordStart, { dur: 0.22, gain: 0.1 + size * 0.01, hp: 2400, lp: 9500 });
       break;
     }
     case "penalty": {

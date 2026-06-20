@@ -17,11 +17,16 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
     snapshot.pauseReason ||
     snapshot.pendingBatchPlay ||
     snapshot.oneWindow ||
-    snapshot.self.drawnCardId ||
     snapshot.currentPlayerId !== snapshot.self.id
   ) {
     return [];
   }
+
+  // After drawing, the player is committed to the just-drawn card: only a batch
+  // that starts with it is allowed, so the drawn card is forced as the lone
+  // starter (and only its value can be batched).
+  const drawnId = snapshot.self.drawnCardId;
+  const drawnCard = drawnId ? snapshot.self.hand.find((card) => card.id === drawnId) : undefined;
 
   const grouped = new Map<CardValue, Card[]>();
   for (const card of snapshot.self.hand) {
@@ -34,7 +39,9 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
     .map(([value, cards]) => ({
       value,
       cards,
-      playableStarterIds: new Set(cards.filter((card) => canPlayCard(snapshot, card)).map((card) => card.id))
+      playableStarterIds: drawnCard
+        ? new Set<string>(value === drawnCard.value && canPlayCard(snapshot, drawnCard) ? [drawnCard.id] : [])
+        : new Set(cards.filter((card) => canPlayCard(snapshot, card)).map((card) => card.id))
     }))
     .filter((group) => group.cards.length >= 2 && group.playableStarterIds.size > 0);
 }

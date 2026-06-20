@@ -20,7 +20,11 @@ interface TrackDefinition {
 }
 
 const MUSIC_STORAGE_KEY = "congcard:music-muted";
-const MUSIC_MASTER_GAIN = 0.35;
+const MUSIC_VOLUME_KEY = "congcard:music-volume";
+const MUSIC_MASTER_GAIN = 0.65;
+// Per-note gains in the track tables are authored very low; scale them up here so
+// the bed sits clearly under the SFX instead of being inaudible (~6x louder).
+const NOTE_GAIN_SCALE = 3.4;
 const CROSSFADE_SECONDS = 1.5;
 const LOOKAHEAD_MS = 100;
 const SCHEDULE_AHEAD_SECONDS = 0.4;
@@ -50,23 +54,34 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(8, 392, 2, "sine", 0.02, 3200), note(12, 440, 2, "sine", 0.018, 3200),
       note(24, 329.63, 2, "sine", 0.019, 3200), note(28, 392, 2, "sine", 0.018, 3200),
       note(40, 261.63, 2, "sine", 0.019, 3000), note(44, 329.63, 2, "sine", 0.018, 3100),
-      note(56, 293.66, 2, "sine", 0.019, 3100), note(60, 261.63, 3, "sine", 0.018, 3000)
+      note(56, 293.66, 2, "sine", 0.019, 3100), note(60, 261.63, 3, "sine", 0.018, 3000),
+      // Gentle twinkles to lift the welcome mood.
+      note(6, 783.99, 2, "sine", 0.012, 5000), note(22, 659.25, 2, "sine", 0.012, 5000),
+      note(38, 698.46, 2, "sine", 0.012, 4800), note(54, 587.33, 2, "sine", 0.012, 4800)
     ]
   },
   play: {
-    bpm: 96,
+    bpm: 104,
     lengthSteps: 64,
     notes: [
-      note(0, 130.81, 7, "sine", 0.038, 1900), note(16, 98, 7, "sine", 0.038, 1850),
-      note(32, 110, 7, "sine", 0.038, 1900), note(48, 87.31, 7, "sine", 0.038, 1800),
-      note(0, 523.25, 2, "triangle", 0.024, 3600), note(4, 659.25, 2, "triangle", 0.022, 3800),
-      note(8, 783.99, 2, "triangle", 0.022, 4000), note(12, 659.25, 2, "triangle", 0.02, 3800),
-      note(16, 493.88, 2, "triangle", 0.023, 3600), note(20, 587.33, 2, "triangle", 0.021, 3700),
-      note(24, 783.99, 2, "triangle", 0.022, 4000), note(28, 587.33, 2, "triangle", 0.02, 3700),
-      note(32, 440, 2, "triangle", 0.023, 3500), note(36, 523.25, 2, "triangle", 0.021, 3700),
-      note(40, 659.25, 2, "triangle", 0.022, 3900), note(44, 523.25, 2, "triangle", 0.02, 3700),
-      note(48, 349.23, 2, "triangle", 0.023, 3400), note(52, 440, 2, "triangle", 0.021, 3600),
-      note(56, 587.33, 2, "triangle", 0.022, 3800), note(60, 523.25, 3, "triangle", 0.021, 3700)
+      // Sustained bass pad over a bright I-V-vi-IV (C - G - Am - F).
+      note(0, 130.81, 7, "sine", 0.04, 1950), note(16, 98, 7, "sine", 0.04, 1900),
+      note(32, 110, 7, "sine", 0.04, 1950), note(48, 87.31, 7, "sine", 0.04, 1850),
+      // Off-beat bass bounce for drive.
+      note(8, 130.81, 2, "triangle", 0.03, 1700), note(24, 196, 2, "triangle", 0.03, 1700),
+      note(40, 220, 2, "triangle", 0.03, 1700), note(56, 174.61, 2, "triangle", 0.03, 1700),
+      // Bright bouncing arpeggio melody.
+      note(0, 523.25, 2, "triangle", 0.028, 4000), note(4, 659.25, 2, "triangle", 0.027, 4200),
+      note(8, 783.99, 2, "triangle", 0.028, 4400), note(12, 659.25, 2, "triangle", 0.025, 4200),
+      note(16, 587.33, 2, "triangle", 0.028, 4000), note(20, 783.99, 2, "triangle", 0.027, 4400),
+      note(24, 987.77, 2, "triangle", 0.028, 4600), note(28, 783.99, 2, "triangle", 0.025, 4400),
+      note(32, 440, 2, "triangle", 0.028, 3800), note(36, 523.25, 2, "triangle", 0.027, 4000),
+      note(40, 659.25, 2, "triangle", 0.028, 4200), note(44, 523.25, 2, "triangle", 0.025, 4000),
+      note(48, 523.25, 2, "triangle", 0.028, 4000), note(52, 698.46, 2, "triangle", 0.027, 4300),
+      note(56, 880, 2, "triangle", 0.028, 4600), note(60, 698.46, 3, "triangle", 0.025, 4300),
+      // Sparkle bells one octave up at the tail of each bar.
+      note(14, 1318.51, 2, "sine", 0.013, 6500), note(30, 1567.98, 2, "sine", 0.013, 6800),
+      note(46, 1318.51, 2, "sine", 0.013, 6500), note(62, 1396.91, 2, "sine", 0.013, 6800)
     ]
   },
   flipDark: {
@@ -95,6 +110,26 @@ let currentStep = 0;
 let unlocked = false;
 let suspended = false;
 const cleanupTimers = new Set<number>();
+
+function clampVolume(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+export function getMusicVolume(): number {
+  const raw = safeGet(MUSIC_VOLUME_KEY);
+  if (raw === null) return 1;
+  const value = Number.parseFloat(raw);
+  return Number.isFinite(value) ? clampVolume(value) : 1;
+}
+
+export function setMusicVolume(volume: number): void {
+  const value = clampVolume(volume);
+  safeSet(MUSIC_VOLUME_KEY, String(value));
+  if (musicMaster && audioAvailable()) {
+    // Short ramp avoids a click when the user drags the slider.
+    musicMaster.gain.setTargetAtTime(MUSIC_MASTER_GAIN * value, sharedAudioContext().currentTime, 0.02);
+  }
+}
 
 export function isMusicMuted(): boolean {
   if (typeof window === "undefined") return true;
@@ -157,7 +192,7 @@ function startRequestedScene(): void {
 function ensureMusicMaster(context: AudioContext): GainNode {
   if (!musicMaster) {
     musicMaster = context.createGain();
-    musicMaster.gain.value = MUSIC_MASTER_GAIN;
+    musicMaster.gain.value = MUSIC_MASTER_GAIN * getMusicVolume();
     musicMaster.connect(context.destination);
   }
   return musicMaster;
@@ -247,7 +282,7 @@ function scheduleNote(
   filter.type = "lowpass";
   filter.frequency.setValueAtTime(synthNote.cutoff, start);
   gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(synthNote.gain, start + Math.min(0.08, duration * 0.2));
+  gain.gain.exponentialRampToValueAtTime(synthNote.gain * NOTE_GAIN_SCALE, start + Math.min(0.08, duration * 0.2));
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
 
   oscillator.connect(filter);

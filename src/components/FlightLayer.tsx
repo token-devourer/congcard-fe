@@ -8,7 +8,7 @@ import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
 
 type Flight =
-  | { kind: "card"; card: Card; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number }
+  | { kind: "card"; card: Card; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number; batchTotal?: number }
   | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number }
   | { kind: "token"; from: string; to: string; delay?: number };
 
@@ -79,7 +79,8 @@ export function FlightLayer() {
             to: "discard",
             delay: Math.max(0, batch.startsAt + index * batch.cardIntervalMs - serverNow) / 1000,
             pitchLevel: Math.min(8, index + 1),
-            batchIndex: index + 1
+            batchIndex: index + 1,
+            batchTotal: batch.cards.length
           });
         });
       }
@@ -191,7 +192,13 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
     const pitchLevel = Math.min(8, Math.max(1, flight.drawIndex ?? 1));
     window.setTimeout(() => playSound("drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
   } else if (flight.kind === "card" && flight.pitchLevel) {
-    window.setTimeout(() => playSound("matchChain", flight.pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
+    const delayMs = Math.max(0, (flight.delay ?? 0) * 1000);
+    window.setTimeout(() => playSound("matchChain", flight.pitchLevel), delayMs);
+    // Crown the last card of a batch with a festive finale as it lands.
+    if (flight.batchTotal && flight.batchIndex === flight.batchTotal) {
+      const landMs = Math.max(0, ((flight.delay ?? 0) + firstLegDuration + secondLegDuration) * 1000);
+      window.setTimeout(() => playSound("batchFinale", Math.min(8, flight.batchTotal!)), landMs);
+    }
   }
 
   gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });

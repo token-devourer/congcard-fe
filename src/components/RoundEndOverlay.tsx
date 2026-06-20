@@ -28,6 +28,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
   const showLastStand = Boolean(lastStandRows?.length);
+  const roundScore = snapshot.roundScore;
 
   return (
     <AnimatePresence>
@@ -121,6 +122,51 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                     ))}
               </div>
             </div>
+
+            {roundScore && !showLastStand ? (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                className="rounded-xl bg-black/30 p-3 text-left"
+              >
+                <p className="display text-center text-lg font-black text-[var(--gold)]">
+                  {t("roundEnd.earnedThisRound", { points: roundScore.total })}
+                </p>
+                <p className="mb-2 mt-0.5 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {t("roundEnd.fromOpponents")}
+                </p>
+                <div className="grid gap-1.5">
+                  {roundScore.players.map((entry) => {
+                    const player = snapshot.players.find((item) => item.id === entry.playerId);
+                    if (!player) {
+                      return null;
+                    }
+
+                    return (
+                      <div
+                        key={entry.playerId}
+                        className="flex items-center justify-between gap-2 rounded-lg bg-black/20 px-3 py-1.5"
+                      >
+                        <span className="flex min-w-0 items-center gap-2 truncate">
+                          <Avatar avatarId={player.avatarId} size={20} />
+                          <span className="truncate">{player.nickname}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 text-xs">
+                          <span className="text-[var(--muted)]">{t("roundEnd.cardsLeft", { count: entry.cardCount })}</span>
+                          <span className="tabular-nums font-black text-[var(--gold)]">+{entry.handValue}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-2.5 text-center text-[11px] leading-relaxed text-[var(--muted)]">
+                  {t("roundEnd.scoringRule")}
+                  <br />
+                  {t("roundEnd.scoringRuleNote")}
+                </p>
+              </motion.div>
+            ) : null}
 
             {snapshot.phase === "roundEnd" ? (
               !isPlayer ? (
