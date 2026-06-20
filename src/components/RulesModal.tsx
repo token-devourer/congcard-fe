@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { RoomSettings } from "@congcard/shared";
+import { shouldIgnoreShortcut } from "@/lib/shortcuts";
 
 interface RulesModalProps {
   open: boolean;
@@ -25,19 +26,19 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
       : "actionWild4NoChallenge";
 
   useEffect(() => {
-    if (!open) {
+    if (!open || !(settings?.keyboardShortcutsEnabled ?? true)) {
       return undefined;
     }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !shouldIgnoreShortcut(event)) {
         onClose();
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, settings?.keyboardShortcutsEnabled]);
 
   return (
     <AnimatePresence>
@@ -70,6 +71,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 className="button secondary !min-h-9 !px-4 text-sm"
                 onClick={onClose}
                 aria-label={t("back")}
+                aria-keyshortcuts="Escape"
               >
                 ✕ {t("back")}
               </button>
@@ -95,6 +97,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
                 <li>{settings?.callEnabled ?? true ? t("callOn") : t("callOff")}</li>
                 <li>{settings?.batchEnabled ? t("batchOn") : t("batchOff")}</li>
+                <li>{settings?.keyboardShortcutsEnabled ?? true ? t("shortcutsOn") : t("shortcutsOff")}</li>
                 <li>{t(`absentPlayer.${settings?.absentPlayerAction ?? "draw"}`)}</li>
                 {settings?.absentPlayerAction === "autoplay" ? (
                   <li>{settings.autoPlayCallOne ? t("autoPlayOneOn") : t("autoPlayOneOff")}</li>

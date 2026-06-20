@@ -32,6 +32,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       challengeEnabled: true,
       callEnabled: true,
       batchEnabled: true,
+      keyboardShortcutsEnabled: true,
       absentPlayerAction: "draw",
       autoPlayCallOne: false,
       deckBoxes: 1,
@@ -105,5 +106,36 @@ describe("Batch Cards", () => {
       expect.objectContaining({ id: "red-5" }),
       expect.objectContaining({ id: "blue-5" })
     ]);
+  });
+
+  it("opens and closes Batch selection from shortcut commands", () => {
+    const view = render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Hand
+          snapshot={snapshot()}
+          isMyTurn
+          batchShortcutCommand={{ id: 1, type: "toggle" }}
+          onPlay={vi.fn()}
+          onPassDrawn={vi.fn()}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByRole("region", { name: "Batch Cards" })).toBeInTheDocument();
+
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Hand
+          snapshot={snapshot()}
+          isMyTurn
+          batchShortcutCommand={{ id: 2, type: "close" }}
+          onPlay={vi.fn()}
+          onPassDrawn={vi.fn()}
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.queryByRole("region", { name: "Batch Cards" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Batch" })).toHaveAttribute("aria-keyshortcuts", "B");
   });
 });

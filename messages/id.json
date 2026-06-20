@@ -98,6 +98,8 @@
     "callHint": "Pemain harus memanggil One saat tersisa satu kartu, dan lawan bisa Catch jika terlewat.",
     "batch": "Aktifkan Batch Cards",
     "batchHint": "Mainkan dua atau lebih kartu dengan value sama dalam urutan pilihanmu.",
+    "keyboardShortcuts": "Aktifkan shortcut keyboard",
+    "keyboardShortcutsHint": "Izinkan tombol aksi untuk Ambil, Lewati, One, Catch, Batch, dan Aturan.",
     "start": "Mulai permainan",
     "needPlayers": "Butuh minimal 2 pemain",
     "copyCode": "Salin kode",
@@ -322,6 +324,8 @@
     "callOff": "One dan Catch nonaktif: pemain dengan satu kartu tidak perlu berteriak dan tidak bisa ditangkap.",
     "batchOn": "Batch Cards aktif: mainkan dua atau lebih kartu dengan value sama sesuai urutan pilihan. Penalti draw dikalikan jumlah kartu batch.",
     "batchOff": "Batch Cards nonaktif: kartu dimainkan satu per satu.",
+    "shortcutsOn": "Shortcut keyboard aktif untuk aksi room dan game yang tersedia.",
+    "shortcutsOff": "Shortcut keyboard nonaktif di room ini.",
     "absentPlayer": {
       "none": "Perilaku pemain away/offline adalah Diam Saja: tidak ada aksi proaktif dan timer giliran normal tetap aktif.",
       "draw": "Perilaku pemain away/offline adalah Ambil Satu Kartu: setelah jeda singkat, pemain mengambil satu kartu lalu lewat.",

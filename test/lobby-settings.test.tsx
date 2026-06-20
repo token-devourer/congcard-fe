@@ -44,6 +44,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       challengeEnabled: true,
       callEnabled: true,
       batchEnabled: false,
+      keyboardShortcutsEnabled: true,
       absentPlayerAction: "draw",
       autoPlayCallOne: false,
       deckBoxes: 1,
@@ -143,6 +144,37 @@ describe("Lobby settings", () => {
     fireEvent.click(batch!);
     expect(batch).toBeChecked();
     expect(stacking).not.toBeChecked();
+  });
+
+  it("keeps keyboard shortcuts enabled by default and independently configurable", () => {
+    render(<LobbyHarness />);
+
+    const shortcuts = screen.getByText("Enable keyboard shortcuts").closest("label")?.querySelector("input") as HTMLInputElement | null;
+    const batch = screen.getByText("Enable Batch Cards").closest("label")?.querySelector("input") as HTMLInputElement | null;
+
+    expect(shortcuts).not.toBeNull();
+    expect(shortcuts).toBeChecked();
+    expect(shortcuts).toBeEnabled();
+
+    fireEvent.click(shortcuts!);
+    expect(shortcuts).not.toBeChecked();
+    expect(batch).not.toBeChecked();
+
+    fireEvent.click(shortcuts!);
+    expect(shortcuts).toBeChecked();
+  });
+
+  it("allows only the host to change keyboard shortcuts", () => {
+    const guestSnapshot = snapshot({ self: { id: "guest", role: "player", hand: [] } });
+
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Lobby snapshot={guestSnapshot} code={guestSnapshot.code} send={() => undefined} />
+      </NextIntlClientProvider>
+    );
+
+    const shortcuts = screen.getByText("Enable keyboard shortcuts").closest("label")?.querySelector("input") as HTMLInputElement | null;
+    expect(shortcuts).toBeDisabled();
   });
 
   it("configures away and offline behavior independently", () => {

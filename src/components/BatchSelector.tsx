@@ -11,11 +11,17 @@ import { CardView } from "./CardView";
 interface BatchSelectorProps {
   snapshot: GameSnapshot;
   actionLocked: boolean;
+  shortcutCommand?: BatchShortcutCommand | null;
   onSelectionChange: (active: boolean) => void;
   onPlay: (cards: Card[], declaredColor?: Color) => void;
 }
 
-export function BatchSelector({ snapshot, actionLocked, onSelectionChange, onPlay }: BatchSelectorProps) {
+export interface BatchShortcutCommand {
+  id: number;
+  type: "toggle" | "close";
+}
+
+export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelectionChange, onPlay }: BatchSelectorProps) {
   const t = useTranslations();
   const groups = useMemo(() => batchCardGroups(snapshot, actionLocked), [actionLocked, snapshot]);
   const [open, setOpen] = useState(false);
@@ -47,6 +53,21 @@ export function BatchSelector({ snapshot, actionLocked, onSelectionChange, onPla
     setSelectedIds([]);
     setChoosingColor(false);
   }
+
+  useEffect(() => {
+    if (!shortcutCommand) {
+      return;
+    }
+
+    if (shortcutCommand.type === "close" || open || choosingColor) {
+      close();
+      return;
+    }
+
+    if (groups.length > 0) {
+      setOpen(true);
+    }
+  }, [shortcutCommand]);
 
   function chooseGroup(nextValue: CardValue) {
     setValue(nextValue);
@@ -100,7 +121,7 @@ export function BatchSelector({ snapshot, actionLocked, onSelectionChange, onPla
       <div className="grid gap-2">
         {!open ? (
           <div className="flex justify-center">
-            <button type="button" className="button batch-button !min-h-9 !px-4 text-sm" onClick={() => setOpen(true)}>
+            <button type="button" className="button batch-button !min-h-9 !px-4 text-sm" onClick={() => setOpen(true)} aria-keyshortcuts="B">
               {t("batch.open")}
             </button>
           </div>
@@ -116,7 +137,7 @@ export function BatchSelector({ snapshot, actionLocked, onSelectionChange, onPla
                 <h3 className="display font-black">{t("batch.title")}</h3>
                 <p className="text-xs text-[var(--muted)]">{value === null ? t("batch.chooseValue") : t("batch.chooseOrder")}</p>
               </div>
-              <button type="button" className="button secondary !min-h-8 !px-3 text-xs" onClick={close}>
+              <button type="button" className="button secondary !min-h-8 !px-3 text-xs" onClick={close} aria-keyshortcuts="Escape">
                 {t("common.cancel")}
               </button>
             </div>

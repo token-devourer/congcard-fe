@@ -13,7 +13,9 @@ import { Avatar } from "./Avatar";
 import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
+import { batchCardGroups } from "@/lib/batch";
 import { needsColor, playableCardInHand } from "@/lib/rules";
+import { isShortcutWindowOpen, resolveGameShortcut, shortcutKey, shouldIgnoreShortcut } from "@/lib/shortcuts";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
 import { useRoomStore } from "@/lib/store";
@@ -33,6 +35,7 @@ import { TurnBanner } from "./TurnBanner";
 import { TurnAlertLayer } from "./TurnAlertLayer";
 import { NotifyToggle } from "./NotifyToggle";
 import { UnoButton } from "./UnoButton";
+import type { BatchShortcutCommand } from "./BatchSelector";
 import { PingBadge } from "./PingBadge";
 import { unlockSound } from "@/lib/sound";
 
@@ -88,6 +91,24 @@ export function RoomClient({ code }: RoomClientProps) {
       window.removeEventListener("keydown", unlock);
     };
   }, []);
+
+  useEffect(() => {
+    const self = snapshot?.players.find((player) => player.id === snapshot.self?.id);
+    if (snapshot?.phase !== "lobby" || !snapshot.settings.keyboardShortcutsEnabled || self?.away) {
+      return undefined;
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (shouldIgnoreShortcut(event) || shortcutKey(event) !== "r" || showRules) {
+        return;
+      }
+      event.preventDefault();
+      setShowRules(true);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showRules, snapshot]);
 
   const connect = useCallback(async () => {
     if (!nickname.trim() || connectingRef.current || roomRef.current) {
@@ -285,6 +306,7 @@ export function RoomClient({ code }: RoomClientProps) {
             type="button"
             className="toolbar-pill text-[var(--text)] transition-colors hover:border-[var(--gold)]"
             onClick={() => setShowRules(true)}
+            aria-keyshortcuts="R"
           >
             {t("room.rules")}
           </button>
@@ -308,7 +330,15 @@ export function RoomClient({ code }: RoomClientProps) {
       ) : snapshot.phase === "lobby" ? (
         <Lobby snapshot={snapshot} code={code} send={send} />
       ) : (
-        <Board snapshot={snapshot} send={send} onLeave={leaveToHome} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
+        <Board
+          snapshot={snapshot}
+          send={send}
+          onLeave={leaveToHome}
+          selectedCard={selectedCard}
+          setSelectedCard={setSelectedCard}
+          rulesOpen={showRules}
+          onOpenRules={() => setShowRules(true)}
+        />
       )}
     </main>
   );
@@ -659,6 +689,19 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.callHint")}</span>
           </span>
         </label>
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.keyboardShortcutsEnabled}
+            onChange={(event) => updateSetting({ keyboardShortcutsEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.keyboardShortcuts")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.keyboardShortcutsHint")}</span>
+          </span>
+        </label>
         {isHost ? (
           <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
             {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
@@ -671,21 +714,26 @@ export function Lobby({
   );
 }
 
-function Board({
+export function Board({
   snapshot,
   send,
   onLeave,
   selectedCard,
-  setSelectedCard
+  setSelectedCard,
+  rulesOpen,
+  onOpenRules
 }: {
   snapshot: GameSnapshot;
   send: (type: string, payload?: unknown) => void;
   onLeave: () => void;
   selectedCard: Card | null;
   setSelectedCard: (card: Card | null) => void;
+  rulesOpen: boolean;
+  onOpenRules: () => void;
 }) {
   const t = useTranslations();
   const [batchSelecting, setBatchSelecting] = useState(false);
+  const [batchShortcutCommand, setBatchShortcutCommand] = useState<BatchShortcutCommand | null>(null);
   const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
   const now = useNow(100);
   const selfRole = snapshot.self?.role ?? "spectator";
@@ -721,6 +769,103 @@ function Board({
     isPlayer && !finished && !playerAway && !eventLocked && !batchSelecting && !batchResolving && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
+  const oneWindow = snapshot.oneWindow;
+  const callShortcutReady = Boolean(canCallOne) && isShortcutWindowOpen(oneWindow, now);
+  const catchShortcutTarget =
+    oneTarget && isShortcutWindowOpen(oneWindow, now) ? oneTarget : undefined;
+  const canPass = Boolean(isMyTurn && snapshot.self?.drawnCardId && !actionLocked && !batchSelecting && !selectedCard);
+  const canBatch = !selectedCard && !snapshot.pendingChallenge && batchCardGroups(snapshot, actionLocked).length > 0;
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (shouldIgnoreShortcut(event)) {
+        return;
+      }
+
+      const key = shortcutKey(event);
+      if (!key) {
+        return;
+      }
+
+      const command = resolveGameShortcut(key, {
+        enabled: snapshot.settings.keyboardShortcutsEnabled,
+        canDraw: canDraw && !selectedCard && !rulesOpen,
+        canPass: canPass && !rulesOpen,
+        canCallOne: callShortcutReady && !selectedCard && !snapshot.pendingChallenge && !rulesOpen,
+        catchTargetId: !selectedCard && !snapshot.pendingChallenge && !rulesOpen ? catchShortcutTarget?.id : undefined,
+        canBatch: canBatch && !rulesOpen,
+        batchSelecting,
+        canOpenRules:
+          isPlayer &&
+          snapshot.phase === "playing" &&
+          !finished &&
+          !playerAway &&
+          !paused &&
+          !eventLocked &&
+          !batchResolving &&
+          !batchSelecting &&
+          !selectedCard &&
+          !snapshot.pendingChallenge &&
+          !rulesOpen,
+        colorPickerOpen: Boolean(selectedCard)
+      });
+
+      if (!command) {
+        return;
+      }
+
+      event.preventDefault();
+      switch (command.type) {
+        case "draw":
+          send("game.drawCard");
+          break;
+        case "pass":
+          send("game.playDrawn", { play: false });
+          break;
+        case "callOne":
+          send("game.callOne");
+          break;
+        case "catchOne":
+          send("game.catchOne", { targetId: command.targetId });
+          break;
+        case "toggleBatch":
+          setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }));
+          break;
+        case "closeBatch":
+          setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "close" }));
+          break;
+        case "closeColorPicker":
+          setSelectedCard(null);
+          break;
+        case "openRules":
+          onOpenRules();
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    actionLocked,
+    batchResolving,
+    batchSelecting,
+    callShortcutReady,
+    canBatch,
+    canDraw,
+    canPass,
+    catchShortcutTarget,
+    eventLocked,
+    finished,
+    isPlayer,
+    onOpenRules,
+    paused,
+    playerAway,
+    rulesOpen,
+    selectedCard,
+    send,
+    setSelectedCard,
+    snapshot
+  ]);
 
   useEffect(() => {
     if (!isPlayer || finished || playerAway || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
@@ -826,6 +971,7 @@ function Board({
                   snapshot={snapshot}
                   isMyTurn={isMyTurn}
                   actionLocked={actionLocked}
+                  batchShortcutCommand={batchShortcutCommand}
                   onPlay={play}
                   onPlayBatch={playBatch}
                   onBatchSelectionChange={setBatchSelecting}

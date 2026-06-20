@@ -53,7 +53,7 @@ export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerP
             </motion.button>
           ))}
         </div>
-        <button className="button secondary" onClick={onCancel}>
+        <button className="button secondary" onClick={onCancel} aria-keyshortcuts="Escape">
           {t("common.cancel")}
         </button>
       </motion.div>

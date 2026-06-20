@@ -98,6 +98,8 @@
     "callHint": "Players must call One at one card, and opponents can Catch missed calls.",
     "batch": "Enable Batch Cards",
     "batchHint": "Play two or more cards with the same value in a chosen order.",
+    "keyboardShortcuts": "Enable keyboard shortcuts",
+    "keyboardShortcutsHint": "Allow action keys for Draw, Pass, One, Catch, Batch, and Rules.",
     "start": "Start game",
     "needPlayers": "At least 2 players needed",
     "copyCode": "Copy code",
@@ -322,6 +324,8 @@
     "callOff": "One and Catch are off: a player on one card never has to call out and cannot be caught.",
     "batchOn": "Batch Cards are on: play two or more cards with the same value in a chosen order. Draw penalties are multiplied by the batch size.",
     "batchOff": "Batch Cards are off: cards are played one at a time.",
+    "shortcutsOn": "Keyboard shortcuts are on for eligible room and game actions.",
+    "shortcutsOff": "Keyboard shortcuts are off in this room.",
     "absentPlayer": {
       "none": "Away/offline behavior is Do Nothing: no proactive action is taken, and the normal turn timer remains active.",
       "draw": "Away/offline behavior is Draw a Card: after a short delay, the player draws one card and passes.",

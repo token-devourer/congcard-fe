@@ -96,6 +96,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             style={catchReady ? { background: "linear-gradient(180deg, #f06354, var(--red))", boxShadow: "var(--shadow-pop)" } : undefined}
             disabled={!catchReady}
             onClick={() => onCatch(catchTarget.id)}
+            aria-keyshortcuts="C"
           >
             <span aria-hidden="true">!</span>
             {t("board.catch", { name: catchTarget.nickname })}
@@ -121,6 +122,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             }}
             disabled={!callReady}
             onClick={onCallOne}
+            aria-keyshortcuts="O"
           >
             <span>{callPending ? t("board.calling") : t("board.one")}</span>
           </motion.button>

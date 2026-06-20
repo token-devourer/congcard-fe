@@ -7,12 +7,13 @@ import type { Card, Color, GameSnapshot } from "@congcard/shared";
 import { canPlayCard } from "@/lib/rules";
 import { groupHand, shouldUseGroupedHand, type HandGroup, type HandGroupId } from "@/lib/handGroups";
 import { CardView } from "./CardView";
-import { BatchSelector } from "./BatchSelector";
+import { BatchSelector, type BatchShortcutCommand } from "./BatchSelector";
 
 interface HandProps {
   snapshot: GameSnapshot;
   isMyTurn: boolean;
   actionLocked?: boolean;
+  batchShortcutCommand?: BatchShortcutCommand | null;
   onPlay: (card: Card) => void;
   onPlayBatch?: (cards: Card[], declaredColor?: Color) => void;
   onBatchSelectionChange?: (active: boolean) => void;
@@ -30,6 +31,7 @@ export function Hand({
   snapshot,
   isMyTurn,
   actionLocked = false,
+  batchShortcutCommand,
   onPlay,
   onPlayBatch = NOOP_BATCH_PLAY,
   onBatchSelectionChange = NOOP_BATCH_SELECTION,
@@ -83,6 +85,7 @@ export function Hand({
       <BatchSelector
         snapshot={snapshot}
         actionLocked={actionLocked}
+        shortcutCommand={batchShortcutCommand}
         onSelectionChange={handleBatchSelectionChange}
         onPlay={onPlayBatch}
       />
@@ -93,7 +96,7 @@ export function Hand({
           className="flex items-center justify-center gap-3 text-sm font-bold"
         >
           <span className="rounded-full bg-black/40 px-3 py-1.5">{t("board.drawnBadge", { count: drawnCount })} ✨</span>
-          <button className="button secondary !min-h-9 !px-4 text-sm" disabled={actionLocked} onClick={onPassDrawn}>
+          <button className="button secondary !min-h-9 !px-4 text-sm" disabled={actionLocked} onClick={onPassDrawn} aria-keyshortcuts="P">
             {t("board.passDrawn")}
           </button>
         </motion.div>

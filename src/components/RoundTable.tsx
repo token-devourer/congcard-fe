@@ -82,6 +82,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           onClick={onDraw}
           whileTap={canDraw ? { scale: 0.94 } : undefined}
           aria-label={drawLabel}
+          aria-keyshortcuts="D"
         >
           <span className="relative">
             <CardView hidden />

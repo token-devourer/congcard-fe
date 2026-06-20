@@ -13,6 +13,7 @@ const settings: RoomSettings = {
   challengeEnabled: true,
   callEnabled: true,
   batchEnabled: false,
+  keyboardShortcutsEnabled: true,
   absentPlayerAction: "draw",
   autoPlayCallOne: false,
   deckBoxes: 1,

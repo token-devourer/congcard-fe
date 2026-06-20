@@ -23,6 +23,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       challengeEnabled: true,
       callEnabled: true,
       batchEnabled: false,
+      keyboardShortcutsEnabled: true,
       absentPlayerAction: "draw",
       autoPlayCallOne: false,
       deckBoxes: 1,
