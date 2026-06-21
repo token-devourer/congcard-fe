@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import type { FlipSide, GameSnapshot } from "@congcard/shared";
+import { scheduleFlipMusicTransition } from "@/lib/music";
 import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
 
@@ -33,6 +34,15 @@ export function FlipTransitionLayer({ snapshot }: { snapshot: GameSnapshot }) {
     const timers: number[] = [];
     let side = pending.fromSide;
     const serverNow = Date.now() + clockOffset;
+    const firstTransitionAt = pending.transitionTimes[0]!;
+    const finalTransitionAt = pending.transitionTimes.at(-1)!;
+
+    scheduleFlipMusicTransition(
+      pending.toSide === "dark" ? "flipDark" : "play",
+      Math.max(0, firstTransitionAt - 260 - serverNow),
+      Math.max(0, firstTransitionAt - serverNow),
+      Math.max(0, finalTransitionAt - serverNow)
+    );
 
     pending.transitionTimes.forEach((transitionAt, index) => {
       const level = Math.min(8, index + 1);

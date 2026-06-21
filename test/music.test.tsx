@@ -55,6 +55,16 @@ describe("synth music", () => {
     }
   });
 
+  it("uses the Canon progression in D major and its D minor dark variation", () => {
+    const bassLine = (scene: "play" | "flipDark") =>
+      MUSIC_TRACKS[scene].notes
+        .filter((item) => item.type === "sine" && item.gain === 0.032)
+        .map((item) => item.frequency);
+
+    expect(bassLine("play")).toEqual([146.83, 110, 123.47, 92.5, 98, 146.83, 98, 110]);
+    expect(bassLine("flipDark")).toEqual([146.83, 110, 116.54, 87.31, 130.81, 98, 116.54, 110]);
+  });
+
   it("enables music by default and persists an independent mute choice", async () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages}>

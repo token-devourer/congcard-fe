@@ -26,6 +26,7 @@ const MUSIC_MASTER_GAIN = 0.65;
 // the bed sits clearly under the SFX instead of being inaudible (~6x louder).
 const NOTE_GAIN_SCALE = 3.4;
 const CROSSFADE_SECONDS = 1.5;
+const FLIP_FADE_IN_SECONDS = 0.75;
 const LOOKAHEAD_MS = 250;
 const SCHEDULE_AHEAD_SECONDS = 2;
 
@@ -37,6 +38,64 @@ const note = (
   gain: number,
   cutoff: number
 ): SynthNote => ({ step, frequency, durationSteps, type, gain, cutoff });
+
+type CanonMelodyNote = readonly [offset: number, frequency: number, durationSteps?: number];
+
+interface CanonBar {
+  bass: number;
+  chord: readonly [number, number, number];
+  melody: readonly CanonMelodyNote[];
+}
+
+function buildCanonTrack(
+  bpm: number,
+  bars: readonly CanonBar[],
+  timbre: { bassCutoff: number; chordCutoff: number; melodyCutoff: number; melodyGain: number }
+): TrackDefinition {
+  const notes = bars.flatMap((bar, barIndex) => {
+    const step = barIndex * 16;
+    const isClosingBar = barIndex === bars.length - 1;
+    const bedDuration = isClosingBar ? 17 : 16;
+    const chordNotes = bar.chord.map((frequency, chordIndex) =>
+      note(
+        step,
+        frequency,
+        isClosingBar && chordIndex > 0 ? 16 : bedDuration,
+        "sine",
+        chordIndex === 0 ? 0.009 : 0.008,
+        timbre.chordCutoff
+      )
+    );
+    const melodyNotes = bar.melody.map(([offset, frequency, durationSteps = 3]) =>
+      note(step + offset, frequency, durationSteps, "triangle", timbre.melodyGain, timbre.melodyCutoff)
+    );
+    return [note(step, bar.bass, bedDuration, "sine", 0.032, timbre.bassCutoff), ...chordNotes, ...melodyNotes];
+  });
+
+  return { bpm, lengthSteps: bars.length * 16, notes };
+}
+
+const LIGHT_CANON_BARS: readonly CanonBar[] = [
+  { bass: 146.83, chord: [293.66, 369.99, 440], melody: [[0, 739.99], [4, 659.25], [8, 587.33], [12, 554.37]] },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 493.88], [4, 440], [8, 493.88], [12, 554.37]] },
+  { bass: 123.47, chord: [246.94, 293.66, 369.99], melody: [[0, 587.33], [4, 554.37], [8, 493.88], [12, 440]] },
+  { bass: 92.5, chord: [185, 220, 277.18], melody: [[0, 440], [4, 554.37], [8, 739.99], [12, 659.25]] },
+  { bass: 98, chord: [196, 246.94, 293.66], melody: [[0, 587.33], [4, 493.88], [8, 392], [12, 440]] },
+  { bass: 146.83, chord: [293.66, 369.99, 440], melody: [[0, 369.99], [4, 440], [8, 587.33], [12, 739.99]] },
+  { bass: 98, chord: [196, 246.94, 293.66], melody: [[0, 783.99], [4, 739.99], [8, 659.25], [12, 587.33]] },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 554.37], [4, 493.88], [8, 440], [12, 440, 5]] }
+];
+
+const DARK_CANON_BARS: readonly CanonBar[] = [
+  { bass: 146.83, chord: [293.66, 349.23, 440], melody: [[0, 698.46], [4, 659.25], [8, 587.33], [12, 523.25]] },
+  { bass: 110, chord: [220, 261.63, 329.63], melody: [[0, 466.16], [4, 440], [8, 466.16], [12, 523.25]] },
+  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: [[0, 587.33], [4, 523.25], [8, 466.16], [12, 440]] },
+  { bass: 87.31, chord: [174.61, 220, 261.63], melody: [[0, 440], [4, 523.25], [8, 698.46], [12, 659.25]] },
+  { bass: 130.81, chord: [261.63, 329.63, 392], melody: [[0, 783.99], [4, 659.25], [8, 523.25], [12, 587.33]] },
+  { bass: 98, chord: [196, 233.08, 293.66], melody: [[0, 466.16], [4, 587.33], [8, 783.99], [12, 698.46]] },
+  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: [[0, 698.46], [4, 587.33], [8, 466.16], [12, 440]] },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 554.37], [4, 493.88], [8, 440], [12, 440, 5]] }
+];
 
 export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
   lobby: {
@@ -60,79 +119,18 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(38, 698.46, 2, "sine", 0.012, 4800), note(54, 587.33, 2, "sine", 0.012, 4800)
     ]
   },
-  play: {
-    bpm: 104,
-    lengthSteps: 128,
-    notes: [
-      // Eight-bar C major progression: C, G, Am, F, C, G, F, G.
-      note(0, 130.81, 14, "sine", 0.032, 1650), note(16, 98, 14, "sine", 0.032, 1600),
-      note(32, 110, 14, "sine", 0.032, 1650), note(48, 87.31, 14, "sine", 0.032, 1580),
-      note(64, 130.81, 14, "sine", 0.032, 1650), note(80, 98, 14, "sine", 0.032, 1600),
-      note(96, 87.31, 14, "sine", 0.032, 1580), note(112, 98, 17, "sine", 0.032, 1600),
-      // Quiet chord bed keeps every melodic phrase anchored to its harmony.
-      note(0, 261.63, 14, "sine", 0.009, 2600), note(0, 329.63, 14, "sine", 0.008, 2600), note(0, 392, 14, "sine", 0.008, 2600),
-      note(16, 196, 14, "sine", 0.009, 2550), note(16, 246.94, 14, "sine", 0.008, 2550), note(16, 293.66, 14, "sine", 0.008, 2550),
-      note(32, 220, 14, "sine", 0.009, 2600), note(32, 261.63, 14, "sine", 0.008, 2600), note(32, 329.63, 14, "sine", 0.008, 2600),
-      note(48, 174.61, 14, "sine", 0.009, 2500), note(48, 220, 14, "sine", 0.008, 2500), note(48, 261.63, 14, "sine", 0.008, 2500),
-      note(64, 261.63, 14, "sine", 0.009, 2600), note(64, 329.63, 14, "sine", 0.008, 2600), note(64, 392, 14, "sine", 0.008, 2600),
-      note(80, 196, 14, "sine", 0.009, 2550), note(80, 246.94, 14, "sine", 0.008, 2550), note(80, 293.66, 14, "sine", 0.008, 2550),
-      note(96, 174.61, 14, "sine", 0.009, 2500), note(96, 220, 14, "sine", 0.008, 2500), note(96, 261.63, 14, "sine", 0.008, 2500),
-      note(112, 196, 17, "sine", 0.009, 2550), note(112, 246.94, 16, "sine", 0.008, 2550), note(112, 293.66, 16, "sine", 0.008, 2550),
-      // A relaxed two-phrase melody with rests between each short response.
-      note(0, 659.25, 3, "triangle", 0.021, 3900), note(4, 783.99, 3, "triangle", 0.021, 4100),
-      note(8, 880, 2, "triangle", 0.019, 4200), note(11, 783.99, 2, "triangle", 0.018, 4100), note(14, 659.25, 2, "triangle", 0.018, 3900),
-      note(16, 587.33, 3, "triangle", 0.021, 3800), note(20, 783.99, 3, "triangle", 0.021, 4100),
-      note(24, 987.77, 3, "triangle", 0.02, 4300), note(28, 880, 2, "triangle", 0.018, 4200), note(30, 783.99, 2, "triangle", 0.018, 4100),
-      note(32, 659.25, 3, "triangle", 0.021, 3900), note(36, 880, 3, "triangle", 0.021, 4200),
-      note(40, 1046.5, 3, "triangle", 0.02, 4400), note(44, 987.77, 2, "triangle", 0.018, 4300), note(46, 880, 2, "triangle", 0.018, 4200),
-      note(48, 1046.5, 3, "triangle", 0.021, 4400), note(52, 880, 3, "triangle", 0.02, 4200),
-      note(56, 783.99, 2, "triangle", 0.019, 4100), note(59, 698.46, 3, "triangle", 0.019, 4000), note(63, 659.25, 1, "triangle", 0.016, 3900),
-      note(64, 659.25, 3, "triangle", 0.021, 3900), note(68, 783.99, 3, "triangle", 0.021, 4100),
-      note(72, 1046.5, 3, "triangle", 0.02, 4400), note(76, 987.77, 2, "triangle", 0.018, 4300), note(78, 783.99, 2, "triangle", 0.018, 4100),
-      note(80, 587.33, 3, "triangle", 0.021, 3800), note(84, 783.99, 3, "triangle", 0.021, 4100),
-      note(88, 987.77, 3, "triangle", 0.02, 4300), note(92, 880, 2, "triangle", 0.018, 4200), note(94, 783.99, 2, "triangle", 0.018, 4100),
-      note(96, 880, 3, "triangle", 0.021, 4200), note(100, 1046.5, 3, "triangle", 0.021, 4400),
-      note(104, 880, 2, "triangle", 0.019, 4200), note(107, 783.99, 2, "triangle", 0.018, 4100), note(110, 698.46, 2, "triangle", 0.018, 4000),
-      note(112, 783.99, 3, "triangle", 0.021, 4100), note(116, 880, 3, "triangle", 0.02, 4200),
-      note(120, 987.77, 3, "triangle", 0.02, 4300), note(124, 587.33, 3, "triangle", 0.018, 3800), note(127, 493.88, 2, "triangle", 0.016, 3700)
-    ]
-  },
-  flipDark: {
-    bpm: 100,
-    lengthSteps: 128,
-    notes: [
-      // The same eight-bar rhythm in A minor: Am, F, C, G, Am, F, Dm, E.
-      note(0, 110, 14, "sine", 0.033, 1420), note(16, 87.31, 14, "sine", 0.033, 1380),
-      note(32, 130.81, 14, "sine", 0.033, 1420), note(48, 98, 14, "sine", 0.033, 1380),
-      note(64, 110, 14, "sine", 0.033, 1420), note(80, 87.31, 14, "sine", 0.033, 1380),
-      note(96, 73.42, 14, "sine", 0.033, 1340), note(112, 82.41, 17, "sine", 0.033, 1360),
-      note(0, 220, 14, "sine", 0.009, 2150), note(0, 261.63, 14, "sine", 0.008, 2150), note(0, 329.63, 14, "sine", 0.008, 2150),
-      note(16, 174.61, 14, "sine", 0.009, 2050), note(16, 220, 14, "sine", 0.008, 2050), note(16, 261.63, 14, "sine", 0.008, 2050),
-      note(32, 261.63, 14, "sine", 0.009, 2150), note(32, 329.63, 14, "sine", 0.008, 2150), note(32, 392, 14, "sine", 0.008, 2150),
-      note(48, 196, 14, "sine", 0.009, 2050), note(48, 246.94, 14, "sine", 0.008, 2050), note(48, 293.66, 14, "sine", 0.008, 2050),
-      note(64, 220, 14, "sine", 0.009, 2150), note(64, 261.63, 14, "sine", 0.008, 2150), note(64, 329.63, 14, "sine", 0.008, 2150),
-      note(80, 174.61, 14, "sine", 0.009, 2050), note(80, 220, 14, "sine", 0.008, 2050), note(80, 261.63, 14, "sine", 0.008, 2050),
-      note(96, 146.83, 14, "sine", 0.009, 1980), note(96, 174.61, 14, "sine", 0.008, 1980), note(96, 220, 14, "sine", 0.008, 1980),
-      note(112, 164.81, 17, "sine", 0.009, 2020), note(112, 207.65, 16, "sine", 0.008, 2020), note(112, 246.94, 16, "sine", 0.008, 2020),
-      // Dark-side variation mirrors the light motif without borrowing clashing notes.
-      note(0, 659.25, 3, "triangle", 0.02, 3200), note(4, 880, 3, "triangle", 0.02, 3400),
-      note(8, 1046.5, 2, "triangle", 0.018, 3550), note(11, 987.77, 2, "triangle", 0.017, 3450), note(14, 880, 2, "triangle", 0.017, 3400),
-      note(16, 523.25, 3, "triangle", 0.02, 3000), note(20, 698.46, 3, "triangle", 0.02, 3250),
-      note(24, 880, 3, "triangle", 0.019, 3400), note(28, 783.99, 2, "triangle", 0.017, 3300), note(30, 698.46, 2, "triangle", 0.017, 3250),
-      note(32, 659.25, 3, "triangle", 0.02, 3200), note(36, 783.99, 3, "triangle", 0.02, 3300),
-      note(40, 1046.5, 3, "triangle", 0.019, 3550), note(44, 987.77, 2, "triangle", 0.017, 3450), note(46, 783.99, 2, "triangle", 0.017, 3300),
-      note(48, 587.33, 3, "triangle", 0.02, 3100), note(52, 783.99, 3, "triangle", 0.02, 3300),
-      note(56, 987.77, 2, "triangle", 0.019, 3450), note(59, 880, 3, "triangle", 0.018, 3400), note(63, 783.99, 1, "triangle", 0.016, 3300),
-      note(64, 659.25, 3, "triangle", 0.02, 3200), note(68, 880, 3, "triangle", 0.02, 3400),
-      note(72, 1046.5, 3, "triangle", 0.019, 3550), note(76, 987.77, 2, "triangle", 0.017, 3450), note(78, 880, 2, "triangle", 0.017, 3400),
-      note(80, 523.25, 3, "triangle", 0.02, 3000), note(84, 698.46, 3, "triangle", 0.02, 3250),
-      note(88, 880, 3, "triangle", 0.019, 3400), note(92, 783.99, 2, "triangle", 0.017, 3300), note(94, 698.46, 2, "triangle", 0.017, 3250),
-      note(96, 587.33, 3, "triangle", 0.02, 3100), note(100, 698.46, 3, "triangle", 0.02, 3250),
-      note(104, 880, 2, "triangle", 0.018, 3400), note(107, 783.99, 2, "triangle", 0.017, 3300), note(110, 698.46, 2, "triangle", 0.017, 3250),
-      note(112, 659.25, 3, "triangle", 0.02, 3200), note(116, 830.61, 3, "triangle", 0.02, 3350),
-      note(120, 987.77, 3, "triangle", 0.019, 3450), note(124, 830.61, 3, "triangle", 0.017, 3350), note(127, 659.25, 2, "triangle", 0.016, 3200)
-    ]
-  }
+  play: buildCanonTrack(104, LIGHT_CANON_BARS, {
+    bassCutoff: 1650,
+    chordCutoff: 2600,
+    melodyCutoff: 4200,
+    melodyGain: 0.02
+  }),
+  flipDark: buildCanonTrack(100, DARK_CANON_BARS, {
+    bassCutoff: 1400,
+    chordCutoff: 2100,
+    melodyCutoff: 3400,
+    melodyGain: 0.019
+  })
 };
 
 let requestedScene: MusicScene | null = null;
@@ -198,6 +196,23 @@ export function setMusicScene(scene: MusicScene | null): void {
   startRequestedScene();
 }
 
+export function scheduleFlipMusicTransition(
+  scene: "play" | "flipDark",
+  fadeOutStartDelayMs: number,
+  fadeOutEndDelayMs: number,
+  fadeInDelayMs: number
+): void {
+  requestedScene = scene;
+  if (!canPlayMusic()) return;
+  const context = sharedAudioContext();
+  const now = context.currentTime;
+  startScene(scene, {
+    fadeOutAt: now + Math.max(0, fadeOutStartDelayMs) / 1000,
+    fadeOutEndAt: now + Math.max(0, fadeOutEndDelayMs) / 1000,
+    fadeInAt: now + Math.max(0, fadeInDelayMs) / 1000
+  });
+}
+
 export function unlockMusic(): void {
   if (typeof window === "undefined" || !audioAvailable()) return;
   unlocked = true;
@@ -232,26 +247,41 @@ function ensureMusicMaster(context: AudioContext): GainNode {
   return musicMaster;
 }
 
-function startScene(scene: MusicScene): void {
+function startScene(
+  scene: MusicScene,
+  transition?: { fadeOutAt: number; fadeOutEndAt: number; fadeInAt: number }
+): void {
   const context = sharedAudioContext();
   const now = context.currentTime;
   const previousBus = activeBus;
   stopScheduler();
 
   if (previousBus) {
-    fadeAndDisconnect(previousBus, now);
+    if (transition) {
+      fadeAndDisconnectAt(previousBus, now, transition.fadeOutAt, transition.fadeOutEndAt);
+    } else {
+      fadeAndDisconnect(previousBus, now);
+    }
   }
 
   const bus = context.createGain();
   bus.gain.setValueAtTime(0.0001, now);
-  bus.gain.linearRampToValueAtTime(1, now + CROSSFADE_SECONDS);
+  const sceneStart = transition ? transition.fadeInAt : now + 0.08;
+  if (transition) {
+    bus.gain.setValueAtTime(0.0001, sceneStart);
+    bus.gain.linearRampToValueAtTime(1, sceneStart + FLIP_FADE_IN_SECONDS);
+  } else {
+    bus.gain.linearRampToValueAtTime(1, now + CROSSFADE_SECONDS);
+  }
   bus.connect(ensureMusicMaster(context));
 
   activeScene = scene;
   activeBus = bus;
-  nextCycleTime = now + 0.08;
+  const track = MUSIC_TRACKS[scene];
+  const secondsPerStep = 60 / track.bpm / 4;
+  scheduleTrackCycle(context, bus, track, sceneStart, secondsPerStep);
+  nextCycleTime = sceneStart + track.lengthSteps * secondsPerStep;
   schedulerId = window.setInterval(scheduleMusic, LOOKAHEAD_MS);
-  scheduleMusic();
 }
 
 function haltActiveScene(): void {
@@ -264,13 +294,21 @@ function haltActiveScene(): void {
 }
 
 function fadeAndDisconnect(bus: GainNode, now: number): void {
+  fadeAndDisconnectAt(bus, now, now, now + CROSSFADE_SECONDS);
+}
+
+function fadeAndDisconnectAt(bus: GainNode, now: number, fadeOutAt: number, fadeOutEndAt: number): void {
+  const fadeStart = Math.max(now, fadeOutAt);
+  const fadeEnd = Math.max(fadeStart + 0.05, fadeOutEndAt);
+  const currentGain = Math.max(0.0001, bus.gain.value);
   bus.gain.cancelScheduledValues(now);
-  bus.gain.setValueAtTime(Math.max(0.0001, bus.gain.value), now);
-  bus.gain.linearRampToValueAtTime(0.0001, now + CROSSFADE_SECONDS);
+  bus.gain.setValueAtTime(currentGain, now);
+  bus.gain.setValueAtTime(currentGain, fadeStart);
+  bus.gain.linearRampToValueAtTime(0.0001, fadeEnd);
   const timer = window.setTimeout(() => {
     bus.disconnect();
     cleanupTimers.delete(timer);
-  }, (CROSSFADE_SECONDS + 0.1) * 1000);
+  }, (fadeEnd - now + 0.1) * 1000);
   cleanupTimers.add(timer);
 }
 
@@ -289,16 +327,26 @@ function scheduleMusic(): void {
   const cycleDuration = track.lengthSteps * secondsPerStep;
 
   while (nextCycleTime < context.currentTime + SCHEDULE_AHEAD_SECONDS) {
-    for (const synthNote of track.notes) {
-      scheduleNote(
-        context,
-        activeBus,
-        synthNote,
-        nextCycleTime + synthNote.step * secondsPerStep,
-        secondsPerStep
-      );
-    }
+    scheduleTrackCycle(context, activeBus, track, nextCycleTime, secondsPerStep);
     nextCycleTime += cycleDuration;
+  }
+}
+
+function scheduleTrackCycle(
+  context: AudioContext,
+  destination: AudioNode,
+  track: TrackDefinition,
+  startsAt: number,
+  secondsPerStep: number
+): void {
+  for (const synthNote of track.notes) {
+    scheduleNote(
+      context,
+      destination,
+      synthNote,
+      startsAt + synthNote.step * secondsPerStep,
+      secondsPerStep
+    );
   }
 }
 

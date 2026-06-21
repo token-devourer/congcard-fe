@@ -308,48 +308,44 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "flipSweep": {
-      const { ratio } = pitchedLevel(level);
-      noise(ctx, t, { dur: 0.24, gain: 0.18, hp: 700, lp: 7200 });
-      noise(ctx, t + 0.07, { dur: 0.16, gain: 0.1, hp: 1200, lp: 8200 });
-      tone(ctx, t + 0.015, { freq: 293.66 * ratio, dur: 0.13, type: "triangle", gain: 0.05, lp: 3200 });
-      tone(ctx, t + 0.09, { freq: 392 * ratio, dur: 0.16, type: "sine", gain: 0.045, lp: 4200 });
+      noise(ctx, t, { dur: 0.24, gain: 0.14, hp: 900, lp: 7600 });
+      noise(ctx, t + 0.07, { dur: 0.16, gain: 0.07, hp: 1600, lp: 8600 });
       break;
     }
     case "flipImpact": {
       const { ratio } = pitchedLevel(level);
-      noise(ctx, t, { dur: 0.13, gain: 0.32, hp: 120, lp: 4200 });
-      tone(ctx, t, { freq: 130 * ratio, dur: 0.28, type: "square", gain: 0.2, sweepTo: 70 * ratio, lp: 1300 });
-      tone(ctx, t + 0.02, { freq: 520 * ratio, dur: 0.18, type: "triangle", gain: 0.12, lp: 5200 });
+      noise(ctx, t, { dur: 0.1, gain: 0.2, hp: 180, lp: 3600 });
+      tone(ctx, t, { freq: 146.83 * ratio, dur: 0.24, type: "sine", gain: 0.14, lp: 1500 });
       break;
     }
     case "flipLight": {
       const { ratio } = pitchedLevel(level);
-      [523.25, 587.33, 659.25, 783.99].forEach((freq, index) => {
+      [293.66, 329.63, 369.99, 392, 440, 587.33].forEach((freq, index) => {
         tone(ctx, t + index * 0.07, {
           freq: freq * ratio,
-          dur: 0.24 + index * 0.02,
+          dur: 0.22 + index * 0.018,
           type: "triangle",
-          gain: 0.095,
+          gain: 0.09,
           lp: 7600,
           attack: 0.004
         });
       });
-      tone(ctx, t + 0.23, { freq: 1046.5 * ratio, dur: 0.36, type: "sine", gain: 0.08, lp: 8600, attack: 0.005 });
+      tone(ctx, t + 0.35, { freq: 1174.66 * ratio, dur: 0.38, type: "sine", gain: 0.065, lp: 8600, attack: 0.005 });
       break;
     }
     case "flipDark": {
       const { ratio } = pitchedLevel(level);
-      [392, 329.63, 293.66, 261.63].forEach((freq, index) => {
+      [440, 392, 349.23, 329.63, 293.66, 220].forEach((freq, index) => {
         tone(ctx, t + index * 0.075, {
           freq: freq * ratio,
-          dur: 0.26 + index * 0.025,
+          dur: 0.23 + index * 0.02,
           type: "triangle",
-          gain: 0.1,
-          lp: 2600,
+          gain: 0.09,
+          lp: 3000,
           attack: 0.004
         });
       });
-      tone(ctx, t + 0.06, { freq: 196 * ratio, dur: 0.42, type: "sine", gain: 0.07, lp: 1800, attack: 0.005 });
+      tone(ctx, t + 0.37, { freq: 146.83 * ratio, dur: 0.42, type: "sine", gain: 0.065, lp: 1900, attack: 0.005 });
       break;
     }
     case "opening": {

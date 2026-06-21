@@ -4,8 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mergeRoomSettings, type Card, type GameSnapshot } from "@congcard/shared";
 import messages from "../messages/en.json";
 
-const { playSound } = vi.hoisted(() => ({ playSound: vi.fn() }));
+const { playSound, scheduleFlipMusicTransition } = vi.hoisted(() => ({
+  playSound: vi.fn(),
+  scheduleFlipMusicTransition: vi.fn()
+}));
 vi.mock("../src/lib/sound", () => ({ playSound }));
+vi.mock("../src/lib/music", () => ({ scheduleFlipMusicTransition }));
 
 import { CardView } from "../src/components/CardView";
 import { ColorPicker } from "../src/components/ColorPicker";
@@ -45,6 +49,7 @@ describe("Flip presentation", () => {
     vi.useRealTimers();
     document.body.classList.remove("flip-light", "flip-dark", "flip-card-animating");
     playSound.mockClear();
+    scheduleFlipMusicTransition.mockClear();
   });
 
   it("renders dark-side cards and actions", () => {
@@ -75,5 +80,6 @@ describe("Flip presentation", () => {
     expect(playSound).toHaveBeenCalledWith("flipSweep", 1);
     expect(playSound).toHaveBeenCalledWith("flipImpact", 1);
     expect(playSound).toHaveBeenCalledWith("flipDark", 1);
+    expect(scheduleFlipMusicTransition).toHaveBeenCalledWith("flipDark", 240, 500, 500);
   });
 });
