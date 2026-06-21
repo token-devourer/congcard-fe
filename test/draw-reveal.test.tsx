@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import { mergeRoomSettings, type Card, type GameSnapshot, type PublicPlayer } from "@congcard/shared";
@@ -93,5 +93,33 @@ describe("authoritative draw controls", () => {
 
     fireEvent.keyDown(window, { key: "d" });
     expect(send).toHaveBeenCalledWith("game.drawColorCard");
+  });
+
+  it("keeps sequentially revealed cards together in the draw status", () => {
+    const game = snapshot("auto");
+    game.pendingDraw = {
+      ...game.pendingDraw!,
+      drawnCount: 2,
+      totalCount: 4,
+      revealedCards: [
+        { color: "red", value: 1, side: "dark" },
+        { color: "cyan", value: 2, side: "dark" }
+      ],
+      reveal: {
+        id: 3,
+        index: 3,
+        startsAt: Date.now() - 200,
+        revealsAt: Date.now() - 100,
+        resolvesAt: Date.now() + 200,
+        visibleCard: { color: "purple", value: 3, side: "dark" }
+      }
+    };
+    renderBoard(game);
+
+    const status = screen.getByText("Drawing for me").closest('[role="status"]') as HTMLElement;
+    expect(within(status).getByLabelText("red 1")).toBeInTheDocument();
+    expect(within(status).getByLabelText("cyan 2")).toBeInTheDocument();
+    expect(within(status).getByLabelText("purple 3")).toBeInTheDocument();
+    expect(within(status).getByText("3 / 4 cards")).toBeInTheDocument();
   });
 });

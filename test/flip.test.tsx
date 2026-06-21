@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mergeRoomSettings, type Card, type GameSnapshot } from "@congcard/shared";
@@ -91,7 +91,7 @@ describe("Flip presentation", () => {
     expect(scheduleFlipMusicTransition).toHaveBeenCalledWith("flipDark", 240, 500, 500);
   });
 
-  it("shows opponent inactive faces and the public draw-pile back", () => {
+  it("shows opponent inactive faces and closes the drawer for One/Catch", async () => {
     const game = flipSnapshot();
     delete game.pendingFlip;
     game.self = { id: "me", role: "player", hand: [card("mine", "red", 2)] };
@@ -114,7 +114,7 @@ describe("Flip presentation", () => {
       }
     ];
 
-    render(
+    const { rerender } = render(
       <NextIntlClientProvider locale="en" messages={messages}>
         <RoundTable snapshot={game} isMyTurn canDraw onDraw={vi.fn()} />
       </NextIntlClientProvider>
@@ -125,5 +125,13 @@ describe("Flip presentation", () => {
     expect(screen.getByLabelText("Opponent opposite card faces")).toBeInTheDocument();
     expect(screen.getAllByLabelText("cyan 3").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByLabelText("red 2")).not.toBeInTheDocument();
+
+    game.oneWindow = { playerId: "other", opensAt: Date.now(), deadline: Date.now() + 3000 };
+    rerender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <RoundTable snapshot={game} isMyTurn canDraw onDraw={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+    await waitFor(() => expect(screen.queryByLabelText("Opponent opposite card faces")).not.toBeInTheDocument());
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, OpponentCardFace, PendingStack, PublicPlayer } from "@congcard/shared";
@@ -67,6 +68,12 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const hoverCloseTimer = useRef<number | undefined>(undefined);
   const inspectedPlayerId = pinnedOpponentId ?? hoveredOpponentId;
   const inspectedPlayer = snapshot.players.find((player) => player.id === inspectedPlayerId && player.oppositeHand?.length);
+
+  useEffect(() => {
+    if (!snapshot.oneWindow) return;
+    setHoveredOpponentId(undefined);
+    setPinnedOpponentId(undefined);
+  }, [snapshot.oneWindow]);
 
   function keepOpponentTrayOpen(playerId: string) {
     if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
@@ -174,9 +181,9 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
                 oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id}
                 turnDeadline={snapshot.turnDeadline}
                 turnTimeoutSec={snapshot.settings.turnTimeoutSec}
-                onOppositeEnter={player.oppositeHand?.length ? () => keepOpponentTrayOpen(player.id) : undefined}
-                onOppositeLeave={player.oppositeHand?.length ? scheduleOpponentTrayClose : undefined}
-                onOppositeToggle={player.oppositeHand?.length ? () => toggleOpponentTray(player.id) : undefined}
+                onOppositeEnter={player.oppositeHand?.length && !snapshot.oneWindow ? () => keepOpponentTrayOpen(player.id) : undefined}
+                onOppositeLeave={player.oppositeHand?.length && !snapshot.oneWindow ? scheduleOpponentTrayClose : undefined}
+                onOppositeToggle={player.oppositeHand?.length && !snapshot.oneWindow ? () => toggleOpponentTray(player.id) : undefined}
               />
             </div>
           ))}
@@ -230,9 +237,9 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
               oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
               turnDeadline={snapshot.turnDeadline}
               turnTimeoutSec={snapshot.settings.turnTimeoutSec}
-              onOppositeEnter={player.oppositeHand?.length ? () => keepOpponentTrayOpen(player.id) : undefined}
-              onOppositeLeave={player.oppositeHand?.length ? scheduleOpponentTrayClose : undefined}
-              onOppositeToggle={player.oppositeHand?.length ? () => toggleOpponentTray(player.id) : undefined}
+              onOppositeEnter={player.oppositeHand?.length && !snapshot.oneWindow ? () => keepOpponentTrayOpen(player.id) : undefined}
+              onOppositeLeave={player.oppositeHand?.length && !snapshot.oneWindow ? scheduleOpponentTrayClose : undefined}
+              onOppositeToggle={player.oppositeHand?.length && !snapshot.oneWindow ? () => toggleOpponentTray(player.id) : undefined}
             />
           </div>
         ))}
@@ -276,15 +283,24 @@ function OpponentFaceTray({
     else result.push({ color, cards: [card] });
     return result;
   }, []);
-  return (
-    <div className="opponent-face-tray" onMouseEnter={onEnter} onMouseLeave={onLeave} aria-label={`${player.nickname} opposite card faces`}>
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <aside className="opponent-face-tray" onMouseEnter={onEnter} onMouseLeave={onLeave} aria-label={`${player.nickname} opposite card faces`}>
       <div className="opponent-face-tray-header">
         <strong>{player.nickname}</strong>
-        <span>{cards.length} cards</span>
+        <span>{t("board.cards", { count: cards.length })}</span>
         <button type="button" onClick={onClose} aria-label="Close card tray">&times;</button>
       </div>
       <div className="opponent-face-tray-cards thin-scroll">
-        {cards.length > 12
+        {cards.length > 0
           ? groups.map((group) => (
               <section key={group.color} className="opponent-face-group">
                 <span>{group.color === "wild" ? "Wild" : t(`colors.${group.color}`)} · {group.cards.length}</span>
@@ -295,7 +311,8 @@ function OpponentFaceTray({
             ))
           : ordered.map((card) => <CardView key={card.trackingId} card={card} small />)}
       </div>
-    </div>
+    </aside>,
+    document.body
   );
 }
 

@@ -1083,8 +1083,9 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
   if (!pending) return null;
   const recipient = snapshot.players.find((player) => player.id === pending.playerId);
   const total = pending.totalCount;
+  const displayCount = pending.reveal?.index ?? pending.drawnCount;
   const progress = total
-    ? t("board.drawProgressFixed", { current: pending.drawnCount, total })
+    ? t("board.drawProgressFixed", { current: displayCount, total })
     : pending.reason === "colorHunt"
       ? t("board.drawProgressColor", {
           current: pending.matchesFound ?? 0,
@@ -1093,15 +1094,30 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
         })
       : t("board.drawProgress", { count: pending.drawnCount });
   const revealVisible = Boolean(pending.reveal && localNow + clockOffset >= pending.reveal.revealsAt);
+  const completedFaces = pending.revealedCards ?? [];
+  const completedCards = Array.from({ length: pending.drawnCount }, (_, index) => completedFaces[index]);
 
   return (
-    <div className="pointer-events-none absolute inset-x-2 top-2 z-30 flex justify-center">
+    <div className="pointer-events-none absolute right-2 top-2 z-30 flex max-w-[calc(100%-16px)] justify-end">
       <div className="draw-progress-panel" role="status" aria-live="polite">
-        {revealVisible && pending.reveal?.visibleCard ? <CardView card={pending.reveal.visibleCard} small /> : <CardView hidden small />}
-        <div className="min-w-0">
+        <div className="draw-progress-header">
           <div className="display truncate text-sm font-black">{t("board.drawingFor", { name: recipient?.nickname ?? t("board.waiting") })}</div>
           <div className="text-xs font-bold text-[var(--gold)]">{progress}</div>
         </div>
+        {completedCards.length > 0 || pending.reveal ? (
+          <div className="draw-collection-row thin-scroll">
+            {completedCards.map((card, index) => (
+              <span key={`drawn-${index}`} className="draw-collection-card">
+                {card ? <CardView card={card} small /> : <CardView hidden small />}
+              </span>
+            ))}
+            {pending.reveal ? (
+              <span className="draw-collection-card current">
+                {revealVisible && pending.reveal.visibleCard ? <CardView card={pending.reveal.visibleCard} small /> : <CardView hidden small />}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </div>
   );
