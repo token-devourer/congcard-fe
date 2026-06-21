@@ -44,6 +44,7 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
     small ? "small" : "",
     playable ? "playable" : "",
     dimmed ? "dimmed" : "",
+    card.side ? `card-side-${card.side}` : "card-side-light",
     card.color ? `card-${card.color}` : "card-wild"
   ]
     .filter(Boolean)
@@ -135,13 +136,6 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
   return (
     <div className="grid place-items-center gap-1 text-center">
       <svg className="card-wild-badge" viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <linearGradient id="cc-star" x1="0" y1="5" x2="0" y2="59" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#fff4ba" />
-            <stop offset="0.52" stopColor="#ffd257" />
-            <stop offset="1" stopColor="#f69c25" />
-          </linearGradient>
-        </defs>
         {gems.map((gem, index) => {
           const points = [
             [32, 6],
@@ -159,7 +153,7 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
               height="10"
               rx="2"
               fill={gem.fill}
-              stroke="rgba(255,255,255,0.68)"
+              stroke={dark ? "rgba(0,0,0,0.76)" : "rgba(255,255,255,0.9)"}
               strokeWidth="1"
               transform={`rotate(45 ${x} ${y})`}
             />
@@ -167,8 +161,8 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
         })}
         <path
           d="M32 8 38.8 24.6 56 25.8 42.7 37.4 46.6 55 32 45.6 17.4 55 21.3 37.4 8 25.8 25.2 24.6Z"
-          fill="url(#cc-star)"
-          stroke="#5a3608"
+          fill={dark ? "#11100f" : "#ffffff"}
+          stroke={dark ? "#000000" : "rgba(255,255,255,0.92)"}
           strokeWidth="1.3"
           strokeLinejoin="round"
           transform="translate(32 32) scale(0.78) translate(-32 -32)"

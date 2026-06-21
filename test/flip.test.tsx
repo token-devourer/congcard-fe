@@ -54,10 +54,17 @@ describe("Flip presentation", () => {
   });
 
   it("renders dark-side cards and actions", () => {
-    const { rerender } = render(<CardView card={card("draw", "orange", "draw5")} />);
-    expect(screen.getByLabelText("orange +5")).toHaveClass("card-orange");
-    rerender(<CardView card={card("flip", "purple", "flip")} />);
-    expect(screen.getByLabelText("purple Flip")).toHaveClass("card-purple");
+    const { rerender } = render(<CardView card={{ ...card("draw", "orange", "draw5"), side: "dark" }} />);
+    expect(screen.getByLabelText("orange +5")).toHaveClass("card-orange", "card-side-dark");
+    rerender(<CardView card={{ ...card("flip", "purple", "flip"), side: "dark" }} />);
+    expect(screen.getByLabelText("purple Flip")).toHaveClass("card-purple", "card-side-dark");
+  });
+
+  it("marks light cards with light ink including yellow", () => {
+    const { rerender } = render(<CardView card={{ ...card("yellow", "yellow", 6), side: "light" }} />);
+    expect(screen.getByLabelText("yellow 6")).toHaveClass("card-yellow", "card-side-light");
+    rerender(<CardView card={{ ...card("standard-yellow", "yellow", "skip") }} />);
+    expect(screen.getByLabelText("yellow Skip")).toHaveClass("card-side-light");
   });
 
   it("offers only dark-side colors when dark is active", () => {

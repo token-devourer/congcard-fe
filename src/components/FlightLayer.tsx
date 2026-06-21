@@ -208,7 +208,7 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   if (flight.kind === "card") {
     el.className = "flight-card-shell";
     const card = document.createElement("div");
-    const faceClass = `card-face small ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
+    const faceClass = `card-face small ${flight.card.side ? `card-side-${flight.card.side}` : "card-side-light"} ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
     card.className = flight.drawReveal ? "card-face small card-back flight-reveal-flip" : faceClass;
     el.appendChild(card);
     const label = document.createElement("span");
