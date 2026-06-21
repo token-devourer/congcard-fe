@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -1096,6 +1096,7 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
   const revealVisible = Boolean(pending.reveal && localNow + clockOffset >= pending.reveal.revealsAt);
   const completedFaces = pending.revealedCards ?? [];
   const completedCards = Array.from({ length: pending.drawnCount }, (_, index) => completedFaces[index]);
+  const visibleCardCount = completedCards.length + (pending.reveal ? 1 : 0);
 
   return (
     <div className="pointer-events-none absolute right-2 top-2 z-30 flex max-w-[calc(100%-16px)] justify-end">
@@ -1105,14 +1106,17 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
           <div className="text-xs font-bold text-[var(--gold)]">{progress}</div>
         </div>
         {completedCards.length > 0 || pending.reveal ? (
-          <div className="draw-collection-row thin-scroll">
+          <div
+            className="draw-collection-row"
+            style={{ "--draw-card-count": Math.max(1, visibleCardCount) } as CSSProperties}
+          >
             {completedCards.map((card, index) => (
-              <span key={`drawn-${index}`} className="draw-collection-card">
+              <span key={`drawn-${index}`} className="draw-collection-card" style={{ zIndex: index + 1 }}>
                 {card ? <CardView card={card} small /> : <CardView hidden small />}
               </span>
             ))}
             {pending.reveal ? (
-              <span className="draw-collection-card current">
+              <span className="draw-collection-card current" style={{ zIndex: visibleCardCount + 1 }}>
                 {revealVisible && pending.reveal.visibleCard ? <CardView card={pending.reveal.visibleCard} small /> : <CardView hidden small />}
               </span>
             ) : null}

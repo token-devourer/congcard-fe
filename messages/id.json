@@ -162,6 +162,7 @@
     "awaySelf": "Kamu sedang AFK",
     "awaySelfHint": "Giliranmu dimainkan otomatis. Ketuk Kembali untuk ambil alih.",
     "drawingFor": "Mengambil untuk {name}",
+    "oppositeFaces": "Sisi kartu tidak aktif",
     "drawProgress": "{count} kartu diambil",
     "drawProgressFixed": "{current} / {total} kartu",
     "drawProgressColor": "{current} / {total} {color} ditemukan",

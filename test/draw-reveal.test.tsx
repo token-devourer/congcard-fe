@@ -122,4 +122,27 @@ describe("authoritative draw controls", () => {
     expect(within(status).getByLabelText("purple 3")).toBeInTheDocument();
     expect(within(status).getByText("3 / 4 cards")).toBeInTheDocument();
   });
+
+  it("compacts large draw sequences with the newest card on top", () => {
+    const game = snapshot("auto");
+    game.pendingDraw = {
+      ...game.pendingDraw!,
+      drawnCount: 12,
+      totalCount: 14,
+      revealedCards: Array.from({ length: 12 }, (_, index) => ({ color: "cyan" as const, value: (index % 10) as Card["value"], side: "dark" as const })),
+      reveal: {
+        id: 13,
+        index: 13,
+        startsAt: Date.now() - 120,
+        revealsAt: Date.now() - 40,
+        resolvesAt: Date.now() + 140,
+        visibleCard: { color: "pink", value: 3, side: "dark" }
+      }
+    };
+    renderBoard(game);
+
+    const row = screen.getByText("13 / 14 cards").closest('[role="status"]')?.querySelector(".draw-collection-row") as HTMLElement;
+    expect(row).toHaveStyle({ "--draw-card-count": "13" });
+    expect(row.lastElementChild).toHaveStyle({ zIndex: "14" });
+  });
 });

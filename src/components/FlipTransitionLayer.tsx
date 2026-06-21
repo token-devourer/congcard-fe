@@ -10,9 +10,14 @@ import { useRoomStore } from "@/lib/store";
 export function FlipTransitionLayer({ snapshot }: { snapshot: GameSnapshot }) {
   const clockOffset = useRoomStore((state) => state.clockOffset);
   const handled = useRef(new Set<number>());
+  const pendingRef = useRef(snapshot.pendingFlip);
+  const clockOffsetRef = useRef(clockOffset);
+  const cardFlipTimer = useRef<number | undefined>(undefined);
   const reduceMotion = useReducedMotion();
   const [visualSide, setVisualSide] = useState<FlipSide>(snapshot.flipSide ?? "light");
   const pending = snapshot.pendingFlip;
+  pendingRef.current = pending;
+  clockOffsetRef.current = clockOffset;
 
   useEffect(() => {
     if (snapshot.settings.modeId !== "flip") {
@@ -29,22 +34,23 @@ export function FlipTransitionLayer({ snapshot }: { snapshot: GameSnapshot }) {
   }, [snapshot.settings.modeId, visualSide]);
 
   useEffect(() => {
-    if (!pending || handled.current.has(pending.id)) return;
-    handled.current.add(pending.id);
+    const event = pendingRef.current;
+    if (!event || handled.current.has(event.id)) return;
+    handled.current.add(event.id);
     const timers: number[] = [];
-    let side = pending.fromSide;
-    const serverNow = Date.now() + clockOffset;
-    const firstTransitionAt = pending.transitionTimes[0]!;
-    const finalTransitionAt = pending.transitionTimes.at(-1)!;
+    let side = event.fromSide;
+    const serverNow = Date.now() + clockOffsetRef.current;
+    const firstTransitionAt = event.transitionTimes[0]!;
+    const finalTransitionAt = event.transitionTimes.at(-1)!;
 
     scheduleFlipMusicTransition(
-      pending.toSide === "dark" ? "flipDark" : "play",
+      event.toSide === "dark" ? "flipDark" : "play",
       Math.max(0, firstTransitionAt - 260 - serverNow),
       Math.max(0, firstTransitionAt - serverNow),
       Math.max(0, finalTransitionAt - serverNow)
     );
 
-    pending.transitionTimes.forEach((transitionAt, index) => {
+    event.transitionTimes.forEach((transitionAt, index) => {
       const level = Math.min(8, index + 1);
       const sweepDelay = Math.max(0, transitionAt - 260 - serverNow);
       const impactDelay = Math.max(0, transitionAt - serverNow);
@@ -56,15 +62,24 @@ export function FlipTransitionLayer({ snapshot }: { snapshot: GameSnapshot }) {
           document.body.classList.remove("flip-card-animating");
           void document.body.offsetWidth;
           document.body.classList.add("flip-card-animating");
+          if (cardFlipTimer.current) window.clearTimeout(cardFlipTimer.current);
+          cardFlipTimer.current = window.setTimeout(() => {
+            document.body.classList.remove("flip-card-animating");
+            cardFlipTimer.current = undefined;
+          }, 600);
         }
         playSound("flipImpact", level);
         playSound(side === "dark" ? "flipDark" : "flipLight", level);
-        timers.push(window.setTimeout(() => document.body.classList.remove("flip-card-animating"), 600));
       }, impactDelay));
     });
 
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
-  }, [clockOffset, pending, reduceMotion]);
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      if (cardFlipTimer.current) window.clearTimeout(cardFlipTimer.current);
+      cardFlipTimer.current = undefined;
+      document.body.classList.remove("flip-card-animating");
+    };
+  }, [pending?.id, reduceMotion]);
 
   useEffect(() => () => {
     document.body.classList.remove("flip-light", "flip-dark", "flip-card-animating");

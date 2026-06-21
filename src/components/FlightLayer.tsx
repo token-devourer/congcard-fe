@@ -254,11 +254,11 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const endX = to.left + to.width / 2 - el.offsetWidth / 2;
   const endY = to.top + to.height / 2 - el.offsetHeight / 2;
   const lift = Math.max(40, Math.abs(endY - startY) * 0.35);
-  const spin = flight.kind === "token" ? 0 : startX < endX ? 14 : -14;
   const isDrawReveal = flight.kind !== "token" && Boolean(flight.drawReveal);
-  const firstLegDuration = isDrawReveal ? 0.15 : flight.kind === "back" ? 0.42 : 0.3;
-  const secondLegDuration = isDrawReveal ? 0.15 : flight.kind === "back" ? 0.38 : 0.3;
-  const fadeDuration = isDrawReveal ? 0.06 : flight.kind === "back" ? 0.18 : 0.16;
+  const spin = flight.kind === "token" || isDrawReveal ? 0 : startX < endX ? 14 : -14;
+  const firstLegDuration = isDrawReveal ? 0.1 : flight.kind === "back" ? 0.42 : 0.3;
+  const secondLegDuration = isDrawReveal ? 0.11 : flight.kind === "back" ? 0.38 : 0.3;
+  const fadeDuration = isDrawReveal ? 0.05 : flight.kind === "back" ? 0.18 : 0.16;
   if (flight.kind === "back") {
     const pitchLevel = Math.min(8, Math.max(1, flight.drawIndex ?? 1));
     window.setTimeout(() => playSound(flight.dealing ? "dealTick" : "drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));

@@ -159,7 +159,7 @@ function CardCountChip({ count, label, oppositeHand }: { count: number; label: s
         {oppositeHand?.length
           ? oppositeHand.slice(0, 4).map((card, index) => (
               <span key={card.trackingId} className="opposite-mini-card" style={{ transform: `rotate(${(index - (fan - 1) / 2) * 10}deg)` }}>
-                <CardView card={card} small />
+                <CardView card={card} micro />
               </span>
             ))
           : Array.from({ length: fan }, (_, index) => (

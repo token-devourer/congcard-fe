@@ -5,6 +5,7 @@ interface CardViewProps {
   card?: Card | VisibleCardFace;
   hidden?: boolean;
   small?: boolean;
+  micro?: boolean;
   playable?: boolean;
   dimmed?: boolean;
   disabled?: boolean;
@@ -26,10 +27,11 @@ const DARK_WILD_GEMS: Array<{ key: Color; fill: string }> = [
   { key: "pink", fill: "#ff5fb7" }
 ];
 
-export function CardView({ card, hidden, small, playable, dimmed, disabled, onClick }: CardViewProps) {
+export function CardView({ card, hidden, small, micro, playable, dimmed, disabled, onClick }: CardViewProps) {
+  const compact = Boolean(small || micro);
   if (hidden || !card) {
     return (
-      <div className={`${small ? "card-face small" : "card-face"} card-back grid place-items-center`} aria-label="Hidden card">
+      <div className={`${compact ? "card-face small" : "card-face"} ${micro ? "micro" : ""} card-back grid place-items-center`} aria-label="Hidden card">
         <div className="relative z-10 grid place-items-center">
           <div className="card-back-mark">
             CC
@@ -41,11 +43,13 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
 
   const className = [
     "card-face",
-    small ? "small" : "",
+    compact ? "small" : "",
+    micro ? "micro" : "",
     playable ? "playable" : "",
     dimmed ? "dimmed" : "",
     card.side ? `card-side-${card.side}` : "card-side-light",
-    card.color ? `card-${card.color}` : "card-wild"
+    card.color ? `card-${card.color}` : "card-wild",
+    !card.color && card.side === "dark" ? "card-wild-dark-ink" : ""
   ]
     .filter(Boolean)
     .join(" ");
@@ -54,17 +58,17 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
 
   const content = (
     <>
-      <CornerIndex card={card} small={small} position="tl" />
-      <CornerIndex card={card} small={small} position="br" />
+      <CornerIndex card={card} small={compact} position="tl" />
+      <CornerIndex card={card} small={compact} position="br" />
 
       <div className="absolute inset-0 z-[5] grid place-items-center">
-        <div className={`cartouche ${small ? "cartouche-sm" : ""}`}>
+        <div className={`cartouche ${compact ? "cartouche-sm" : ""}`}>
           {isWild ? (
-            <WildBadge small={small} value={card.value} dark={card.side === "dark"} />
+            <WildBadge small={compact} value={card.value} dark={card.side === "dark"} />
           ) : card.value === "draw2" || card.value === "draw5" ? (
-            <DrawActionGlyph small={small} amount={card.value === "draw2" ? "+2" : "+5"} />
+            <DrawActionGlyph small={compact} amount={card.value === "draw2" ? "+2" : "+5"} />
           ) : isActionValue(card.value) ? (
-            <ActionGlyph value={card.value} small={small} />
+            <ActionGlyph value={card.value} small={compact} />
           ) : (
             <div className="grid place-items-center gap-1 text-center">
               <ColorSymbol color={card.color} />

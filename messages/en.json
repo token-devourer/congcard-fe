@@ -162,6 +162,7 @@
     "awaySelf": "You're away",
     "awaySelfHint": "Auto-playing your turns. Tap Return to take over.",
     "drawingFor": "Drawing for {name}",
+    "oppositeFaces": "Inactive card faces",
     "drawProgress": "{count} cards drawn",
     "drawProgressFixed": "{current} / {total} cards",
     "drawProgressColor": "{current} / {total} {color} found",

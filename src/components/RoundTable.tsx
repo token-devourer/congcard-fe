@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -295,21 +295,29 @@ function OpponentFaceTray({
   return createPortal(
     <aside className="opponent-face-tray" onMouseEnter={onEnter} onMouseLeave={onLeave} aria-label={`${player.nickname} opposite card faces`}>
       <div className="opponent-face-tray-header">
-        <strong>{player.nickname}</strong>
-        <span>{t("board.cards", { count: cards.length })}</span>
+        <div>
+          <strong>{player.nickname}</strong>
+          <span>{t("board.oppositeFaces")}</span>
+        </div>
+        <span className="opponent-face-total">{t("board.cards", { count: cards.length })}</span>
         <button type="button" onClick={onClose} aria-label="Close card tray">&times;</button>
       </div>
       <div className="opponent-face-tray-cards thin-scroll">
-        {cards.length > 0
-          ? groups.map((group) => (
-              <section key={group.color} className="opponent-face-group">
-                <span>{group.color === "wild" ? "Wild" : t(`colors.${group.color}`)} · {group.cards.length}</span>
-                <div>
-                  {group.cards.map((card) => <CardView key={card.trackingId} card={card} small />)}
-                </div>
-              </section>
-            ))
-          : ordered.map((card) => <CardView key={card.trackingId} card={card} small />)}
+        {groups.map((group) => (
+          <section key={group.color} className="opponent-face-group">
+            <span>{group.color === "wild" ? "Wild" : t(`colors.${group.color}`)} · {group.cards.length}</span>
+            <div
+              className="opponent-face-stack"
+              style={{ "--opponent-face-count": group.cards.length } as CSSProperties}
+            >
+              {group.cards.map((card, index) => (
+                <span key={card.trackingId} className="opponent-face-stack-card" style={{ zIndex: index + 1 }}>
+                  <CardView card={card} small />
+                </span>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </aside>,
     document.body

@@ -60,6 +60,12 @@ describe("Flip presentation", () => {
     expect(screen.getByLabelText("purple Flip")).toHaveClass("card-purple", "card-side-dark");
   });
 
+  it("uses gold ink for dark-side Wild labels and corner stars", () => {
+    render(<CardView card={{ ...card("dark-wild", null, "wildColor"), side: "dark" }} />);
+
+    expect(screen.getByLabelText("wild Wild Color")).toHaveClass("card-side-dark", "card-wild-dark-ink");
+  });
+
   it("marks light cards with light ink including yellow", () => {
     const { rerender } = render(<CardView card={{ ...card("yellow", "yellow", 6), side: "light" }} />);
     expect(screen.getByLabelText("yellow 6")).toHaveClass("card-yellow", "card-side-light");
@@ -89,6 +95,20 @@ describe("Flip presentation", () => {
     expect(playSound).toHaveBeenCalledWith("flipImpact", 1);
     expect(playSound).toHaveBeenCalledWith("flipDark", 1);
     expect(scheduleFlipMusicTransition).toHaveBeenCalledWith("flipDark", 240, 500, 500);
+  });
+
+  it("clears the global card flip class after snapshot refreshes for the same transition", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-21T00:00:00Z"));
+    const game = flipSnapshot();
+    const { rerender } = render(<FlipTransitionLayer snapshot={game} />);
+
+    act(() => vi.advanceTimersByTime(500));
+    expect(document.body).toHaveClass("flip-card-animating");
+
+    rerender(<FlipTransitionLayer snapshot={{ ...game, seq: 2, pendingFlip: { ...game.pendingFlip! } }} />);
+    act(() => vi.advanceTimersByTime(600));
+    expect(document.body).not.toHaveClass("flip-card-animating");
   });
 
   it("shows opponent inactive faces and closes the drawer for One/Catch", async () => {
@@ -125,6 +145,8 @@ describe("Flip presentation", () => {
     expect(screen.getByLabelText("Opponent opposite card faces")).toBeInTheDocument();
     expect(screen.getAllByLabelText("cyan 3").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByLabelText("red 2")).not.toBeInTheDocument();
+    const stackedFace = screen.getAllByLabelText("cyan 3").find((element) => element.closest(".opponent-face-stack"));
+    expect(stackedFace?.closest(".opponent-face-stack")).toHaveStyle({ "--opponent-face-count": "1" });
 
     game.oneWindow = { playerId: "other", opensAt: Date.now(), deadline: Date.now() + 3000 };
     rerender(
