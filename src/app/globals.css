@@ -1227,10 +1227,23 @@ button.card-face.playable:active {
   height: var(--card-draw-glyph-height);
 }
 
+.flight-card-shell {
+  position: relative;
+  width: 56px;
+  aspect-ratio: 5 / 7;
+  overflow: visible;
+}
+
+.flight-card-shell > .card-face {
+  --card-width: 56px;
+  position: absolute;
+  inset: 0;
+}
+
 .flight-draw-badge {
   position: absolute;
-  right: -8px;
-  top: -8px;
+  right: -10px;
+  top: -10px;
   z-index: 40;
   display: grid;
   min-width: 24px;
@@ -1244,6 +1257,7 @@ button.card-face.playable:active {
   font-weight: 1000;
   line-height: 1;
   box-shadow: 0 0 20px rgba(242, 193, 78, 0.6);
+  pointer-events: none;
 }
 
 .card-face::before {
