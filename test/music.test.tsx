@@ -37,7 +37,7 @@ describe("synth music", () => {
   it("defines restrained oscillator-only tracks", () => {
     expect(MUSIC_TRACKS.lobby.bpm).toBe(70);
     expect(MUSIC_TRACKS.play.bpm).toBe(104);
-    expect(MUSIC_TRACKS.flipDark.bpm).toBe(98);
+    expect(MUSIC_TRACKS.flipDark.bpm).toBe(100);
     expect(MUSIC_TRACKS.play.lengthSteps).toBe(128);
     expect(MUSIC_TRACKS.flipDark.lengthSteps).toBe(128);
     expect(MUSIC_TRACKS.flipDark.bpm).toBeLessThan(MUSIC_TRACKS.play.bpm);
