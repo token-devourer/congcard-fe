@@ -165,9 +165,11 @@ function CardCountChip({ count, label, oppositeHand }: { count: number; label: s
           : Array.from({ length: fan }, (_, index) => (
               <span
                 key={index}
-                className="card-back -ml-1 block h-3.5 w-2.5 rounded-[2px] border border-white/40 first:ml-0"
+                className="opposite-mini-card"
                 style={{ transform: `rotate(${(index - (fan - 1) / 2) * 10}deg)` }}
-              />
+              >
+                <span className="opposite-mini-back card-back" />
+              </span>
             ))}
       </span>
       <span className="text-[11px] font-black">{count}</span>

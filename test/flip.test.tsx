@@ -141,6 +141,9 @@ describe("Flip presentation", () => {
     );
 
     expect(screen.getByLabelText("orange 4")).toBeInTheDocument();
+    const selfSeat = screen.getByText("Me").closest(".tableseat") as HTMLElement;
+    expect(selfSeat.querySelectorAll(".opposite-mini-card")).toHaveLength(1);
+    expect(selfSeat.querySelector(".opposite-mini-back")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Opponent, 2 cards" }));
     expect(screen.getByLabelText("Opponent opposite card faces")).toBeInTheDocument();
     expect(screen.getAllByLabelText("cyan 3").length).toBeGreaterThanOrEqual(1);
