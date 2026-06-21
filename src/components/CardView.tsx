@@ -1,8 +1,8 @@
-import type { Card, CardValue, Color } from "@congcard/shared";
+import type { Card, CardValue, Color, FlipSide, VisibleCardFace } from "@congcard/shared";
 import { cardText } from "@/lib/rules";
 
 interface CardViewProps {
-  card?: Card;
+  card?: Card | VisibleCardFace;
   hidden?: boolean;
   small?: boolean;
   playable?: boolean;
@@ -10,6 +10,8 @@ interface CardViewProps {
   disabled?: boolean;
   onClick?: () => void;
 }
+
+type DisplayCard = Pick<Card, "color" | "value"> & { side?: FlipSide };
 
 const WILD_GEMS: Array<{ key: Color; fill: string }> = [
   { key: "red", fill: "#ff4f5e" },
@@ -93,7 +95,7 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
   );
 }
 
-function CornerIndex({ card, small, position }: { card: Card; small?: boolean; position: "tl" | "br" }) {
+function CornerIndex({ card, small, position }: { card: DisplayCard; small?: boolean; position: "tl" | "br" }) {
   const place =
     position === "tl"
       ? "card-corner-tl items-start"

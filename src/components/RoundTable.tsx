@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot, PendingStack, PublicPlayer } from "@congcard/shared";
+import type { GameSnapshot, OpponentCardFace, PendingStack, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
@@ -62,6 +62,25 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
   const now = useNow(100);
+  const [hoveredOpponentId, setHoveredOpponentId] = useState<string>();
+  const [pinnedOpponentId, setPinnedOpponentId] = useState<string>();
+  const hoverCloseTimer = useRef<number | undefined>(undefined);
+  const inspectedPlayerId = pinnedOpponentId ?? hoveredOpponentId;
+  const inspectedPlayer = snapshot.players.find((player) => player.id === inspectedPlayerId && player.oppositeHand?.length);
+
+  function keepOpponentTrayOpen(playerId: string) {
+    if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
+    setHoveredOpponentId(playerId);
+  }
+
+  function scheduleOpponentTrayClose() {
+    if (hoverCloseTimer.current) window.clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = window.setTimeout(() => setHoveredOpponentId(undefined), 140);
+  }
+
+  function toggleOpponentTray(playerId: string) {
+    setPinnedOpponentId((current) => current === playerId ? undefined : playerId);
+  }
   const oneVisibleUntil = Math.max(snapshot.oneWindow?.deadline ?? 0, snapshot.oneWindow?.callResolvesAt ?? 0);
   const oneReady =
     Boolean(snapshot.oneWindow) &&
@@ -91,7 +110,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           aria-keyshortcuts="D"
         >
           <span className="relative">
-            <CardView hidden />
+            <CardView card={snapshot.drawPileBack} hidden={!snapshot.drawPileBack} />
             <span className="absolute -right-2 -top-2 z-20 rounded-full bg-black/85 px-2 py-0.5 text-xs font-black text-[var(--gold)]">
               {snapshot.drawPileCount}
             </span>
@@ -155,6 +174,9 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
                 oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id}
                 turnDeadline={snapshot.turnDeadline}
                 turnTimeoutSec={snapshot.settings.turnTimeoutSec}
+                onOppositeEnter={player.oppositeHand?.length ? () => keepOpponentTrayOpen(player.id) : undefined}
+                onOppositeLeave={player.oppositeHand?.length ? scheduleOpponentTrayClose : undefined}
+                onOppositeToggle={player.oppositeHand?.length ? () => toggleOpponentTray(player.id) : undefined}
               />
             </div>
           ))}
@@ -166,6 +188,15 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
             <div className="relative z-10">{centerPile}</div>
           </div>
         </div>
+        {inspectedPlayer?.oppositeHand ? (
+          <OpponentFaceTray
+            player={inspectedPlayer}
+            cards={inspectedPlayer.oppositeHand}
+            onEnter={() => keepOpponentTrayOpen(inspectedPlayer.id)}
+            onLeave={scheduleOpponentTrayClose}
+            onClose={() => { setPinnedOpponentId(undefined); setHoveredOpponentId(undefined); }}
+          />
+        ) : null}
       </div>
     );
   }
@@ -199,6 +230,9 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
               oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
               turnDeadline={snapshot.turnDeadline}
               turnTimeoutSec={snapshot.settings.turnTimeoutSec}
+              onOppositeEnter={player.oppositeHand?.length ? () => keepOpponentTrayOpen(player.id) : undefined}
+              onOppositeLeave={player.oppositeHand?.length ? scheduleOpponentTrayClose : undefined}
+              onOppositeToggle={player.oppositeHand?.length ? () => toggleOpponentTray(player.id) : undefined}
             />
           </div>
         ))}
@@ -206,6 +240,60 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
         <div className="absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-1/2">
           {centerPile}
         </div>
+        {inspectedPlayer?.oppositeHand ? (
+          <OpponentFaceTray
+            player={inspectedPlayer}
+            cards={inspectedPlayer.oppositeHand}
+            onEnter={() => keepOpponentTrayOpen(inspectedPlayer.id)}
+            onLeave={scheduleOpponentTrayClose}
+            onClose={() => { setPinnedOpponentId(undefined); setHoveredOpponentId(undefined); }}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function OpponentFaceTray({
+  player,
+  cards,
+  onEnter,
+  onLeave,
+  onClose
+}: {
+  player: PublicPlayer;
+  cards: OpponentCardFace[];
+  onEnter: () => void;
+  onLeave: () => void;
+  onClose: () => void;
+}) {
+  const t = useTranslations();
+  const ordered = [...cards].sort((a, b) => `${a.color ?? "wild"}-${a.value}`.localeCompare(`${b.color ?? "wild"}-${b.value}`));
+  const groups = ordered.reduce<Array<{ color: string; cards: OpponentCardFace[] }>>((result, card) => {
+    const color = card.color ?? "wild";
+    const group = result.find((item) => item.color === color);
+    if (group) group.cards.push(card);
+    else result.push({ color, cards: [card] });
+    return result;
+  }, []);
+  return (
+    <div className="opponent-face-tray" onMouseEnter={onEnter} onMouseLeave={onLeave} aria-label={`${player.nickname} opposite card faces`}>
+      <div className="opponent-face-tray-header">
+        <strong>{player.nickname}</strong>
+        <span>{cards.length} cards</span>
+        <button type="button" onClick={onClose} aria-label="Close card tray">&times;</button>
+      </div>
+      <div className="opponent-face-tray-cards thin-scroll">
+        {cards.length > 12
+          ? groups.map((group) => (
+              <section key={group.color} className="opponent-face-group">
+                <span>{group.color === "wild" ? "Wild" : t(`colors.${group.color}`)} · {group.cards.length}</span>
+                <div>
+                  {group.cards.map((card) => <CardView key={card.trackingId} card={card} small />)}
+                </div>
+              </section>
+            ))
+          : ordered.map((card) => <CardView key={card.trackingId} card={card} small />)}
       </div>
     </div>
   );

@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import type { Card, GameSnapshot } from "@congcard/shared";
+import type { Card, GameSnapshot, VisibleCardFace } from "@congcard/shared";
 import { anchorRect } from "@/lib/anchors";
+import { cardText } from "@/lib/rules";
 import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
 
 type Flight =
-  | { kind: "card"; card: Card; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number; batchTotal?: number }
-  | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number; dealing?: boolean }
+  | { kind: "card"; card: Card | VisibleCardFace; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number; batchTotal?: number; drawReveal?: boolean; drawIndex?: number; drawTotal?: number }
+  | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number; dealing?: boolean; drawReveal?: boolean }
   | { kind: "token"; from: string; to: string; delay?: number };
 
 const MAX_DRAW_FLIGHTS = 12;
@@ -22,6 +23,7 @@ export function FlightLayer() {
   const prevRef = useRef<GameSnapshot | null>(null);
   const animatedBatchIds = useRef(new Set<number>());
   const animatedDealIds = useRef(new Set<number>());
+  const animatedDrawIds = useRef(new Set<number>());
   const [reducedMotion, setReducedMotion] = useState(false);
   const snapshot = useRoomStore((state) => state.snapshot);
   const clockOffset = useRoomStore((state) => state.clockOffset);
@@ -46,6 +48,7 @@ export function FlightLayer() {
     if (prev && prev.code !== snapshot.code) {
       animatedBatchIds.current.clear();
       animatedDealIds.current.clear();
+      animatedDrawIds.current.clear();
     }
 
     if (reducedMotion) {
@@ -53,6 +56,21 @@ export function FlightLayer() {
     }
 
     const flights: Flight[] = [];
+    const drawReveal = snapshot.pendingDraw?.reveal;
+    if (drawReveal && !animatedDrawIds.current.has(drawReveal.id)) {
+      animatedDrawIds.current.add(drawReveal.id);
+      const serverNow = Date.now() + clockOffset;
+      const destination = snapshot.pendingDraw?.playerId === snapshot.self?.id ? "hand" : `seat:${snapshot.pendingDraw?.playerId}`;
+      const common = {
+        from: "draw",
+        to: destination,
+        delay: Math.max(0, drawReveal.startsAt - serverNow) / 1000,
+        drawIndex: drawReveal.index,
+        drawTotal: snapshot.pendingDraw?.totalCount,
+        drawReveal: true
+      };
+      flights.push(drawReveal.visibleCard ? { kind: "card", card: drawReveal.visibleCard, ...common } : { kind: "back", ...common });
+    }
     const dealEvent = snapshot.roundDeal?.event;
     if (dealEvent && !animatedDealIds.current.has(dealEvent.id)) {
       animatedDealIds.current.add(dealEvent.id);
@@ -125,7 +143,7 @@ export function FlightLayer() {
         }
 
         const gained = player.cardCount - before.cardCount;
-        if (gained > 0) {
+        if (gained > 0 && !snapshot.pendingDraw && !prev.pendingDraw) {
           const to = player.id === snapshot.self?.id ? "hand" : `seat:${player.id}`;
           const visibleGained = Math.min(gained, MAX_DRAW_FLIGHTS);
           for (let i = 0; i < visibleGained; i += 1) {
@@ -190,8 +208,20 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   if (flight.kind === "card") {
     el.className = "flight-card-shell";
     const card = document.createElement("div");
-    card.className = `card-face small ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
+    const faceClass = `card-face small ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
+    card.className = flight.drawReveal ? "card-face small card-back flight-reveal-flip" : faceClass;
     el.appendChild(card);
+    const label = document.createElement("span");
+    label.className = "flight-card-label";
+    label.textContent = cardText(flight.card);
+    if (flight.drawReveal) label.hidden = true;
+    card.appendChild(label);
+    if (flight.drawReveal) {
+      window.setTimeout(() => {
+        card.className = `${faceClass} flight-reveal-flip revealed`;
+        label.hidden = false;
+      }, Math.max(0, ((flight.delay ?? 0) * 1000) + 220));
+    }
     if (flight.batchIndex) {
       const badge = document.createElement("span");
       badge.className = "flight-draw-badge";
@@ -239,6 +269,11 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
       const landMs = Math.max(0, ((flight.delay ?? 0) + firstLegDuration + secondLegDuration) * 1000);
       window.setTimeout(() => playSound("batchFinale", Math.min(8, flight.batchTotal!)), landMs);
     }
+  } else if (flight.kind === "card" && flight.drawReveal) {
+    window.setTimeout(
+      () => playSound("drawTick", Math.min(8, Math.max(1, flight.drawIndex ?? 1))),
+      Math.max(0, (flight.delay ?? 0) * 1000)
+    );
   }
 
   gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });

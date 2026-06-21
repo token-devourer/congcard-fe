@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mergeRoomSettings, type Card, type GameSnapshot } from "@congcard/shared";
@@ -14,6 +14,7 @@ vi.mock("../src/lib/music", () => ({ scheduleFlipMusicTransition }));
 import { CardView } from "../src/components/CardView";
 import { ColorPicker } from "../src/components/ColorPicker";
 import { FlipTransitionLayer } from "../src/components/FlipTransitionLayer";
+import { RoundTable } from "../src/components/RoundTable";
 
 function card(id: string, color: Card["color"], value: Card["value"]): Card {
   return { id, color, value, deckIndex: 0 };
@@ -81,5 +82,41 @@ describe("Flip presentation", () => {
     expect(playSound).toHaveBeenCalledWith("flipImpact", 1);
     expect(playSound).toHaveBeenCalledWith("flipDark", 1);
     expect(scheduleFlipMusicTransition).toHaveBeenCalledWith("flipDark", 240, 500, 500);
+  });
+
+  it("shows opponent inactive faces and the public draw-pile back", () => {
+    const game = flipSnapshot();
+    delete game.pendingFlip;
+    game.self = { id: "me", role: "player", hand: [card("mine", "red", 2)] };
+    game.activeColor = "red";
+    game.discardTop = card("top", "red", 5);
+    game.currentPlayerId = "me";
+    game.drawPileBack = { trackingId: "draw-back", color: "orange", value: 4, side: "dark" };
+    game.players = [
+      {
+        id: "me", nickname: "Me", avatarId: "sun", seat: 0, cardCount: 1, score: 0, connected: true, away: false,
+        isHost: true, ready: false, calledOne: false, autoPlay: false, missedDisconnectedTurns: 0, ping: 0
+      },
+      {
+        id: "other", nickname: "Opponent", avatarId: "moon", seat: 1, cardCount: 2, score: 0, connected: true, away: false,
+        isHost: false, ready: false, calledOne: false, autoPlay: false, missedDisconnectedTurns: 0, ping: 0,
+        oppositeHand: [
+          { trackingId: "one", color: "cyan", value: 3, side: "dark" },
+          { trackingId: "two", color: "purple", value: "skip", side: "dark" }
+        ]
+      }
+    ];
+
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <RoundTable snapshot={game} isMyTurn canDraw onDraw={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByLabelText("orange 4")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Opponent, 2 cards" }));
+    expect(screen.getByLabelText("Opponent opposite card faces")).toBeInTheDocument();
+    expect(screen.getAllByLabelText("cyan 3").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByLabelText("red 2")).not.toBeInTheDocument();
   });
 });

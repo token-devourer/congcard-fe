@@ -8,6 +8,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     snapshot.pauseReason ||
     snapshot.pendingBatchPlay ||
     snapshot.pendingFlip ||
+    snapshot.pendingDraw ||
     snapshot.oneWindow
   ) {
     return false;
@@ -92,7 +93,7 @@ export function needsColor(card: Card): boolean {
   return card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
 }
 
-export function cardText(card: Card): string {
+export function cardText(card: Pick<Card, "value">): string {
   if (typeof card.value === "number") {
     return String(card.value);
   }

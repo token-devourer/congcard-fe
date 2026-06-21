@@ -21,6 +21,7 @@ import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
 import { useRoomStore } from "@/lib/store";
 import { useNow } from "@/lib/useNow";
 import { ChallengeModal } from "./ChallengeModal";
+import { CardView } from "./CardView";
 import { ColorPicker } from "./ColorPicker";
 import { FlightLayer } from "./FlightLayer";
 import { FlipTransitionLayer } from "./FlipTransitionLayer";
@@ -383,6 +384,8 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   hand_ready: "errors.handReady",
   not_dealing: "errors.notDealing",
   round_setup_active: "errors.roundSetupActive",
+  draw_in_progress: "errors.drawInProgress",
+  color_draw_unavailable: "errors.colorDrawUnavailable",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -760,7 +763,9 @@ export function Board({
   const eventLocked = now < eventLockUntil;
   const batchResolving = Boolean(snapshot.pendingBatchPlay);
   const flipResolving = Boolean(snapshot.pendingFlip);
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving;
+  const pendingDraw = snapshot.pendingDraw;
+  const drawResolving = Boolean(pendingDraw);
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving || drawResolving;
   const canCallOne =
     isPlayer &&
     !finished &&
@@ -768,6 +773,7 @@ export function Board({
     !eventLocked &&
     !batchSelecting &&
     !batchResolving &&
+    !drawResolving &&
     snapshot.oneWindow?.playerId === snapshot.self?.id &&
     snapshot.self?.hand.length === 1 &&
     !me?.calledOne;
@@ -780,7 +786,7 @@ export function Board({
   const canDraw =
     (isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked && !batchSelecting) || Boolean(canTakeStack);
   const oneTarget =
-    isPlayer && !finished && !playerAway && !eventLocked && !batchSelecting && !batchResolving && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && !finished && !playerAway && !eventLocked && !batchSelecting && !batchResolving && !drawResolving && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
   const oneWindow = snapshot.oneWindow;
@@ -794,6 +800,13 @@ export function Board({
       snapshot.pendingChallenge?.challengerId === snapshot.self?.id &&
       snapshot.pendingStack?.challengeable &&
       snapshot.pendingStack.targetPlayerId === snapshot.self?.id
+  );
+  const manualColorDrawReady = Boolean(
+    pendingDraw?.playerId === snapshot.self?.id &&
+      pendingDraw?.reason === "colorHunt" &&
+      pendingDraw?.mode === "manual" &&
+      !pendingDraw?.reveal &&
+      !playerAway
   );
 
   useEffect(() => {
@@ -809,7 +822,7 @@ export function Board({
 
       const command = resolveGameShortcut(key, {
         enabled: snapshot.settings.keyboardShortcutsEnabled,
-        canDraw: canDraw && !selectedCard && !rulesOpen,
+        canDraw: (canDraw || manualColorDrawReady) && !selectedCard && !rulesOpen,
         canPass: canPass && !rulesOpen,
         canCallOne: callShortcutReady && !selectedCard && !snapshot.pendingChallenge && !rulesOpen,
         catchTargetId: !selectedCard && !snapshot.pendingChallenge && !rulesOpen ? catchShortcutTarget?.id : undefined,
@@ -837,7 +850,7 @@ export function Board({
       event.preventDefault();
       switch (command.type) {
         case "draw":
-          send("game.drawCard");
+          send(manualColorDrawReady ? "game.drawColorCard" : "game.drawCard");
           break;
         case "pass":
           send("game.playDrawn", { play: false });
@@ -877,6 +890,7 @@ export function Board({
     eventLocked,
     finished,
     isPlayer,
+    manualColorDrawReady,
     onOpenRules,
     paused,
     playerAway,
@@ -894,7 +908,7 @@ export function Board({
   }, [finished, isPlayer, playerAway, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer || finished || playerAway || eventLocked || batchSelecting || batchResolving) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchSelecting || batchResolving || drawResolving) {
       return;
     }
 
@@ -912,7 +926,7 @@ export function Board({
   }
 
   function chooseColor(color: Color) {
-    if (eventLocked || playerAway || batchResolving) {
+    if (eventLocked || playerAway || batchResolving || drawResolving) {
       return;
     }
 
@@ -927,7 +941,7 @@ export function Board({
   }
 
   function playBatch(cards: Card[], declaredColor?: Color) {
-    if (!isPlayer || finished || playerAway || eventLocked || batchResolving) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchResolving || drawResolving) {
       return;
     }
 
@@ -942,6 +956,7 @@ export function Board({
       <section className="board">
         <div className="board-zone relative">
           <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
+          {snapshot.pendingDraw ? <DrawProgress snapshot={snapshot} /> : null}
           {paused ? <PauseBanner /> : null}
           <LogTicker snapshot={snapshot} />
         </div>
@@ -996,6 +1011,9 @@ export function Board({
                 {t("board.cards", { count: snapshot.self?.hand.length ?? 0 })} · {t("board.points", { score: me?.score ?? 0 })}
                   </span>
                 </div>
+                {pendingDraw?.playerId === snapshot.self?.id && pendingDraw?.reason === "colorHunt" ? (
+                  <ColorDrawControls snapshot={snapshot} send={send} />
+                ) : null}
                 <Hand
                   snapshot={snapshot}
                   isMyTurn={isMyTurn}
@@ -1052,6 +1070,81 @@ function PauseBanner() {
       <div className="panel max-w-md border-[var(--gold)]/70 bg-[#1f1a0a]/90 px-4 py-3 text-center shadow-[0_0_28px_rgba(242,193,78,0.25)]">
         <div className="display text-base font-black text-[var(--gold)]">{t("board.paused")}</div>
         <div className="mt-1 text-xs font-bold text-[var(--muted)]">{t("board.pausedHint")}</div>
+      </div>
+    </div>
+  );
+}
+
+function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
+  const t = useTranslations();
+  const localNow = useNow(50);
+  const clockOffset = useRoomStore((state) => state.clockOffset);
+  const pending = snapshot.pendingDraw;
+  if (!pending) return null;
+  const recipient = snapshot.players.find((player) => player.id === pending.playerId);
+  const total = pending.totalCount;
+  const progress = total
+    ? t("board.drawProgressFixed", { current: pending.drawnCount, total })
+    : pending.reason === "colorHunt"
+      ? t("board.drawProgressColor", {
+          current: pending.matchesFound ?? 0,
+          total: pending.requiredMatches ?? 1,
+          color: pending.targetColor ? t(`colors.${pending.targetColor}`) : ""
+        })
+      : t("board.drawProgress", { count: pending.drawnCount });
+  const revealVisible = Boolean(pending.reveal && localNow + clockOffset >= pending.reveal.revealsAt);
+
+  return (
+    <div className="pointer-events-none absolute inset-x-2 top-2 z-30 flex justify-center">
+      <div className="draw-progress-panel" role="status" aria-live="polite">
+        {revealVisible && pending.reveal?.visibleCard ? <CardView card={pending.reveal.visibleCard} small /> : <CardView hidden small />}
+        <div className="min-w-0">
+          <div className="display truncate text-sm font-black">{t("board.drawingFor", { name: recipient?.nickname ?? t("board.waiting") })}</div>
+          <div className="text-xs font-bold text-[var(--gold)]">{progress}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ColorDrawControls({ snapshot, send }: { snapshot: GameSnapshot; send: (type: string, payload?: unknown) => void }) {
+  const t = useTranslations();
+  const pending = snapshot.pendingDraw;
+  const now = useNow(250);
+  if (!pending || pending.reason !== "colorHunt") return null;
+  const seconds = pending.deadline ? Math.max(0, Math.ceil((pending.deadline - now) / 1000)) : 0;
+  const busy = Boolean(pending.reveal);
+
+  return (
+    <div className="color-draw-controls" role="region" aria-label={t("board.colorDrawTitle")}>
+      <div className="min-w-0">
+        <div className="display text-sm font-black text-[var(--gold)]">{t("board.colorDrawTitle")}</div>
+        <div className="text-xs text-[var(--muted)]">
+          {t("board.colorDrawStatus", {
+            found: pending.matchesFound ?? 0,
+            required: pending.requiredMatches ?? 1,
+            color: pending.targetColor ? t(`colors.${pending.targetColor}`) : "",
+            seconds
+          })}
+        </div>
+      </div>
+      <div className="flex flex-wrap justify-end gap-2">
+        {pending.mode === "choice" ? (
+          <>
+            <button type="button" className="button secondary !min-h-9 !px-3 text-sm" disabled={busy} onClick={() => send("game.chooseColorDraw", { mode: "manual" })}>
+              {t("board.manualDraw")}
+            </button>
+            <button type="button" className="button !min-h-9 !px-3 text-sm" disabled={busy} onClick={() => send("game.chooseColorDraw", { mode: "auto" })}>
+              {t("board.autoDrawColor")}
+            </button>
+          </>
+        ) : pending.mode === "manual" ? (
+          <button type="button" className="button !min-h-9 !px-3 text-sm" disabled={busy} aria-keyshortcuts="D" onClick={() => send("game.drawColorCard")}>
+            {busy ? t("board.revealingCard") : t("board.drawNextCard")}
+          </button>
+        ) : (
+          <span className="rounded-full bg-black/35 px-3 py-2 text-xs font-black text-[var(--muted)]">{t("board.autoDrawing")}</span>
+        )}
       </div>
     </div>
   );

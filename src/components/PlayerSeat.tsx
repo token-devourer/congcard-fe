@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PublicPlayer } from "@congcard/shared";
+import type { OpponentCardFace, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
+import { CardView } from "./CardView";
 import { PingBadge } from "./PingBadge";
 
 interface PlayerSeatProps {
@@ -15,9 +16,22 @@ interface PlayerSeatProps {
   oneOpen?: boolean;
   turnDeadline?: number;
   turnTimeoutSec?: number;
+  onOppositeEnter?: () => void;
+  onOppositeLeave?: () => void;
+  onOppositeToggle?: () => void;
 }
 
-export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turnTimeoutSec }: PlayerSeatProps) {
+export function PlayerSeat({
+  player,
+  active,
+  isSelf,
+  oneOpen,
+  turnDeadline,
+  turnTimeoutSec,
+  onOppositeEnter,
+  onOppositeLeave,
+  onOppositeToggle
+}: PlayerSeatProps) {
   const t = useTranslations();
   const prevCount = useRef<number | null>(null);
   const [shaking, setShaking] = useState(false);
@@ -50,6 +64,18 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
       className={`tableseat ${seatActive ? "active" : ""} ${oneOpen && !finished ? "pulse-red" : ""} ${
         !player.connected ? "offline" : player.away ? "away" : ""
       } ${shaking ? "shake" : ""}`}
+      onMouseEnter={onOppositeEnter}
+      onMouseLeave={onOppositeLeave}
+      onClick={onOppositeToggle}
+      onKeyDown={(event) => {
+        if (onOppositeToggle && (event.key === "Enter" || event.key === " ")) {
+          event.preventDefault();
+          onOppositeToggle();
+        }
+      }}
+      role={onOppositeToggle ? "button" : undefined}
+      tabIndex={onOppositeToggle ? 0 : undefined}
+      aria-label={onOppositeToggle ? `${player.nickname}, ${player.cardCount} cards` : undefined}
     >
       <div className="relative mx-auto h-14 w-14">
         {seatActive && turnDeadline && turnTimeoutSec ? <TimerRing deadline={turnDeadline} totalSec={turnTimeoutSec} /> : null}
@@ -84,7 +110,7 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
       </div>
 
       <div className="mt-0.5 flex items-center justify-center gap-1.5">
-        <CardCountChip count={player.cardCount} label={t("board.cards", { count: player.cardCount })} />
+        <CardCountChip count={player.cardCount} label={t("board.cards", { count: player.cardCount })} oppositeHand={player.oppositeHand} />
         <span className="text-[10px] font-bold text-[var(--muted)]">{t("board.points", { score: player.score })}</span>
       </div>
 
@@ -124,19 +150,25 @@ function TimerRing({ deadline, totalSec }: { deadline: number; totalSec: number 
   );
 }
 
-function CardCountChip({ count, label }: { count: number; label: string }) {
+function CardCountChip({ count, label, oppositeHand }: { count: number; label: string; oppositeHand?: OpponentCardFace[] }) {
   const fan = Math.max(1, Math.min(count, 4));
 
   return (
     <span className="flex items-center gap-1 rounded-full bg-black/45 px-1.5 py-0.5" aria-label={label}>
-      <span className="flex" aria-hidden="true">
-        {Array.from({ length: fan }, (_, index) => (
-          <span
-            key={index}
-            className="card-back -ml-1 block h-3.5 w-2.5 rounded-[2px] border border-white/40 first:ml-0"
-            style={{ transform: `rotate(${(index - (fan - 1) / 2) * 10}deg)` }}
-          />
-        ))}
+      <span className="opposite-mini-fan" aria-hidden="true">
+        {oppositeHand?.length
+          ? oppositeHand.slice(0, 4).map((card, index) => (
+              <span key={card.trackingId} className="opposite-mini-card" style={{ transform: `rotate(${(index - (fan - 1) / 2) * 10}deg)` }}>
+                <CardView card={card} small />
+              </span>
+            ))
+          : Array.from({ length: fan }, (_, index) => (
+              <span
+                key={index}
+                className="card-back -ml-1 block h-3.5 w-2.5 rounded-[2px] border border-white/40 first:ml-0"
+                style={{ transform: `rotate(${(index - (fan - 1) / 2) * 10}deg)` }}
+              />
+            ))}
       </span>
       <span className="text-[11px] font-black">{count}</span>
     </span>
