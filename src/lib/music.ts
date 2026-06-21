@@ -47,6 +47,13 @@ interface CanonBar {
   melody: readonly CanonMelodyNote[];
 }
 
+function canonIntroArpeggio(low: number, middle: number, high: number): readonly CanonMelodyNote[] {
+  return [
+    [0, low, 2], [2, middle, 2], [4, high, 2], [6, middle, 2],
+    [8, low, 2], [10, middle, 2], [12, high, 2], [14, middle, 3]
+  ];
+}
+
 function buildCanonTrack(
   bpm: number,
   bars: readonly CanonBar[],
@@ -76,25 +83,25 @@ function buildCanonTrack(
 }
 
 const LIGHT_CANON_BARS: readonly CanonBar[] = [
-  { bass: 146.83, chord: [293.66, 369.99, 440], melody: [[0, 739.99], [4, 659.25], [8, 587.33], [12, 554.37]] },
-  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 493.88], [4, 440], [8, 493.88], [12, 554.37]] },
-  { bass: 123.47, chord: [246.94, 293.66, 369.99], melody: [[0, 587.33], [4, 554.37], [8, 493.88], [12, 440]] },
-  { bass: 92.5, chord: [185, 220, 277.18], melody: [[0, 440], [4, 554.37], [8, 739.99], [12, 659.25]] },
-  { bass: 98, chord: [196, 246.94, 293.66], melody: [[0, 587.33], [4, 493.88], [8, 392], [12, 440]] },
-  { bass: 146.83, chord: [293.66, 369.99, 440], melody: [[0, 369.99], [4, 440], [8, 587.33], [12, 739.99]] },
-  { bass: 98, chord: [196, 246.94, 293.66], melody: [[0, 783.99], [4, 739.99], [8, 659.25], [12, 587.33]] },
-  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 554.37], [4, 493.88], [8, 440], [12, 440, 5]] }
+  { bass: 146.83, chord: [293.66, 369.99, 440], melody: canonIntroArpeggio(369.99, 440, 587.33) },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: canonIntroArpeggio(329.63, 440, 554.37) },
+  { bass: 123.47, chord: [246.94, 293.66, 369.99], melody: canonIntroArpeggio(369.99, 493.88, 587.33) },
+  { bass: 92.5, chord: [185, 220, 277.18], melody: canonIntroArpeggio(369.99, 440, 554.37) },
+  { bass: 98, chord: [196, 246.94, 293.66], melody: canonIntroArpeggio(392, 493.88, 587.33) },
+  { bass: 146.83, chord: [293.66, 369.99, 440], melody: canonIntroArpeggio(369.99, 440, 587.33) },
+  { bass: 98, chord: [196, 246.94, 293.66], melody: canonIntroArpeggio(392, 493.88, 587.33) },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: canonIntroArpeggio(329.63, 440, 554.37) }
 ];
 
 const DARK_CANON_BARS: readonly CanonBar[] = [
-  { bass: 146.83, chord: [293.66, 349.23, 440], melody: [[0, 698.46], [4, 659.25], [8, 587.33], [12, 523.25]] },
-  { bass: 110, chord: [220, 261.63, 329.63], melody: [[0, 466.16], [4, 440], [8, 466.16], [12, 523.25]] },
-  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: [[0, 587.33], [4, 523.25], [8, 466.16], [12, 440]] },
-  { bass: 87.31, chord: [174.61, 220, 261.63], melody: [[0, 440], [4, 523.25], [8, 698.46], [12, 659.25]] },
-  { bass: 130.81, chord: [261.63, 329.63, 392], melody: [[0, 783.99], [4, 659.25], [8, 523.25], [12, 587.33]] },
-  { bass: 98, chord: [196, 233.08, 293.66], melody: [[0, 466.16], [4, 587.33], [8, 783.99], [12, 698.46]] },
-  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: [[0, 698.46], [4, 587.33], [8, 466.16], [12, 440]] },
-  { bass: 110, chord: [220, 277.18, 329.63], melody: [[0, 554.37], [4, 493.88], [8, 440], [12, 440, 5]] }
+  { bass: 146.83, chord: [293.66, 349.23, 440], melody: canonIntroArpeggio(349.23, 440, 587.33) },
+  { bass: 110, chord: [220, 261.63, 329.63], melody: canonIntroArpeggio(329.63, 440, 523.25) },
+  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: canonIntroArpeggio(349.23, 466.16, 587.33) },
+  { bass: 87.31, chord: [174.61, 220, 261.63], melody: canonIntroArpeggio(349.23, 440, 523.25) },
+  { bass: 130.81, chord: [261.63, 329.63, 392], melody: canonIntroArpeggio(392, 523.25, 659.25) },
+  { bass: 98, chord: [196, 233.08, 293.66], melody: canonIntroArpeggio(392, 466.16, 587.33) },
+  { bass: 116.54, chord: [233.08, 293.66, 349.23], melody: canonIntroArpeggio(349.23, 466.16, 587.33) },
+  { bass: 110, chord: [220, 277.18, 329.63], melody: canonIntroArpeggio(329.63, 440, 554.37) }
 ];
 
 export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {

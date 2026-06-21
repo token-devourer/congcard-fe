@@ -63,6 +63,10 @@ describe("synth music", () => {
 
     expect(bassLine("play")).toEqual([146.83, 110, 123.47, 92.5, 98, 146.83, 98, 110]);
     expect(bassLine("flipDark")).toEqual([146.83, 110, 116.54, 87.31, 130.81, 98, 116.54, 110]);
+    expect(MUSIC_TRACKS.play.notes.filter((item) => item.type === "triangle" && item.step < 16).map((item) => item.frequency))
+      .toEqual([369.99, 440, 587.33, 440, 369.99, 440, 587.33, 440]);
+    expect(MUSIC_TRACKS.flipDark.notes.filter((item) => item.type === "triangle" && item.step < 16).map((item) => item.frequency))
+      .toEqual([349.23, 440, 587.33, 440, 349.23, 440, 587.33, 440]);
   });
 
   it("enables music by default and persists an independent mute choice", async () => {
