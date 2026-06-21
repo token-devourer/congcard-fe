@@ -1810,6 +1810,10 @@ body.flip-dark .card-back {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.72);
 }
 
+.card-wild .card-action-glyph.corner {
+  color: #f5c84c;
+}
+
 /* ---------- Animations ---------- */
 
 @keyframes seat-glow {

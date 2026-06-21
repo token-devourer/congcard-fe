@@ -63,7 +63,9 @@ describe("Flip presentation", () => {
   it("uses gold ink for dark-side Wild labels and corner stars", () => {
     render(<CardView card={{ ...card("dark-wild", null, "wildColor"), side: "dark" }} />);
 
-    expect(screen.getByLabelText("wild Wild Color")).toHaveClass("card-side-dark", "card-wild-dark-ink");
+    const wild = screen.getByLabelText("wild Wild Color");
+    expect(wild).toHaveClass("card-side-dark", "card-wild-dark-ink");
+    expect(wild.querySelector(".card-wild-badge path")).toHaveAttribute("fill", "#f5c84c");
   });
 
   it("marks light cards with light ink including yellow", () => {

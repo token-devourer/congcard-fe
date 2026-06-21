@@ -140,13 +140,6 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
   return (
     <div className="grid place-items-center gap-1 text-center">
       <svg className="card-wild-badge" viewBox="0 0 64 64" aria-hidden="true">
-        <defs>
-          <linearGradient id="cc-star" x1="0" y1="5" x2="0" y2="59" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#fff4ba" />
-            <stop offset="0.52" stopColor="#ffd257" />
-            <stop offset="1" stopColor="#f69c25" />
-          </linearGradient>
-        </defs>
         {gems.map((gem, index) => {
           const points = [
             [32, 6],
@@ -172,7 +165,7 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
         })}
         <path
           d="M32 8 38.8 24.6 56 25.8 42.7 37.4 46.6 55 32 45.6 17.4 55 21.3 37.4 8 25.8 25.2 24.6Z"
-          fill="url(#cc-star)"
+          fill="#f5c84c"
           stroke="#5a3608"
           strokeWidth="1.3"
           strokeLinejoin="round"
