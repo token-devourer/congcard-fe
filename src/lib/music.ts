@@ -26,8 +26,8 @@ const MUSIC_MASTER_GAIN = 0.65;
 // the bed sits clearly under the SFX instead of being inaudible (~6x louder).
 const NOTE_GAIN_SCALE = 3.4;
 const CROSSFADE_SECONDS = 1.5;
-const LOOKAHEAD_MS = 100;
-const SCHEDULE_AHEAD_SECONDS = 0.4;
+const LOOKAHEAD_MS = 250;
+const SCHEDULE_AHEAD_SECONDS = 2;
 
 const note = (
   step: number,
@@ -68,7 +68,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(0, 130.81, 14, "sine", 0.032, 1650), note(16, 98, 14, "sine", 0.032, 1600),
       note(32, 110, 14, "sine", 0.032, 1650), note(48, 87.31, 14, "sine", 0.032, 1580),
       note(64, 130.81, 14, "sine", 0.032, 1650), note(80, 98, 14, "sine", 0.032, 1600),
-      note(96, 87.31, 14, "sine", 0.032, 1580), note(112, 98, 14, "sine", 0.032, 1600),
+      note(96, 87.31, 14, "sine", 0.032, 1580), note(112, 98, 17, "sine", 0.032, 1600),
       // Quiet chord bed keeps every melodic phrase anchored to its harmony.
       note(0, 261.63, 14, "sine", 0.009, 2600), note(0, 329.63, 14, "sine", 0.008, 2600), note(0, 392, 14, "sine", 0.008, 2600),
       note(16, 196, 14, "sine", 0.009, 2550), note(16, 246.94, 14, "sine", 0.008, 2550), note(16, 293.66, 14, "sine", 0.008, 2550),
@@ -77,7 +77,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(64, 261.63, 14, "sine", 0.009, 2600), note(64, 329.63, 14, "sine", 0.008, 2600), note(64, 392, 14, "sine", 0.008, 2600),
       note(80, 196, 14, "sine", 0.009, 2550), note(80, 246.94, 14, "sine", 0.008, 2550), note(80, 293.66, 14, "sine", 0.008, 2550),
       note(96, 174.61, 14, "sine", 0.009, 2500), note(96, 220, 14, "sine", 0.008, 2500), note(96, 261.63, 14, "sine", 0.008, 2500),
-      note(112, 196, 14, "sine", 0.009, 2550), note(112, 246.94, 14, "sine", 0.008, 2550), note(112, 293.66, 14, "sine", 0.008, 2550),
+      note(112, 196, 17, "sine", 0.009, 2550), note(112, 246.94, 16, "sine", 0.008, 2550), note(112, 293.66, 16, "sine", 0.008, 2550),
       // A relaxed two-phrase melody with rests between each short response.
       note(0, 659.25, 3, "triangle", 0.021, 3900), note(4, 783.99, 3, "triangle", 0.021, 4100),
       note(8, 880, 2, "triangle", 0.019, 4200), note(11, 783.99, 2, "triangle", 0.018, 4100), note(14, 659.25, 2, "triangle", 0.018, 3900),
@@ -94,7 +94,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(96, 880, 3, "triangle", 0.021, 4200), note(100, 1046.5, 3, "triangle", 0.021, 4400),
       note(104, 880, 2, "triangle", 0.019, 4200), note(107, 783.99, 2, "triangle", 0.018, 4100), note(110, 698.46, 2, "triangle", 0.018, 4000),
       note(112, 783.99, 3, "triangle", 0.021, 4100), note(116, 880, 3, "triangle", 0.02, 4200),
-      note(120, 987.77, 3, "triangle", 0.02, 4300), note(124, 587.33, 2, "triangle", 0.018, 3800), note(127, 493.88, 1, "triangle", 0.016, 3700)
+      note(120, 987.77, 3, "triangle", 0.02, 4300), note(124, 587.33, 3, "triangle", 0.018, 3800), note(127, 493.88, 2, "triangle", 0.016, 3700)
     ]
   },
   flipDark: {
@@ -105,7 +105,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(0, 110, 14, "sine", 0.033, 1420), note(16, 87.31, 14, "sine", 0.033, 1380),
       note(32, 130.81, 14, "sine", 0.033, 1420), note(48, 98, 14, "sine", 0.033, 1380),
       note(64, 110, 14, "sine", 0.033, 1420), note(80, 87.31, 14, "sine", 0.033, 1380),
-      note(96, 73.42, 14, "sine", 0.033, 1340), note(112, 82.41, 14, "sine", 0.033, 1360),
+      note(96, 73.42, 14, "sine", 0.033, 1340), note(112, 82.41, 17, "sine", 0.033, 1360),
       note(0, 220, 14, "sine", 0.009, 2150), note(0, 261.63, 14, "sine", 0.008, 2150), note(0, 329.63, 14, "sine", 0.008, 2150),
       note(16, 174.61, 14, "sine", 0.009, 2050), note(16, 220, 14, "sine", 0.008, 2050), note(16, 261.63, 14, "sine", 0.008, 2050),
       note(32, 261.63, 14, "sine", 0.009, 2150), note(32, 329.63, 14, "sine", 0.008, 2150), note(32, 392, 14, "sine", 0.008, 2150),
@@ -113,7 +113,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(64, 220, 14, "sine", 0.009, 2150), note(64, 261.63, 14, "sine", 0.008, 2150), note(64, 329.63, 14, "sine", 0.008, 2150),
       note(80, 174.61, 14, "sine", 0.009, 2050), note(80, 220, 14, "sine", 0.008, 2050), note(80, 261.63, 14, "sine", 0.008, 2050),
       note(96, 146.83, 14, "sine", 0.009, 1980), note(96, 174.61, 14, "sine", 0.008, 1980), note(96, 220, 14, "sine", 0.008, 1980),
-      note(112, 164.81, 14, "sine", 0.009, 2020), note(112, 207.65, 14, "sine", 0.008, 2020), note(112, 246.94, 14, "sine", 0.008, 2020),
+      note(112, 164.81, 17, "sine", 0.009, 2020), note(112, 207.65, 16, "sine", 0.008, 2020), note(112, 246.94, 16, "sine", 0.008, 2020),
       // Dark-side variation mirrors the light motif without borrowing clashing notes.
       note(0, 659.25, 3, "triangle", 0.02, 3200), note(4, 880, 3, "triangle", 0.02, 3400),
       note(8, 1046.5, 2, "triangle", 0.018, 3550), note(11, 987.77, 2, "triangle", 0.017, 3450), note(14, 880, 2, "triangle", 0.017, 3400),
@@ -130,7 +130,7 @@ export const MUSIC_TRACKS: Readonly<Record<MusicScene, TrackDefinition>> = {
       note(96, 587.33, 3, "triangle", 0.02, 3100), note(100, 698.46, 3, "triangle", 0.02, 3250),
       note(104, 880, 2, "triangle", 0.018, 3400), note(107, 783.99, 2, "triangle", 0.017, 3300), note(110, 698.46, 2, "triangle", 0.017, 3250),
       note(112, 659.25, 3, "triangle", 0.02, 3200), note(116, 830.61, 3, "triangle", 0.02, 3350),
-      note(120, 987.77, 3, "triangle", 0.019, 3450), note(124, 830.61, 2, "triangle", 0.017, 3350), note(127, 659.25, 1, "triangle", 0.016, 3200)
+      note(120, 987.77, 3, "triangle", 0.019, 3450), note(124, 830.61, 3, "triangle", 0.017, 3350), note(127, 659.25, 2, "triangle", 0.016, 3200)
     ]
   }
 };
@@ -140,8 +140,7 @@ let activeScene: MusicScene | null = null;
 let activeBus: GainNode | null = null;
 let musicMaster: GainNode | null = null;
 let schedulerId: number | null = null;
-let nextStepTime = 0;
-let currentStep = 0;
+let nextCycleTime = 0;
 let unlocked = false;
 let suspended = false;
 const cleanupTimers = new Set<number>();
@@ -250,8 +249,7 @@ function startScene(scene: MusicScene): void {
 
   activeScene = scene;
   activeBus = bus;
-  currentStep = 0;
-  nextStepTime = now + 0.08;
+  nextCycleTime = now + 0.08;
   schedulerId = window.setInterval(scheduleMusic, LOOKAHEAD_MS);
   scheduleMusic();
 }
@@ -288,15 +286,19 @@ function scheduleMusic(): void {
   const context = sharedAudioContext();
   const track = MUSIC_TRACKS[activeScene];
   const secondsPerStep = 60 / track.bpm / 4;
+  const cycleDuration = track.lengthSteps * secondsPerStep;
 
-  while (nextStepTime < context.currentTime + SCHEDULE_AHEAD_SECONDS) {
+  while (nextCycleTime < context.currentTime + SCHEDULE_AHEAD_SECONDS) {
     for (const synthNote of track.notes) {
-      if (synthNote.step === currentStep) {
-        scheduleNote(context, activeBus, synthNote, nextStepTime, secondsPerStep);
-      }
+      scheduleNote(
+        context,
+        activeBus,
+        synthNote,
+        nextCycleTime + synthNote.step * secondsPerStep,
+        secondsPerStep
+      );
     }
-    nextStepTime += secondsPerStep;
-    currentStep = (currentStep + 1) % track.lengthSteps;
+    nextCycleTime += cycleDuration;
   }
 }
 

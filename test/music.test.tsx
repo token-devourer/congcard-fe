@@ -48,6 +48,13 @@ describe("synth music", () => {
     }
   });
 
+  it("carries a harmonic anchor across both gameplay loop boundaries", () => {
+    for (const scene of ["play", "flipDark"] as const) {
+      const track = MUSIC_TRACKS[scene];
+      expect(track.notes.some((item) => item.step + item.durationSteps > track.lengthSteps)).toBe(true);
+    }
+  });
+
   it("enables music by default and persists an independent mute choice", async () => {
     render(
       <NextIntlClientProvider locale="en" messages={messages}>
