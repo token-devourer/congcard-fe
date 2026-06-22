@@ -32,7 +32,7 @@ const THEME: Record<string, AvatarTheme> = {
   wave: { seed: "Blue diver", bg: ["41b8ff", "1259d8"], style: avataaarsNeutral as Style<Record<string, unknown>> },
   flame: { seed: "Flame mask", bg: ["ff4c59", "ff9b23"], style: funEmoji as Style<Record<string, unknown>> },
   stone: { seed: "Stone golem", bg: ["8c96a3", "34404d"], style: botttsNeutral as Style<Record<string, unknown>> },
-  comet: { seed: "Comet runner", bg: ["9d5cff", "22d3ee"], style: pixelArt as Style<Record<string, unknown>> },
+  comet: { seed: "Comet runner", bg: ["20d2c1", "304ffe"], style: miniavs as Style<Record<string, unknown>> },
   spark: { seed: "Spark ace", bg: ["ff5fb7", "7b3ff3"], style: micah as Style<Record<string, unknown>> },
   cloud: { seed: "Cloud bard", bg: ["8ed7ff", "4d7cff"], style: croodlesNeutral as Style<Record<string, unknown>> },
   gem: { seed: "Gem envoy", bg: ["d15cff", "24d1a0"], style: bigEarsNeutral as Style<Record<string, unknown>> }
@@ -41,7 +41,7 @@ const THEME: Record<string, AvatarTheme> = {
 const uriCache = new Map<string, string>();
 
 export function avatarUri(avatarId: string): string {
-  if (avatarId === "bolt") {
+  if (avatarId === "comet") {
     return "/avatars/soladerp.png";
   }
 
