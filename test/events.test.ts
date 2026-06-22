@@ -67,6 +67,27 @@ describe("diffSnapshots", () => {
     expect(diffSnapshots(null, snapshot({}))).toEqual([]);
   });
 
+  it("prefers structured presentation events over log and card-count inference", () => {
+    const prev = snapshot({ presentationEvents: [] });
+    const next = snapshot({
+      players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1, cardCount: 11 })],
+      presentationEvents: [{
+        id: 7,
+        seq: 7,
+        kind: "penalty",
+        targetIds: ["b"],
+        amount: 6,
+        level: 3,
+        startsAt: 1_000,
+        resolvesAt: 3_000
+      }]
+    });
+
+    const penalties = diffSnapshots(prev, next).filter((event) => event.type === "penalty");
+    expect(penalties).toHaveLength(1);
+    expect(penalties[0]).toMatchObject({ count: 6, playerId: "b", startsAt: 1_000, resolvesAt: 3_000 });
+  });
+
   it("detects a penalty when a player's card count jumps by two or more", () => {
     const prev = snapshot({});
     const next = snapshot({

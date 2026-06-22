@@ -194,6 +194,16 @@ export function musicSceneForSnapshot(snapshot: GameSnapshot | null): MusicScene
   return snapshot.settings.modeId === "flip" && snapshot.flipSide === "dark" ? "flipDark" : "play";
 }
 
+export function duckMusic(startsInMs = 0, durationMs = 700, depth = 0.38): void {
+  if (!musicMaster || !audioAvailable() || isMusicMuted()) return;
+  const context = sharedAudioContext();
+  const startsAt = context.currentTime + Math.max(0, startsInMs) / 1000;
+  const baseGain = MUSIC_MASTER_GAIN * getMusicVolume();
+  musicMaster.gain.cancelScheduledValues(startsAt);
+  musicMaster.gain.setTargetAtTime(Math.max(0.02, baseGain * depth), startsAt, 0.035);
+  musicMaster.gain.setTargetAtTime(baseGain, startsAt + durationMs / 1000, 0.16);
+}
+
 export function setMusicScene(scene: MusicScene | null): void {
   requestedScene = scene;
   if (!scene) {

@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useRoomStore } from "@/lib/store";
 import type { UiEvent } from "@/lib/events";
+import { useNow } from "@/lib/useNow";
 
 const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
@@ -42,20 +43,45 @@ const BURST_POINTS = [
 export function GameEventOverlay() {
   const events = useRoomStore((state) => state.events);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
+  const clockOffset = useRoomStore((state) => state.clockOffset);
+  const now = useNow(50) + clockOffset;
   const toasts = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
+  const active = toasts
+    .filter((event) => (!event.startsAt || event.startsAt <= now) && (!event.resolvesAt || event.resolvesAt + 500 > now))
+    .sort((a, b) => eventPriority(b) - eventPriority(a) || (a.startsAt ?? 0) - (b.startsAt ?? 0))[0];
+
+  useEffect(() => {
+    for (const event of toasts) {
+      if (event.resolvesAt && event.resolvesAt + 500 <= now) dismissEvent(event.id);
+    }
+  }, [dismissEvent, now, toasts]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center overflow-hidden">
       <AnimatePresence>
-        {toasts.map((event) => (
-          <EventToast key={event.id} event={event} onDone={() => dismissEvent(event.id)} />
-        ))}
+        {active ? <EventToast key={active.id} event={active} onDone={() => dismissEvent(active.id)} /> : null}
       </AnimatePresence>
     </div>
   );
 }
 
+function eventPriority(event: UiEvent): number {
+  switch (event.type) {
+    case "catchWindow": return 5;
+    case "calledOne": return 4;
+    case "penalty":
+    case "stack": return 3;
+    case "skip":
+    case "reverse":
+    case "colorChange": return 2;
+    default: return 1;
+  }
+}
+
 export function eventToastDurationMs(event: UiEvent): number {
+  if (event.startsAt && event.resolvesAt) {
+    return Math.max(700, Math.min(2_400, event.resolvesAt - event.startsAt));
+  }
   if (event.type === "penalty" || event.type === "stack") {
     return 2000;
   }

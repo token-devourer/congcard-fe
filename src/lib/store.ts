@@ -43,10 +43,11 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     const fresh = diffSnapshots(get().snapshot, snapshot);
     const visibleEvents = fresh.filter(isVisibleUiEvent);
     const eventLockMs = eventActionLockMs(fresh);
-    playUiEventSounds(fresh);
+    const nextClockOffset = typeof snapshot.serverNow === "number" ? snapshot.serverNow - Date.now() : get().clockOffset;
+    playUiEventSounds(fresh, nextClockOffset);
     set((state) => ({
       snapshot,
-      clockOffset: typeof snapshot.serverNow === "number" ? snapshot.serverNow - Date.now() : state.clockOffset,
+      clockOffset: nextClockOffset,
       eventLockUntil: eventLockMs > 0 ? Math.max(state.eventLockUntil, Date.now() + eventLockMs) : state.eventLockUntil,
       events: [...state.events, ...visibleEvents].slice(-MAX_VISIBLE_EVENTS)
     }));

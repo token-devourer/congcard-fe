@@ -1,5 +1,6 @@
 import type { UiEvent } from "./events";
 import { audioAvailable, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
+import { duckMusic } from "./music";
 import { safeGet, safeSet } from "./storage";
 
 export type SoundName =
@@ -73,20 +74,29 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     default: return null;
   }
 }
-export function playUiEventSounds(events: UiEvent[]): void {
+export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   for (const event of events) {
     const sound = soundForEvent(event);
     if (!sound) continue;
-    if (event.type === "catchWindow" && typeof window !== "undefined") {
-      window.setTimeout(() => playSound(sound), Math.max(0, event.opensAt - Date.now()));
-    } else if (event.type === "stack" || event.type === "matchChain") {
-      playSound(sound, event.level);
-    } else if (event.type === "skip" || event.type === "reverse" || event.type === "colorChange") {
-      playSound(sound, event.level ?? 1);
-    } else {
-      playSound(sound);
+    const serverStart = event.type === "catchWindow" ? event.opensAt : event.startsAt;
+    const startsInMs = serverStart ? Math.max(0, serverStart - (Date.now() + clockOffset)) : 0;
+    const level = event.type === "stack" || event.type === "matchChain"
+      ? event.level
+      : event.type === "skip" || event.type === "reverse" || event.type === "colorChange"
+        ? event.level ?? 1
+        : 1;
+    playSoundAt(sound, startsInMs, level);
+    if (["penalty", "skip", "reverse", "colorChange", "stack", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
+      duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : 760);
     }
   }
+}
+
+function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
+  if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  const ctx = sharedAudioContext();
+  unlockAudio();
+  render(name, ctx, ctx.currentTime + Math.max(0.005, startsInMs / 1000), level);
 }
 export function playSound(name: SoundName, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;

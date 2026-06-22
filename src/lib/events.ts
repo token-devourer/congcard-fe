@@ -1,6 +1,6 @@
-import type { CardValue, Color, GameSnapshot, PendingStack } from "@congcard/shared";
+import type { CardValue, Color, GameSnapshot, PendingStack, PresentationEvent } from "@congcard/shared";
 
-export type UiEvent =
+export type UiEvent = (
   | { id: number; type: "yourTurn" }
   | { id: number; type: "penalty"; playerId: string; nickname: string; count: number; self: boolean }
   | { id: number; type: "skip"; level?: number }
@@ -11,7 +11,8 @@ export type UiEvent =
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
-  | { id: number; type: "roundLost"; winnerId: string; nickname: string; gameEnd: boolean };
+  | { id: number; type: "roundLost"; winnerId: string; nickname: string; gameEnd: boolean }
+) & { startsAt?: number; resolvesAt?: number };
 
 const ACTION_LOCK_EVENT_TYPES = new Set<UiEvent["type"]>(["skip", "reverse", "penalty", "stack", "colorChange"]);
 const ACTION_LOCK_MS = 700;
@@ -59,6 +60,14 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
     !next.pendingChallenge &&
     next.currentPlayerId === selfId &&
     (prev.currentPlayerId !== selfId || prev.phase !== "playing" || Boolean(prev.pendingChallenge));
+
+  if (next.presentationEvents) {
+    events.push(...presentationUiEvents(prev, next, selfId));
+    if (becameMyTurn) {
+      events.push({ id: eventId(), type: "yourTurn" });
+    }
+    return events;
+  }
 
   // A new round deals 7 cards to everyone, so skip per-card diffs to avoid
   // spurious penalty popups, but still announce the opening turn.
@@ -185,6 +194,58 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   }
 
   return events;
+}
+
+function presentationUiEvents(prev: GameSnapshot, next: GameSnapshot, selfId?: string): UiEvent[] {
+  const previousSequence = prev.presentationEvents?.at(-1)?.seq ?? 0;
+  return (next.presentationEvents ?? [])
+    .filter((event) => event.seq > previousSequence)
+    .flatMap((event) => presentationUiEvent(event, next, selfId));
+}
+
+function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, selfId?: string): UiEvent[] {
+  const id = 1_000_000_000 + event.id;
+  const timing = { startsAt: event.startsAt, resolvesAt: event.resolvesAt };
+  const targetId = event.targetIds?.[0];
+  const target = targetId ? snapshot.players.find((player) => player.id === targetId) : undefined;
+  const actor = event.actorId ? snapshot.players.find((player) => player.id === event.actorId) : undefined;
+
+  switch (event.kind) {
+    case "penalty":
+      return target ? [{
+        id,
+        type: "penalty",
+        playerId: target.id,
+        nickname: target.nickname,
+        count: event.amount ?? 1,
+        self: target.id === selfId,
+        ...timing
+      }] : [];
+    case "skip":
+      return [{ id, type: "skip", ...(event.level ? { level: event.level } : {}), ...timing }];
+    case "reverse":
+      return [{ id, type: "reverse", direction: snapshot.direction, ...(event.level ? { level: event.level } : {}), ...timing }];
+    case "wild":
+      return event.color ? [{ id, type: "colorChange", color: event.color, ...(event.level ? { level: event.level } : {}), ...timing }] : [];
+    case "stack":
+      return [{
+        id,
+        type: "stack",
+        totalDraw: event.amount ?? snapshot.pendingStack?.totalDraw ?? 1,
+        level: event.level ?? 1,
+        kind: snapshot.pendingStack?.kind,
+        targetColor: event.color ?? snapshot.pendingStack?.targetColor,
+        ...timing
+      }];
+    case "cardPlayed":
+      return event.cardValue !== undefined && (event.level ?? 1) > 1
+        ? [{ id, type: "matchChain", value: event.cardValue, level: event.level ?? 1, ...timing }]
+        : [];
+    case "one":
+      return actor ? [{ id, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
+    default:
+      return [];
+  }
 }
 
 export function eventActionLockMs(events: UiEvent[]): number {

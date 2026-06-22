@@ -5,6 +5,7 @@ const SFX_VOLUME_KEY = "congcard:sfx-volume";
 
 let audioContext: AudioContext | null = null;
 let sfxGain: GainNode | null = null;
+let sfxCompressor: DynamicsCompressorNode | null = null;
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -39,8 +40,15 @@ export function sharedAudioContext(): AudioContext {
 
     audioContext = new AudioContextConstructor();
     sfxGain = audioContext.createGain();
+    sfxCompressor = audioContext.createDynamicsCompressor();
+    sfxCompressor.threshold.value = -15;
+    sfxCompressor.knee.value = 14;
+    sfxCompressor.ratio.value = 4;
+    sfxCompressor.attack.value = 0.006;
+    sfxCompressor.release.value = 0.18;
     sfxGain.gain.value = SFX_MASTER * getSfxVolume();
-    sfxGain.connect(audioContext.destination);
+    sfxGain.connect(sfxCompressor);
+    sfxCompressor.connect(audioContext.destination);
   }
 
   return audioContext;
