@@ -66,6 +66,10 @@
     "offline": "offline",
     "kick": "Keluarkan",
     "settings": "Pengaturan ruangan",
+    "sectionBasics": "Dasar permainan",
+    "sectionRules": "Aturan kartu",
+    "sectionAutomation": "Otomatisasi",
+    "sectionControls": "Aksesibilitas dan kontrol",
     "gameMode": "Game mode",
     "modeStandard": "Standard",
     "modeZeroSeven": "0-7 (Coming soon)",
@@ -117,6 +121,8 @@
     "allowMidGameJoinHint": "Pengguna terlambat bisa menonton sekarang dan mendapat kursi saat ronde berikutnya mulai."
   },
   "board": {
+    "tableTools": "Peralatan meja",
+    "noViewers": "Belum ada penonton di meja.",
     "colorHuntPenalty": "Cari {count} {color}",
     "turnLabel": "Giliran",
     "waiting": "Menunggu",

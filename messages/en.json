@@ -66,6 +66,10 @@
     "offline": "offline",
     "kick": "Kick",
     "settings": "Room settings",
+    "sectionBasics": "Game basics",
+    "sectionRules": "Card rules",
+    "sectionAutomation": "Automation",
+    "sectionControls": "Accessibility and controls",
     "gameMode": "Game mode",
     "modeStandard": "Standard",
     "modeZeroSeven": "0-7 (Coming soon)",
@@ -117,6 +121,8 @@
     "allowMidGameJoinHint": "Late users can watch now and take a seat when the next round starts."
   },
   "board": {
+    "tableTools": "Table tools",
+    "noViewers": "No viewers at the table.",
     "colorHuntPenalty": "Find {count} {color}",
     "turnLabel": "Turn",
     "waiting": "Waiting",

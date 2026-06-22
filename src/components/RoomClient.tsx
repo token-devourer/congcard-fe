@@ -1,12 +1,26 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
 import type { Card, Color, GameSnapshot, ParticipantRole, RoomSettings } from "@congcard/shared";
 import { AVATARS } from "@congcard/shared";
+import {
+  Accessibility,
+  Bot,
+  Check,
+  Copy,
+  Eye,
+  Gamepad2,
+  Link2,
+  List,
+  Settings2,
+  Sparkles,
+  Trophy,
+  X
+} from "lucide-react";
 import { anchorRef } from "@/lib/anchors";
 import { resolveRoom } from "@/lib/api";
 import { Avatar } from "./Avatar";
@@ -430,6 +444,29 @@ function ErrorToast() {
   );
 }
 
+function SettingsSection({
+  title,
+  icon,
+  children,
+  open = false
+}: {
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+  open?: boolean;
+}) {
+  return (
+    <details className="settings-section" open={open}>
+      <summary>
+        <span className="settings-section-icon" aria-hidden="true">{icon}</span>
+        <span>{title}</span>
+        <span className="settings-section-chevron" aria-hidden="true" />
+      </summary>
+      <div className="settings-section-body">{children}</div>
+    </details>
+  );
+}
+
 export function Lobby({
   snapshot,
   code,
@@ -461,18 +498,24 @@ export function Lobby({
   }
 
   return (
-    <section className="lobby-layout grid gap-4 md:grid-cols-[1fr_320px]">
-      <div className="panel p-4">
+    <section className="lobby-layout">
+      <div className="surface lobby-players-panel">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="display text-xl font-black">{t("lobby.players")}</h2>
+          <div>
+            <p className="section-label">{t("room.title", { code })}</p>
+            <h2 className="display mt-1 text-xl font-black">{t("lobby.players")}</h2>
+          </div>
           <div className="lobby-actions">
             <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("code")}>
+              {copied === "code" ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />}
               {copied === "code" ? t("lobby.copied") : `📋 ${t("lobby.copyCode")}`}
             </button>
             <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("link")}>
+              {copied === "link" ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
               {copied === "link" ? t("lobby.copied") : `🔗 ${t("lobby.copyLink")}`}
             </button>
             <button className="button !min-h-9 !px-3 text-sm" disabled={me?.away} onClick={() => send("room.ready", { ready: !me?.ready })}>
+              <Check size={16} aria-hidden="true" />
               {me?.ready ? t("lobby.notReady") : t("lobby.ready")}
             </button>
           </div>
@@ -486,7 +529,7 @@ export function Lobby({
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 16 }}
-                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3"
+                className={`lobby-player-row ${player.ready ? "is-ready" : ""}`}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar avatarId={player.avatarId} size={44} className="flex-shrink-0" />
@@ -519,8 +562,15 @@ export function Lobby({
         </div>
       </div>
 
-      <aside className="panel grid content-start gap-4 p-4">
-        <h2 className="display text-xl font-black">{t("lobby.settings")}</h2>
+      <aside className="surface lobby-settings-panel premium-scroll">
+        <div className="lobby-settings-heading">
+          <Settings2 size={18} aria-hidden="true" />
+          <div>
+            <p className="section-label">{isHost ? t("lobby.host") : t("lobby.statusWaiting")}</p>
+            <h2 className="display mt-1 text-xl font-black">{t("lobby.settings")}</h2>
+          </div>
+        </div>
+        <SettingsSection title={t("lobby.sectionBasics")} icon={<Gamepad2 size={17} />} open>
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.gameMode")}</span>
           <select className="field" disabled={!isHost} value={snapshot.settings.modeId} onChange={(event) => updateSetting({ modeId: event.target.value as RoomSettings["modeId"] })}>
@@ -560,6 +610,8 @@ export function Lobby({
             ))}
           </select>
         </label>
+        </SettingsSection>
+        <SettingsSection title={t("lobby.sectionAutomation")} icon={<Bot size={17} />}>
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.absentPlayerAction")}</span>
           <select
@@ -589,6 +641,8 @@ export function Lobby({
             </span>
           </label>
         ) : null}
+        </SettingsSection>
+        <SettingsSection title={t("lobby.sectionRules")} icon={<Sparkles size={17} />} open>
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.scoreTarget")}</span>
           <select
@@ -705,6 +759,8 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.callHint")}</span>
           </span>
         </label>
+        </SettingsSection>
+        <SettingsSection title={t("lobby.sectionControls")} icon={<Accessibility size={17} />}>
         <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
@@ -718,6 +774,7 @@ export function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.keyboardShortcutsHint")}</span>
           </span>
         </label>
+        </SettingsSection>
         {isHost ? (
           <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
             {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
@@ -750,6 +807,7 @@ export function Board({
   const t = useTranslations();
   const [batchSelecting, setBatchSelecting] = useState(false);
   const [batchShortcutCommand, setBatchShortcutCommand] = useState<BatchShortcutCommand | null>(null);
+  const [utilityPanel, setUtilityPanel] = useState<"log" | "scores" | "viewers" | null>(null);
   const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
   const now = useNow(100);
   const selfRole = snapshot.self?.role ?? "spectator";
@@ -958,46 +1016,47 @@ export function Board({
           <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
           {snapshot.pendingDraw ? <DrawProgress snapshot={snapshot} /> : null}
           {paused ? <PauseBanner /> : null}
-          <LogTicker snapshot={snapshot} />
         </div>
 
         <div className="board-zone relative">
-          <UnoButton
-            canCallOne={Boolean(canCallOne)}
-            callWindow={
-              canCallOne && snapshot.oneWindow
-                ? {
-                    opensAt: snapshot.oneWindow.opensAt,
-                    deadline: snapshot.oneWindow.deadline,
-                    callPending: snapshot.oneWindow.callPending,
-                    callResolvesAt: snapshot.oneWindow.callResolvesAt
-                  }
-                : undefined
-            }
-            onCallOne={() => send("game.callOne")}
-            catchTarget={
-              oneTarget && snapshot.oneWindow
-                ? {
-                    id: oneTarget.id,
-                    nickname: oneTarget.nickname,
-                    opensAt: snapshot.oneWindow.opensAt,
-                    deadline: snapshot.oneWindow.deadline,
-                    callPending: snapshot.oneWindow.callPending,
-                    callResolvesAt: snapshot.oneWindow.callResolvesAt
-                  }
-                : undefined
-            }
-            onCatch={(targetId) => send("game.catchOne", { targetId })}
-          />
-          {isPlayer && !finished && !playerAway && !paused ? (
-            <ChallengeModal
-              snapshot={snapshot}
-              send={send}
-              actionLocked={eventLocked || batchSelecting || batchResolving || playerAway || paused || Boolean(selectedCard)}
-              canBatchStack={canBatchChallengeStack}
-              onBatchStack={() => setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }))}
+          <div className="contextual-action-rail">
+            <UnoButton
+              canCallOne={Boolean(canCallOne)}
+              callWindow={
+                canCallOne && snapshot.oneWindow
+                  ? {
+                      opensAt: snapshot.oneWindow.opensAt,
+                      deadline: snapshot.oneWindow.deadline,
+                      callPending: snapshot.oneWindow.callPending,
+                      callResolvesAt: snapshot.oneWindow.callResolvesAt
+                    }
+                  : undefined
+              }
+              onCallOne={() => send("game.callOne")}
+              catchTarget={
+                oneTarget && snapshot.oneWindow
+                  ? {
+                      id: oneTarget.id,
+                      nickname: oneTarget.nickname,
+                      opensAt: snapshot.oneWindow.opensAt,
+                      deadline: snapshot.oneWindow.deadline,
+                      callPending: snapshot.oneWindow.callPending,
+                      callResolvesAt: snapshot.oneWindow.callResolvesAt
+                    }
+                  : undefined
+              }
+              onCatch={(targetId) => send("game.catchOne", { targetId })}
             />
-          ) : null}
+            {isPlayer && !finished && !playerAway && !paused ? (
+              <ChallengeModal
+                snapshot={snapshot}
+                send={send}
+                actionLocked={eventLocked || batchSelecting || batchResolving || playerAway || paused || Boolean(selectedCard)}
+                canBatchStack={canBatchChallengeStack}
+                onBatchStack={() => setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }))}
+              />
+            ) : null}
+          </div>
           <div
             ref={anchorRef("hand")}
             className={`hand-panel hand-reveal panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
@@ -1031,6 +1090,13 @@ export function Board({
           </div>
         </div>
       </section>
+
+      <GameUtilityDock
+        snapshot={snapshot}
+        panel={utilityPanel}
+        onSelect={(next) => setUtilityPanel((current) => current === next ? null : next)}
+        onClose={() => setUtilityPanel(null)}
+      />
 
       <FlightLayer />
       <TurnBanner />
@@ -1231,14 +1297,58 @@ function ViewerStatus({ snapshot, role, finishedRank }: { snapshot: GameSnapshot
   );
 }
 
-function LogTicker({ snapshot }: { snapshot: GameSnapshot }) {
+function GameUtilityDock({
+  snapshot,
+  panel,
+  onSelect,
+  onClose
+}: {
+  snapshot: GameSnapshot;
+  panel: "log" | "scores" | "viewers" | null;
+  onSelect: (panel: "log" | "scores" | "viewers") => void;
+  onClose: () => void;
+}) {
   const t = useTranslations();
-  const entries = snapshot.actionLog.slice(-5);
+  const entries = snapshot.actionLog.slice(-12);
+  const sortedPlayers = [...snapshot.players].sort((a, b) => b.score - a.score || a.seat - b.seat);
 
   return (
-    <aside className="absolute left-1 top-1 z-20 hidden w-60 rounded-xl bg-black/45 p-2.5 backdrop-blur-sm md:block">
-      <h2 className="mb-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.log")}</h2>
-      <div className="grid gap-1 text-xs leading-snug">
+    <div className="game-utility-root">
+      <nav className="game-utility-nav" aria-label={t("board.tableTools")}>
+        <button type="button" className={panel === "log" ? "is-active" : ""} onClick={() => onSelect("log")} title={t("board.log")}>
+          <List size={18} aria-hidden="true" />
+          <span>{t("board.log")}</span>
+        </button>
+        <button type="button" className={panel === "scores" ? "is-active" : ""} onClick={() => onSelect("scores")} title={t("board.scoreboard")}>
+          <Trophy size={18} aria-hidden="true" />
+          <span>{t("board.scoreboard")}</span>
+        </button>
+        <button type="button" className={panel === "viewers" ? "is-active" : ""} onClick={() => onSelect("viewers")} title={t("board.viewers")}>
+          <Eye size={18} aria-hidden="true" />
+          <span>{snapshot.viewers.length}</span>
+        </button>
+      </nav>
+      <AnimatePresence>
+        {panel ? (
+          <motion.aside
+            className="game-utility-panel surface premium-scroll"
+            initial={{ opacity: 0, x: 14, scale: 0.97 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 12, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
+          >
+            <header>
+              <div>
+                <p className="section-label">{t("common.appName")}</p>
+                <h2 className="display mt-1 text-lg font-black">
+                  {panel === "log" ? t("board.log") : panel === "scores" ? t("board.scoreboard") : t("board.viewers")}
+                </h2>
+              </div>
+              <button type="button" className="icon-control" onClick={onClose} aria-label={t("common.close")}>
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+            {panel === "log" ? <div className="game-utility-list">
         {entries.map((entry, index) => (
           <div
             key={entry.seq}
@@ -1249,7 +1359,37 @@ function LogTicker({ snapshot }: { snapshot: GameSnapshot }) {
             <span className="min-w-0 flex-1">{translateLog(entry.message, t as Translate)}</span>
           </div>
         ))}
-      </div>
-    </aside>
+      </div> : null}
+
+            {panel === "scores" ? (
+              <div className="game-utility-list">
+                {sortedPlayers.map((player, index) => (
+                  <div key={player.id} className="game-score-row">
+                    <span className="game-score-rank">{index + 1}</span>
+                    <Avatar avatarId={player.avatarId} size={30} />
+                    <span className="min-w-0 flex-1 truncate font-black">{player.nickname}</span>
+                    <strong className="tabular-nums text-[var(--gold)]">{player.score}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {panel === "viewers" ? (
+              <div className="game-utility-list">
+                {snapshot.viewers.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-[var(--muted)]">{t("board.noViewers")}</p>
+                ) : snapshot.viewers.map((viewer) => (
+                  <div key={viewer.id} className="game-score-row">
+                    <Avatar avatarId={viewer.avatarId} size={30} />
+                    <span className="min-w-0 flex-1 truncate font-black">{viewer.nickname}</span>
+                    <span className="text-xs font-bold text-[var(--muted)]">{t(`board.roles.${viewer.role}`)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </motion.aside>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 }
