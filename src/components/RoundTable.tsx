@@ -275,14 +275,6 @@ function OpponentFaceTray({
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const ordered = [...cards].sort((a, b) => `${a.color ?? "wild"}-${a.value}`.localeCompare(`${b.color ?? "wild"}-${b.value}`));
-  const groups = ordered.reduce<Array<{ color: string; cards: OpponentCardFace[] }>>((result, card) => {
-    const color = card.color ?? "wild";
-    const group = result.find((item) => item.color === color);
-    if (group) group.cards.push(card);
-    else result.push({ color, cards: [card] });
-    return result;
-  }, []);
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -303,21 +295,19 @@ function OpponentFaceTray({
         <button type="button" onClick={onClose} aria-label="Close card tray">&times;</button>
       </div>
       <div className="opponent-face-tray-cards thin-scroll">
-        {groups.map((group) => (
-          <section key={group.color} className="opponent-face-group">
-            <span>{group.color === "wild" ? "Wild" : t(`colors.${group.color}`)} · {group.cards.length}</span>
-            <div
-              className="opponent-face-stack"
-              style={{ "--opponent-face-count": group.cards.length } as CSSProperties}
-            >
-              {group.cards.map((card, index) => (
-                <span key={card.trackingId} className="opponent-face-stack-card" style={{ zIndex: index + 1 }}>
-                  <CardView card={card} small />
-                </span>
-              ))}
-            </div>
-          </section>
-        ))}
+        <section className="opponent-face-group">
+          <span>{t("board.cards", { count: cards.length })}</span>
+          <div
+            className="opponent-face-stack"
+            style={{ "--opponent-face-count": cards.length } as CSSProperties}
+          >
+            {cards.map((card, index) => (
+              <span key={card.trackingId} className="opponent-face-stack-card" style={{ zIndex: index + 1 }}>
+                <CardView card={card} small />
+              </span>
+            ))}
+          </div>
+        </section>
       </div>
     </aside>,
     document.body
