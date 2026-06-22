@@ -212,6 +212,35 @@ describe("diffSnapshots", () => {
     });
   });
 
+  it("detects jump in from the latest out-of-turn play log", () => {
+    const prev = snapshot({
+      currentPlayerId: "a",
+      discardTop: card({ id: "top-red-5", color: "red", value: 5 }),
+      presentationEvents: []
+    });
+    const next = snapshot({
+      currentPlayerId: "c",
+      discardTop: card({ id: "top-blue-5", color: "blue", value: 5 }),
+      presentationEvents: [
+        {
+          id: 2,
+          seq: 2,
+          kind: "cardPlayed",
+          actorId: "b",
+          cardValue: 5,
+          startsAt: 1,
+          resolvesAt: 2
+        }
+      ]
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "jumpIn")).toMatchObject({
+      playerId: "b",
+      nickname: "b",
+      self: false
+    });
+  });
+
   it("raises action sound level for repeated icon cards", () => {
     const prev = snapshot({
       discardTop: card({ id: "top-red-reverse", color: "red", value: "reverse" }),
@@ -309,7 +338,8 @@ describe("diffSnapshots", () => {
     expect(soundForEvent({ id: 8, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
     expect(soundForEvent({ id: 9, type: "skip" })).toBe("skip");
     expect(soundForEvent({ id: 10, type: "reverse", direction: -1 })).toBe("reverse");
-    expect(soundForEvent({ id: 11, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
-    expect(soundForEvent({ id: 12, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
+    expect(soundForEvent({ id: 11, type: "jumpIn", playerId: "b", nickname: "Ben", self: false })).toBe("jumpIn");
+    expect(soundForEvent({ id: 12, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
+    expect(soundForEvent({ id: 13, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
 });

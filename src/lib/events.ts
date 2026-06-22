@@ -3,6 +3,7 @@ import type { CardValue, Color, GameSnapshot, PendingStack, PresentationEvent } 
 export type UiEvent = (
   | { id: number; type: "yourTurn" }
   | { id: number; type: "penalty"; playerId: string; nickname: string; count: number; self: boolean }
+  | { id: number; type: "jumpIn"; playerId: string; nickname: string; self: boolean }
   | { id: number; type: "skip"; level?: number }
   | { id: number; type: "reverse"; direction: 1 | -1; level?: number }
   | { id: number; type: "colorChange"; color: Color; level?: number }
@@ -200,11 +201,11 @@ function presentationUiEvents(prev: GameSnapshot, next: GameSnapshot, selfId?: s
   const previousSequence = prev.presentationEvents?.at(-1)?.seq ?? 0;
   return (next.presentationEvents ?? [])
     .filter((event) => event.seq > previousSequence)
-    .flatMap((event) => presentationUiEvent(event, next, selfId));
+    .flatMap((event) => presentationUiEvent(event, next, prev.currentPlayerId, selfId));
 }
 
-function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, selfId?: string): UiEvent[] {
-  const id = 1_000_000_000 + event.id;
+function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, prevCurrentPlayerId: string | undefined, selfId?: string): UiEvent[] {
+  const idBase = 1_000_000_000 + event.id * 10;
   const timing = { startsAt: event.startsAt, resolvesAt: event.resolvesAt };
   const targetId = event.targetIds?.[0];
   const target = targetId ? snapshot.players.find((player) => player.id === targetId) : undefined;
@@ -213,7 +214,7 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, s
   switch (event.kind) {
     case "penalty":
       return target ? [{
-        id,
+        id: idBase,
         type: "penalty",
         playerId: target.id,
         nickname: target.nickname,
@@ -222,14 +223,14 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, s
         ...timing
       }] : [];
     case "skip":
-      return [{ id, type: "skip", ...(event.level ? { level: event.level } : {}), ...timing }];
+      return [{ id: idBase, type: "skip", ...(event.level ? { level: event.level } : {}), ...timing }];
     case "reverse":
-      return [{ id, type: "reverse", direction: snapshot.direction, ...(event.level ? { level: event.level } : {}), ...timing }];
+      return [{ id: idBase, type: "reverse", direction: snapshot.direction, ...(event.level ? { level: event.level } : {}), ...timing }];
     case "wild":
-      return event.color ? [{ id, type: "colorChange", color: event.color, ...(event.level ? { level: event.level } : {}), ...timing }] : [];
+      return event.color ? [{ id: idBase, type: "colorChange", color: event.color, ...(event.level ? { level: event.level } : {}), ...timing }] : [];
     case "stack":
       return [{
-        id,
+        id: idBase,
         type: "stack",
         totalDraw: event.amount ?? snapshot.pendingStack?.totalDraw ?? 1,
         level: event.level ?? 1,
@@ -238,11 +239,28 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, s
         ...timing
       }];
     case "cardPlayed":
-      return event.cardValue !== undefined && (event.level ?? 1) > 1
-        ? [{ id, type: "matchChain", value: event.cardValue, level: event.level ?? 1, ...timing }]
-        : [];
+      return (() => {
+        const relatedEvents: UiEvent[] = [];
+
+        if (event.actorId && prevCurrentPlayerId && event.actorId !== prevCurrentPlayerId && actor) {
+          relatedEvents.push({
+            id: idBase,
+            type: "jumpIn",
+            playerId: actor.id,
+            nickname: actor.nickname,
+            self: actor.id === selfId,
+            ...timing
+          });
+        }
+
+        if (event.cardValue !== undefined && (event.level ?? 1) > 1) {
+          relatedEvents.push({ id: idBase + 1, type: "matchChain", value: event.cardValue, level: event.level ?? 1, ...timing });
+        }
+
+        return relatedEvents;
+      })();
     case "one":
-      return actor ? [{ id, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
+      return actor ? [{ id: idBase, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
     default:
       return [];
   }

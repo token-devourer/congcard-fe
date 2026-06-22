@@ -68,6 +68,7 @@ export function GameEventOverlay() {
 function eventPriority(event: UiEvent): number {
   switch (event.type) {
     case "catchWindow": return 5;
+    case "jumpIn": return 4;
     case "calledOne": return 4;
     case "penalty":
     case "stack": return 3;
@@ -291,6 +292,30 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
     );
   }
 
+  if (event.type === "jumpIn") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        <motion.div
+          className="absolute h-72 w-72 rounded-full border border-[var(--gold)]/30"
+          animate={{ scale: [0.45, 1.18, 1.55], opacity: [0.7, 0.35, 0] }}
+          transition={{ duration: 1.05, ease: "easeOut" }}
+        />
+        <motion.div
+          className="absolute h-24 w-36 rounded-[26px] border-2 border-white/25 bg-white/10 shadow-[0_18px_42px_rgba(0,0,0,0.28)] backdrop-blur-sm"
+          initial={{ x: -160, y: 36, rotate: -14, opacity: 0, scale: 0.82 }}
+          animate={{ x: [-160, -16, 0], y: [36, 0, -4], rotate: [-14, -2, 0], opacity: [0, 1, 0.95], scale: [0.82, 1.02, 1] }}
+          transition={{ duration: 0.78, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <motion.div
+          className="absolute h-24 w-36 rounded-[26px] border-2 border-[var(--gold)]/35 bg-[rgba(242,193,78,0.16)] shadow-[0_18px_42px_rgba(242,193,78,0.18)] backdrop-blur-sm"
+          initial={{ x: 160, y: -24, rotate: 16, opacity: 0, scale: 0.78 }}
+          animate={{ x: [160, 18, 0], y: [-24, 0, 8], rotate: [16, 3, 0], opacity: [0, 1, 0.85], scale: [0.78, 1.04, 1] }}
+          transition={{ duration: 0.78, ease: [0.16, 1, 0.3, 1], delay: 0.04 }}
+        />
+      </div>
+    );
+  }
+
   return null;
 }
 
@@ -310,6 +335,8 @@ function eventWash(event: UiEvent): string {
       return "radial-gradient(circle at center, rgba(255, 217, 96, 0.32), transparent 42%)";
     case "catchWindow":
       return "radial-gradient(circle at center, rgba(255, 72, 84, 0.36), transparent 44%)";
+    case "jumpIn":
+      return "radial-gradient(circle at center, rgba(242, 193, 78, 0.22), transparent 36%), rgba(11, 14, 17, 0.3)";
     default:
       return "transparent";
   }
@@ -358,6 +385,13 @@ function toastContent(
       return {
         label: event.self ? t("events.youHaveOne") : t("events.catchWindow", { name: event.nickname }),
         background: "linear-gradient(180deg, rgba(30,38,31,0.98), rgba(7,10,8,0.96))"
+      };
+    case "jumpIn":
+      return {
+        label: t("events.jumpIn"),
+        sublabel: event.self ? t("events.youJumpedIn") : t("events.playerJumpedIn", { name: event.nickname }),
+        background: "linear-gradient(180deg, #fff2bf, #f2c14e 52%, #a96a00)",
+        color: "#231705"
       };
     default:
       return { label: "", background: "transparent" };

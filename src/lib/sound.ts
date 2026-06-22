@@ -28,6 +28,7 @@ export type SoundName =
   | "reverse"
   | "win"
   | "lose"
+  | "jumpIn"
   | "uiHover"
   | "uiClick";
 
@@ -71,6 +72,7 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     case "catchWindow": return event.self ? "oneWindow" : "catch";
     case "roundWon": return "win";
     case "roundLost": return "lose";
+    case "jumpIn": return "jumpIn";
     default: return null;
   }
 }
@@ -86,8 +88,8 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
         ? event.level ?? 1
         : 1;
     playSoundAt(sound, startsInMs, level);
-    if (["penalty", "skip", "reverse", "colorChange", "stack", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
-      duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : 760);
+      if (["penalty", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
+        duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760);
     }
   }
 }
@@ -381,6 +383,13 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       noise(ctx, t + 0.01, { dur: 0.045, gain: 0.08 + pitchLevel * 0.015, hp: 2200 + pitchLevel * 260, lp: 8500 });
       break;
     }
+      case "jumpIn": {
+        noise(ctx, t, { dur: 0.03, gain: 0.12, hp: 3000, lp: 9000 });
+        tone(ctx, t + 0.002, { freq: 740, dur: 0.07, type: "triangle", gain: 0.14, lp: 5600 });
+        tone(ctx, t + 0.03, { freq: 988, dur: 0.09, type: "square", gain: 0.18, lp: 3600, sweepTo: 740 });
+        tone(ctx, t + 0.08, { freq: 1480, dur: 0.14, type: "sine", gain: 0.07, lp: 8200 });
+        break;
+      }
     case "batchFinale": {
       // Triumphant climax for the end of a batch: a quick ascending run into a
       // bright sustained major chord, shimmer harmonics, and a celebratory swell.
