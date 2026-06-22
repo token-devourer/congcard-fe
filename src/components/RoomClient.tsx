@@ -1309,7 +1309,7 @@ function GameUtilityDock({
   onClose: () => void;
 }) {
   const t = useTranslations();
-  const entries = snapshot.actionLog.slice(-12);
+  const entries = snapshot.actionLog.slice(-12).reverse();
   const sortedPlayers = [...snapshot.players].sort((a, b) => b.score - a.score || a.seat - b.seat);
 
   return (
@@ -1353,7 +1353,7 @@ function GameUtilityDock({
           <div
             key={entry.seq}
             className="flex items-start gap-1.5"
-            style={{ opacity: 0.45 + 0.55 * ((index + 1) / entries.length) }}
+            style={{ opacity: 0.45 + 0.55 * ((entries.length - index) / entries.length) }}
           >
             <span aria-hidden="true">{LOG_ICON[entry.type] ?? "•"}</span>
             <span className="min-w-0 flex-1">{translateLog(entry.message, t as Translate)}</span>
