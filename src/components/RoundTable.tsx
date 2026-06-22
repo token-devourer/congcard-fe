@@ -61,6 +61,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   );
   const ordered = sorted.map((_, index) => sorted[(selfIndex + index) % sorted.length]);
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
+  const highlightedPlayerId = snapshot.pendingStack?.kind === "wildColor" ? snapshot.pendingStack.targetPlayerId : snapshot.currentPlayerId;
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
   const now = useNow(100);
   const [hoveredOpponentId, setHoveredOpponentId] = useState<string>();
@@ -176,7 +177,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
             <div key={player.id} role="listitem" className="opponent-strip-item">
               <PlayerSeat
                 player={player}
-                active={player.id === snapshot.currentPlayerId}
+                active={player.id === highlightedPlayerId}
                 isSelf={false}
                 oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id}
                 turnDeadline={snapshot.turnDeadline}
@@ -232,7 +233,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
           >
             <PlayerSeat
               player={player}
-              active={player.id === snapshot.currentPlayerId}
+              active={player.id === highlightedPlayerId}
               isSelf={player.id === snapshot.self?.id}
               oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
               turnDeadline={snapshot.turnDeadline}

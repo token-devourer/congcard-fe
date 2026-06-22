@@ -161,4 +161,61 @@ describe("Flip presentation", () => {
     );
     await waitFor(() => expect(screen.queryByLabelText("Opponent opposite card faces")).not.toBeInTheDocument());
   });
+
+  it("highlights the wild color penalty target instead of the next turn player", () => {
+    const game = flipSnapshot();
+    delete game.pendingFlip;
+    game.currentPlayerId = "next";
+    game.activeColor = "blue";
+    game.discardTop = card("top-blue", "blue", 7);
+    game.pendingStack = {
+      kind: "wildColor",
+      targetPlayerId: "penalty",
+      totalDraw: 3,
+      targetColor: "blue"
+    };
+    game.players = [
+      {
+        id: "penalty",
+        nickname: "Penalty",
+        avatarId: "sun",
+        seat: 0,
+        cardCount: 5,
+        score: 0,
+        connected: true,
+        away: false,
+        isHost: true,
+        ready: false,
+        calledOne: false,
+        autoPlay: false,
+        missedDisconnectedTurns: 0,
+        ping: 0
+      },
+      {
+        id: "next",
+        nickname: "Next",
+        avatarId: "moon",
+        seat: 1,
+        cardCount: 4,
+        score: 0,
+        connected: true,
+        away: false,
+        isHost: false,
+        ready: false,
+        calledOne: false,
+        autoPlay: false,
+        missedDisconnectedTurns: 0,
+        ping: 0
+      }
+    ];
+
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <RoundTable snapshot={game} isMyTurn={false} canDraw={false} onDraw={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByText("Penalty").closest(".tableseat")).toHaveClass("active");
+    expect(screen.getByText("Next").closest(".tableseat")).not.toHaveClass("active");
+  });
 });
