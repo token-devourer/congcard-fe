@@ -28,7 +28,7 @@ import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { batchCardGroups } from "@/lib/batch";
-import { needsColor, playableCardInHand } from "@/lib/rules";
+import { jumpInCardInHand, needsColor, playableCardInHand } from "@/lib/rules";
 import { isShortcutWindowOpen, resolveGameShortcut, shortcutKey, shouldIgnoreShortcut } from "@/lib/shortcuts";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
@@ -866,6 +866,7 @@ export function Board({
       !pendingDraw?.reveal &&
       !playerAway
   );
+  const jumpInShortcutCard = jumpInCardInHand(snapshot);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -884,6 +885,7 @@ export function Board({
         canPass: canPass && !rulesOpen,
         canCallOne: callShortcutReady && !selectedCard && !snapshot.pendingChallenge && !rulesOpen,
         catchTargetId: !selectedCard && !snapshot.pendingChallenge && !rulesOpen ? catchShortcutTarget?.id : undefined,
+        canJumpIn: Boolean(jumpInShortcutCard) && !selectedCard && !rulesOpen && !batchSelecting && !batchResolving && !drawResolving,
         canBatch: canBatch && !rulesOpen,
         batchSelecting,
         canOpenRules:
@@ -918,6 +920,11 @@ export function Board({
           break;
         case "catchOne":
           send("game.catchOne", { targetId: command.targetId });
+          break;
+        case "jumpIn":
+          if (jumpInShortcutCard) {
+            send("game.playCard", { cardId: jumpInShortcutCard.id });
+          }
           break;
         case "toggleBatch":
           setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }));

@@ -1,10 +1,11 @@
-export type ShortcutKey = "d" | "p" | "o" | "c" | "b" | "r" | "escape";
+export type ShortcutKey = "d" | "p" | "o" | "c" | "b" | "r" | "j" | "escape";
 
 export type GameShortcutCommand =
   | { type: "draw" }
   | { type: "pass" }
   | { type: "callOne" }
   | { type: "catchOne"; targetId: string }
+  | { type: "jumpIn" }
   | { type: "toggleBatch" }
   | { type: "openRules" }
   | { type: "closeColorPicker" }
@@ -16,6 +17,7 @@ export interface GameShortcutContext {
   canPass: boolean;
   canCallOne: boolean;
   catchTargetId?: string;
+  canJumpIn: boolean;
   canBatch: boolean;
   batchSelecting: boolean;
   canOpenRules: boolean;
@@ -34,7 +36,7 @@ export function isShortcutWindowOpen(window: ShortcutWindow | undefined, now: nu
 
 export function shortcutKey(event: KeyboardEvent): ShortcutKey | null {
   const key = event.key.toLowerCase();
-  return key === "d" || key === "p" || key === "o" || key === "c" || key === "b" || key === "r" || key === "escape"
+  return key === "d" || key === "p" || key === "o" || key === "c" || key === "b" || key === "r" || key === "j" || key === "escape"
     ? key
     : null;
 }
@@ -78,6 +80,9 @@ export function resolveGameShortcut(key: ShortcutKey, context: GameShortcutConte
   }
   if (key === "c" && context.catchTargetId) {
     return { type: "catchOne", targetId: context.catchTargetId };
+  }
+  if (key === "j" && context.canJumpIn) {
+    return { type: "jumpIn" };
   }
   if (key === "b" && (context.canBatch || context.batchSelecting)) {
     return { type: "toggleBatch" };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card, GameSnapshot } from "@congcard/shared";
-import { canPlayCard, playableCardInHand } from "../src/lib/rules";
+import { canPlayCard, jumpInCardInHand, playableCardInHand } from "../src/lib/rules";
 
 function card(id: string, color: Card["color"], value: Card["value"]): Card {
   return { id, color, value, deckIndex: 0 };
@@ -91,6 +91,7 @@ describe("client rules", () => {
     });
 
     expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+    expect(jumpInCardInHand(state)?.id).toBe("jump-red-5");
   });
 
   it("allows only matching stack cards during a draw stack", () => {

@@ -89,6 +89,37 @@ export function playableCardInHand(snapshot: GameSnapshot | null, card: Card | n
   return handCard && canPlayCard(snapshot, handCard) ? handCard : null;
 }
 
+export function jumpInCardInHand(snapshot: GameSnapshot | null): Card | null {
+  if (
+    !snapshot?.self ||
+    snapshot.self.role !== "player" ||
+    snapshot.phase !== "playing" ||
+    snapshot.pauseReason ||
+    snapshot.pendingBatchPlay ||
+    snapshot.pendingFlip ||
+    snapshot.pendingDraw ||
+    snapshot.oneWindow ||
+    snapshot.currentPlayerId === snapshot.self.id ||
+    !snapshot.settings.jumpInEnabled ||
+    !snapshot.discardTop
+  ) {
+    return null;
+  }
+
+  const selfPlayer = snapshot.players.find((player) => player.id === snapshot.self?.id);
+  if (selfPlayer?.finishedRank) {
+    return null;
+  }
+
+  return snapshot.self.hand.find((card) => {
+    if (!isJumpInMatch(card, snapshot.discardTop!)) {
+      return false;
+    }
+
+    return snapshot.pendingStack ? stackDrawAmount(card) !== null : true;
+  }) ?? null;
+}
+
 export function needsColor(card: Card): boolean {
   return card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
 }

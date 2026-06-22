@@ -13,6 +13,7 @@ const available: GameShortcutContext = {
   canPass: true,
   canCallOne: true,
   catchTargetId: "target",
+  canJumpIn: true,
   canBatch: true,
   batchSelecting: false,
   canOpenRules: true,
@@ -25,12 +26,13 @@ describe("keyboard shortcuts", () => {
     expect(resolveGameShortcut("p", available)).toEqual({ type: "pass" });
     expect(resolveGameShortcut("o", available)).toEqual({ type: "callOne" });
     expect(resolveGameShortcut("c", available)).toEqual({ type: "catchOne", targetId: "target" });
+    expect(resolveGameShortcut("j", available)).toEqual({ type: "jumpIn" });
     expect(resolveGameShortcut("b", available)).toEqual({ type: "toggleBatch" });
     expect(resolveGameShortcut("r", available)).toEqual({ type: "openRules" });
   });
 
   it("blocks all actions when the room setting is disabled", () => {
-    for (const key of ["d", "p", "o", "c", "b", "r", "escape"] as const) {
+    for (const key of ["d", "p", "o", "c", "j", "b", "r", "escape"] as const) {
       expect(resolveGameShortcut(key, { ...available, enabled: false, colorPickerOpen: true })).toBeNull();
     }
   });
@@ -42,11 +44,12 @@ describe("keyboard shortcuts", () => {
       canPass: false,
       canCallOne: false,
       catchTargetId: undefined,
+      canJumpIn: false,
       canBatch: false,
       canOpenRules: false
     };
 
-    for (const key of ["d", "p", "o", "c", "b", "r"] as const) {
+    for (const key of ["d", "p", "o", "c", "j", "b", "r"] as const) {
       expect(resolveGameShortcut(key, blocked)).toBeNull();
     }
   });
@@ -70,6 +73,7 @@ describe("keyboard shortcuts", () => {
 
   it("normalizes supported keys and ignores unknown keys", () => {
     expect(shortcutKey(new KeyboardEvent("keydown", { key: "D" }))).toBe("d");
+    expect(shortcutKey(new KeyboardEvent("keydown", { key: "J" }))).toBe("j");
     expect(shortcutKey(new KeyboardEvent("keydown", { key: "Escape" }))).toBe("escape");
     expect(shortcutKey(new KeyboardEvent("keydown", { key: "1" }))).toBeNull();
   });
