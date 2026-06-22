@@ -41,6 +41,10 @@ const THEME: Record<string, AvatarTheme> = {
 const uriCache = new Map<string, string>();
 
 export function avatarUri(avatarId: string): string {
+  if (avatarId === "bolt") {
+    return "/avatars/soladerp.png";
+  }
+
   const cached = uriCache.get(avatarId);
   if (cached) {
     return cached;
@@ -79,7 +83,7 @@ export function Avatar({ avatarId, size = 40, className = "" }: AvatarProps) {
       alt=""
       aria-hidden="true"
       draggable={false}
-      className={`rounded-full ${className}`}
+      className={`rounded-full object-cover ${className}`}
     />
   );
 }
