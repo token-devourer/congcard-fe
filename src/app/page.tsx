@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { DoorOpen, KeyRound, LoaderCircle, Sparkles, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { Card } from "@congcard/shared";
 import { AVATARS } from "@congcard/shared";
@@ -72,113 +73,112 @@ export default function HomePage() {
   }
 
   return (
-    <main className="app-shell py-6 md:py-10">
-      <header className="flex items-center justify-between gap-3">
-        <div className="display flex items-center gap-3 text-lg font-black">
-          <img src="/icon.svg" alt="" className="h-11 w-11 rounded-2xl shadow-[0_6px_18px_rgba(242,193,78,0.35)]" />
-          <span className="bg-gradient-to-b from-[var(--gold-strong)] to-[var(--gold-deep)] bg-clip-text text-xl tracking-wide text-transparent">
-            {t("common.appName")}
-          </span>
-        </div>
-        <LanguageToggle />
-      </header>
-      <section className="grid min-h-[calc(100dvh-140px)] content-center gap-8 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-7">
-          <div>
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]"
-            >
+    <main className="landing-shell">
+      <div className="app-shell">
+        <header className="landing-nav">
+          <div className="brand-lockup">
+            <img src="/icon.svg" alt="" />
+            <strong>{t("common.appName")}</strong>
+          </div>
+          <LanguageToggle />
+        </header>
+
+        <section className="landing-stage">
+          <div className="landing-copy">
+            <div className="section-label flex items-center gap-2">
+              <Sparkles size={14} aria-hidden="true" />
               {t("common.appName")}
-            </motion.p>
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              className="display mt-3 max-w-2xl text-4xl font-black leading-tight md:text-6xl"
-            >
-              {t("landing.headline")}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mt-3 text-lg text-[var(--muted)]"
-            >
+            </div>
+            <h1 className="landing-title display">{t("landing.headline")}</h1>
+            <p className="landing-subtitle flex items-center gap-2">
+              <Users size={19} aria-hidden="true" />
               {t("landing.subline")}
-            </motion.p>
-          </div>
+            </p>
 
-          <div className="flex justify-center py-6 md:justify-start">
-            <div className="flex">
-              {HERO_CARDS.map((card, index) => {
-                const center = (HERO_CARDS.length - 1) / 2;
-                return (
-                  <motion.div
-                    key={card.id}
-                    className="-ml-8 first:ml-0"
-                    style={{ transformOrigin: "bottom center", zIndex: index }}
-                    initial={{ opacity: 0, y: 60, rotate: 0 }}
-                    animate={{
-                      opacity: 1,
-                      y: Math.abs(index - center) * 9,
-                      rotate: (index - center) * 9
-                    }}
-                    whileHover={{ y: Math.abs(index - center) * 9 - 16, scale: 1.06 }}
-                    transition={{ delay: 0.25 + index * 0.09, type: "spring", stiffness: 260, damping: 20 }}
-                  >
-                    <CardView card={card} />
-                  </motion.div>
-                );
-              })}
+            <div className="hero-card-stage" aria-hidden="true">
+              <div className="flex">
+                {HERO_CARDS.map((card, index) => {
+                  const center = (HERO_CARDS.length - 1) / 2;
+                  return (
+                    <motion.div
+                      key={card.id}
+                      className="-ml-8 first:ml-0"
+                      style={{ transformOrigin: "bottom center", zIndex: index }}
+                      animate={{
+                        y: Math.abs(index - center) * 9,
+                        rotate: (index - center) * 9
+                      }}
+                      whileHover={{ y: Math.abs(index - center) * 9 - 16, scale: 1.06 }}
+                      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                    >
+                      <CardView card={card} />
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="panel p-4 md:p-6"
-        >
-          <div className="grid gap-4">
-            <label className="grid gap-2">
-              <span className="text-sm font-bold text-[var(--muted)]">{t("landing.nickname")}</span>
-              <input className="field" maxLength={20} value={nickname} onChange={(event) => setNickname(event.target.value)} />
-            </label>
+          <section className="landing-profile surface" aria-label={t("landing.nickname")}>
+            <p className="section-label">{t("landing.avatar")}</p>
+            <h2 className="landing-form-heading">{t("landing.create")}</h2>
 
-            <div className="grid gap-2">
-              <span className="text-sm font-bold text-[var(--muted)]">{t("landing.avatar")}</span>
-              <AvatarGrid value={avatarId} onChange={setAvatarId} />
-            </div>
-
-            <form className="grid gap-3" onSubmit={submitCreate}>
-              <button className="button" disabled={busy || !nickname.trim()}>
-                {t("landing.create")}
-              </button>
-            </form>
-
-            <form className="grid gap-3" onSubmit={submitJoin}>
+            <div className="grid gap-4">
               <label className="grid gap-2">
-                <span className="text-sm font-bold text-[var(--muted)]">{t("landing.roomCode")}</span>
+                <span className="text-sm font-bold text-[var(--text-soft)]">{t("landing.nickname")}</span>
                 <input
+                  className="field"
+                  maxLength={20}
+                  value={nickname}
+                  onChange={(event) => setNickname(event.target.value)}
+                  autoComplete="nickname"
+                />
+              </label>
+
+              <div className="grid gap-2">
+                <span className="text-sm font-bold text-[var(--text-soft)]">{t("landing.avatar")}</span>
+                <AvatarGrid value={avatarId} onChange={setAvatarId} />
+              </div>
+
+              <form onSubmit={submitCreate}>
+                <button className="button flex w-full items-center justify-center gap-2" disabled={busy || !nickname.trim()}>
+                  {busy ? <LoaderCircle className="animate-spin" size={18} aria-hidden="true" /> : <DoorOpen size={18} aria-hidden="true" />}
+                  {t("landing.create")}
+                </button>
+              </form>
+
+              <div className="flex items-center gap-3 text-xs font-black uppercase tracking-[0.14em] text-[var(--text-faint)]">
+                <span className="h-px flex-1 bg-[var(--border-soft)]" />
+                {t("landing.join")}
+                <span className="h-px flex-1 bg-[var(--border-soft)]" />
+              </div>
+
+              <form className="landing-action-grid" onSubmit={submitJoin}>
+                <label className="sr-only" htmlFor="room-code">{t("landing.roomCode")}</label>
+                <input
+                  id="room-code"
                   className="field uppercase"
                   maxLength={6}
                   value={roomCode}
                   onChange={(event) => setRoomCode(formatRoomCodeInput(event.target.value))}
                   placeholder="ABC234"
+                  inputMode="text"
+                  autoComplete="off"
                 />
-              </label>
-              <button className="button secondary" disabled={busy || roomCode.trim().length < 6 || !nickname.trim()}>
-                {t("landing.join")}
-              </button>
-            </form>
+                <button
+                  className="button secondary flex items-center justify-center gap-2"
+                  disabled={busy || roomCode.trim().length < 6 || !nickname.trim()}
+                >
+                  <KeyRound size={18} aria-hidden="true" />
+                  {t("landing.join")}
+                </button>
+              </form>
 
-            {error ? <p className="rounded-lg border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</p> : null}
-          </div>
-        </motion.div>
-      </section>
+              {error ? <p className="landing-error" role="alert">{error}</p> : null}
+            </div>
+          </section>
+        </section>
+      </div>
     </main>
   );
 }
