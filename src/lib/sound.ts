@@ -63,6 +63,7 @@ export function soundForEvent(event: UiEvent): SoundName | null {
   switch (event.type) {
     case "yourTurn": return "turn";
     case "penalty": return "penalty";
+    case "drawResult": return "penalty";
     case "skip": return "skip";
     case "reverse": return "reverse";
     case "colorChange": return "wild";
@@ -88,7 +89,7 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
         ? event.level ?? 1
         : 1;
     playSoundAt(sound, startsInMs, level);
-      if (["penalty", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
+      if (["penalty", "drawResult", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
         duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760);
     }
   }

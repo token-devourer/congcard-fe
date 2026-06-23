@@ -823,6 +823,10 @@ export function Board({
   const flipResolving = Boolean(snapshot.pendingFlip);
   const pendingDraw = snapshot.pendingDraw;
   const drawResolving = Boolean(pendingDraw);
+  // While you hunt for a Wild Draw Color, the controls + collection inflate the
+  // hand row; flag it so the board lets the table compress instead of growing
+  // the page past the viewport (a scrollbar that vanished on dismount).
+  const selfColorDraw = pendingDraw?.reason === "colorHunt" && pendingDraw.playerId === snapshot.self?.id;
   const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving || drawResolving;
   const canCallOne =
     isPlayer &&
@@ -1018,7 +1022,7 @@ export function Board({
 
   return (
     <>
-      <section className="board">
+      <section className={`board${selfColorDraw ? " board--color-draw" : ""}`}>
         <div className="board-zone relative">
           <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
           {snapshot.pendingDraw ? <DrawProgress snapshot={snapshot} /> : null}
@@ -1161,6 +1165,7 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
     ? t("board.drawProgressFixed", { current: displayCount, total })
     : pending.reason === "colorHunt"
       ? t("board.drawProgressColor", {
+          drawn: displayCount,
           current: pending.matchesFound ?? 0,
           total: pending.requiredMatches ?? 1,
           color: pending.targetColor ? t(`colors.${pending.targetColor}`) : ""

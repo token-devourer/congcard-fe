@@ -319,6 +319,14 @@ button:disabled {
   overflow-x: hidden;
 }
 
+/* During a Wild Draw Color hunt the hand row carries the draw controls and the
+   running collection, so drop the felt's minimum (RoundTable matches this) and
+   let it compress — otherwise the taller hand pushes the board past the
+   viewport and a scrollbar flashes in until the draw resolves. */
+.board--color-draw {
+  grid-template-rows: minmax(min(280px, 34dvh), 1fr) auto;
+}
+
 /* ---------- Round table ---------- */
 
 .table-rim {
