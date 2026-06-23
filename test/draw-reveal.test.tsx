@@ -145,4 +145,30 @@ describe("authoritative draw controls", () => {
     expect(row).toHaveStyle({ "--draw-card-count": "13" });
     expect(row.lastElementChild).toHaveStyle({ zIndex: "14" });
   });
+
+  it("counts the cards drawn while hunting for a color", () => {
+    renderBoard(snapshot("auto"));
+
+    const status = screen.getByText("Drawing for me").closest('[role="status"]') as HTMLElement;
+    // matchesFound 1 of 2 cyan, but the status now leads with the running draw count.
+    expect(within(status).getByText(/2 drawn.*1\/2 Cyan/)).toBeInTheDocument();
+  });
+
+  it("compresses the felt only while you personally hunt for a color", () => {
+    const { container, rerender } = render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Board snapshot={snapshot()} send={vi.fn()} onLeave={vi.fn()} selectedCard={null} setSelectedCard={vi.fn()} rulesOpen={false} onOpenRules={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+    expect(container.querySelector("section.board")).toHaveClass("board--color-draw");
+
+    const opponentHunt = snapshot();
+    opponentHunt.pendingDraw = { ...opponentHunt.pendingDraw!, playerId: "other" };
+    rerender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Board snapshot={opponentHunt} send={vi.fn()} onLeave={vi.fn()} selectedCard={null} setSelectedCard={vi.fn()} rulesOpen={false} onOpenRules={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+    expect(container.querySelector("section.board")).not.toHaveClass("board--color-draw");
+  });
 });

@@ -71,6 +71,7 @@ function eventPriority(event: UiEvent): number {
     case "jumpIn": return 4;
     case "calledOne": return 4;
     case "penalty":
+    case "drawResult":
     case "stack": return 3;
     case "skip":
     case "reverse":
@@ -85,6 +86,10 @@ export function eventToastDurationMs(event: UiEvent): number {
   }
   if (event.type === "penalty" || event.type === "stack") {
     return 2000;
+  }
+
+  if (event.type === "drawResult") {
+    return 2400;
   }
 
   if (event.type === "skip" || event.type === "reverse" || event.type === "colorChange") {
@@ -331,6 +336,8 @@ function eventWash(event: UiEvent): string {
       return `radial-gradient(circle at center, ${COLOR_WASH[event.color] ?? "rgba(242, 193, 78, 0.38)"}, transparent 48%)`;
     case "stack":
       return "radial-gradient(circle at center, rgba(255, 217, 96, 0.42), transparent 42%)";
+    case "drawResult":
+      return "radial-gradient(circle at center, rgba(255, 217, 96, 0.34), transparent 46%)";
     case "calledOne":
       return "radial-gradient(circle at center, rgba(255, 217, 96, 0.32), transparent 42%)";
     case "catchWindow":
@@ -354,6 +361,19 @@ function toastContent(
           ? t("events.youDrew", { count: event.count })
           : t("events.playerDrew", { name: event.nickname, count: event.count }),
         background: "linear-gradient(180deg, #ff7b68, var(--red) 58%, #8d2019)"
+      };
+    case "drawResult":
+      return {
+        label: `+${event.count}`,
+        sublabel: event.color
+          ? event.self
+            ? t("events.drawColorResultSelf", { count: event.count, color: t(`colors.${event.color}`) })
+            : t("events.drawColorResultOther", { name: event.nickname, count: event.count, color: t(`colors.${event.color}`) })
+          : event.self
+            ? t("events.youDrew", { count: event.count })
+            : t("events.playerDrew", { name: event.nickname, count: event.count }),
+        background: "linear-gradient(180deg, #fff0a8, #ffc533 56%, #b66f08)",
+        color: "#211405"
       };
     case "skip":
       return { label: t("events.skip"), background: "linear-gradient(180deg, #77808b, #242c35 62%, #10161d)" };

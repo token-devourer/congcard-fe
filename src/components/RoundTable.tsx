@@ -63,6 +63,14 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
   const highlightedPlayerId = snapshot.pendingStack?.kind === "wildColor" ? snapshot.pendingStack.targetPlayerId : snapshot.currentPlayerId;
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
+  // The Wild Draw Color controls + collection enlarge the hand row, so let the
+  // felt give up height here (matched by .board--color-draw) instead of pushing
+  // the page into a scrollbar while you draw.
+  const selfColorDraw = snapshot.pendingDraw?.reason === "colorHunt" && snapshot.pendingDraw.playerId === snapshot.self?.id;
+  const mobileTableMinH = selfColorDraw ? "min-h-[min(220px,30dvh)]" : "min-h-[min(340px,44dvh)]";
+  const tableMinH = selfColorDraw
+    ? "min-h-[min(280px,34dvh)]"
+    : "min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]";
   const now = useNow(100);
   const [hoveredOpponentId, setHoveredOpponentId] = useState<string>();
   const [pinnedOpponentId, setPinnedOpponentId] = useState<string>();
@@ -168,7 +176,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     const opponents = ordered.filter((p) => p.id !== snapshot.self?.id);
 
     return (
-      <div className="relative grid h-full min-h-[min(340px,44dvh)] w-full max-w-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden px-1 pb-1 pt-2">
+      <div className={`relative grid h-full ${mobileTableMinH} w-full max-w-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2 overflow-hidden px-1 pb-1 pt-2`}>
         <div
           className={`opponent-strip ${opponents.length > 3 ? "is-scrollable" : "is-centered"}`}
           role="list"
@@ -211,7 +219,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
 
 
   return (
-    <div className="relative h-full min-h-[min(420px,46dvh)] w-full max-w-full min-w-0 overflow-hidden md:min-h-[min(460px,50dvh)]">
+    <div className={`relative h-full ${tableMinH} w-full max-w-full min-w-0 overflow-hidden`}>
       {/* Width-capped, centered stage: the felt keeps a sane aspect ratio on
           short/wide screens instead of stretching into a flat sliver. Seats
           and the center pile share its coordinate space so geometry holds. */}

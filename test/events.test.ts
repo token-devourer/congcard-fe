@@ -342,4 +342,34 @@ describe("diffSnapshots", () => {
     expect(soundForEvent({ id: 12, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
     expect(soundForEvent({ id: 13, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
+
+  it("announces the total drawn when a Wild Draw Color hunt clears", () => {
+    const prev = snapshot({
+      presentationEvents: [],
+      pendingDraw: { playerId: "b", reason: "colorHunt", mode: "auto", drawnCount: 9, targetColor: "cyan", requiredMatches: 1, matchesFound: 1 }
+    });
+    const next = snapshot({ presentationEvents: [] });
+
+    const result = diffSnapshots(prev, next).find((event) => event.type === "drawResult");
+    expect(result).toMatchObject({ type: "drawResult", playerId: "b", count: 9, color: "cyan", self: false });
+    expect(soundForEvent(result!)).toBe("penalty");
+  });
+
+  it("does not announce a draw result mid-hunt or for ordinary draws", () => {
+    const hunt = { playerId: "b", reason: "colorHunt", mode: "auto", targetColor: "cyan", requiredMatches: 1, matchesFound: 0 } as const;
+
+    // Still drawing (pending draw persists) — nothing to summarise yet.
+    const midHunt = diffSnapshots(
+      snapshot({ presentationEvents: [], pendingDraw: { ...hunt, drawnCount: 3 } }),
+      snapshot({ presentationEvents: [], pendingDraw: { ...hunt, drawnCount: 4 } })
+    );
+    expect(midHunt.map((event) => event.type)).not.toContain("drawResult");
+
+    // An ordinary fixed draw resolving is not a color hunt.
+    const fixedDraw = diffSnapshots(
+      snapshot({ presentationEvents: [], pendingDraw: { playerId: "b", reason: "penalty", mode: "auto", drawnCount: 2, totalCount: 2, matchesFound: 0 } }),
+      snapshot({ presentationEvents: [] })
+    );
+    expect(fixedDraw.map((event) => event.type)).not.toContain("drawResult");
+  });
 });
