@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, OpponentCardFace, PendingStack, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
+import { isSelfColorHunt } from "@/lib/rules";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
 import { CardView } from "./CardView";
@@ -66,7 +67,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   // The Wild Draw Color controls + collection enlarge the hand row, so let the
   // felt give up height here (matched by .board--color-draw) instead of pushing
   // the page into a scrollbar while you draw.
-  const selfColorDraw = snapshot.pendingDraw?.reason === "colorHunt" && snapshot.pendingDraw.playerId === snapshot.self?.id;
+  const selfColorDraw = isSelfColorHunt(snapshot);
   const mobileTableMinH = selfColorDraw ? "min-h-[min(220px,30dvh)]" : "min-h-[min(340px,44dvh)]";
   const tableMinH = selfColorDraw
     ? "min-h-[min(280px,34dvh)]"

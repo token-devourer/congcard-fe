@@ -3,7 +3,7 @@ import type { CardValue, Color, GameSnapshot, PendingStack, PresentationEvent } 
 export type UiEvent = (
   | { id: number; type: "yourTurn" }
   | { id: number; type: "penalty"; playerId: string; nickname: string; count: number; self: boolean }
-  | { id: number; type: "drawResult"; playerId: string; nickname: string; count: number; color?: Color; self: boolean }
+  | { id: number; type: "drawResult"; playerId: string; nickname: string; count: number; color: Color; self: boolean }
   | { id: number; type: "jumpIn"; playerId: string; nickname: string; self: boolean }
   | { id: number; type: "skip"; level?: number }
   | { id: number; type: "reverse"; direction: 1 | -1; level?: number }
@@ -67,7 +67,12 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   // penalty popup threshold), so the haul was never announced. When the pending
   // draw clears, report the total drawn. Runs in both the presentation-event and
   // legacy diff paths, so it sits ahead of the presentationEvents branch.
-  if (prev.pendingDraw?.reason === "colorHunt" && !next.pendingDraw && prev.pendingDraw.drawnCount > 0) {
+  if (
+    prev.pendingDraw?.reason === "colorHunt" &&
+    prev.pendingDraw.targetColor &&
+    !next.pendingDraw &&
+    prev.pendingDraw.drawnCount > 0
+  ) {
     const drawer = next.players.find((player) => player.id === prev.pendingDraw!.playerId);
     if (drawer) {
       events.push({
@@ -76,7 +81,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
         playerId: drawer.id,
         nickname: drawer.nickname,
         count: prev.pendingDraw.drawnCount,
-        ...(prev.pendingDraw.targetColor ? { color: prev.pendingDraw.targetColor } : {}),
+        color: prev.pendingDraw.targetColor,
         self: drawer.id === selfId
       });
     }
