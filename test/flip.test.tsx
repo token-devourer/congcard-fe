@@ -215,7 +215,13 @@ describe("Flip presentation", () => {
       </NextIntlClientProvider>
     );
 
-    expect(screen.getByText("Penalty").closest(".tableseat")).toHaveClass("active");
-    expect(screen.getByText("Next").closest(".tableseat")).not.toHaveClass("active");
+    const seatFor = (nickname: string) =>
+      screen
+        .getAllByText(nickname)
+        .map((element) => element.closest(".tableseat"))
+        .find((seat): seat is HTMLElement => seat !== null);
+
+    expect(seatFor("Penalty")).toHaveClass("active");
+    expect(seatFor("Next")).not.toHaveClass("active");
   });
 });
