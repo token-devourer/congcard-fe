@@ -128,14 +128,50 @@
   padding: 12px 0 0;
 }
 
-.lobby-settings-panel > .button,
-.lobby-settings-panel > p:last-child {
+.lobby-settings-panel > .button {
   position: sticky;
   z-index: 5;
   bottom: -12px;
   margin: 4px -4px -4px;
   border-top: 1px solid var(--border-soft);
   box-shadow: 0 -12px 24px rgba(7, 16, 12, 0.88);
+}
+
+/* Sticky CTA floats over scrolling content, so a translucent disabled state
+   lets rows bleed through. Keep it opaque; convey disabled via desaturation. */
+.lobby-settings-panel > .button:disabled {
+  opacity: 1;
+  filter: grayscale(0.4) brightness(0.78);
+}
+
+.lobby-waiting-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.lobby-waiting-host-spin {
+  color: var(--gold);
+  animation: lobby-waiting-spin 1.1s linear infinite;
+}
+
+@keyframes lobby-waiting-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-waiting-host-spin {
+    animation: none;
+  }
 }
 
 @media (max-width: 860px) {
@@ -154,8 +190,7 @@
   }
 
   .lobby-settings-heading,
-  .lobby-settings-panel > .button,
-  .lobby-settings-panel > p:last-child {
+  .lobby-settings-panel > .button {
     position: static;
   }
 }
