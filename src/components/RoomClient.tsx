@@ -16,6 +16,7 @@ import {
   Gamepad2,
   Link2,
   List,
+  Loader2,
   Settings2,
   Sparkles,
   Trophy,
@@ -780,7 +781,10 @@ export function Lobby({
             {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
           </button>
         ) : (
-          <p className="text-center text-sm text-[var(--muted)]">{t("lobby.waitingHost")}</p>
+          <p className="lobby-waiting-host">
+            <Loader2 size={15} aria-hidden="true" className="lobby-waiting-host-spin" />
+            {t("lobby.waitingHost")}
+          </p>
         )}
       </aside>
     </section>
