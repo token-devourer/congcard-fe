@@ -61,8 +61,20 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
     sorted.findIndex((player) => player.id === snapshot.self?.id)
   );
   const ordered = sorted.map((_, index) => sorted[(selfIndex + index) % sorted.length]);
-  const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
-  const highlightedPlayerId = snapshot.pendingStack?.kind === "wildColor" ? snapshot.pendingStack.targetPlayerId : snapshot.currentPlayerId;
+  // `currentPlayerId` advances to the next seat the moment a penalty/colour draw
+  // begins — the engine clears `pendingStack` and moves the turn before the
+  // drawer finishes (BE resolveStackDraw) — so a plain currentPlayerId highlight
+  // jumps ahead while the penalised player is still drawing. Prefer the active
+  // drawer, then a pending wild-colour stack target, then the current player.
+  const highlightedPlayerId =
+    snapshot.pendingDraw?.playerId ??
+    (snapshot.pendingStack?.kind === "wildColor" ? snapshot.pendingStack.targetPlayerId : undefined) ??
+    snapshot.currentPlayerId;
+  const activePlayer = snapshot.players.find((player) => player.id === highlightedPlayerId);
+  // `isMyTurn` tracks currentPlayerId, which races ahead during a penalty draw —
+  // gate the chip's "your turn" on the highlighted focus actually being you so it
+  // never pairs the drawer's avatar with a premature "your turn" label.
+  const focusIsSelf = Boolean(highlightedPlayerId && highlightedPlayerId === snapshot.self?.id);
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
   // The Wild Draw Color controls + collection enlarge the hand row, so let the
   // felt give up height here (matched by .board--color-draw) instead of pushing
@@ -113,7 +125,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
 
   const centerPile = (
     <div className="grid justify-items-center gap-2.5">
-      <TurnChip player={activePlayer} isMyTurn={isMyTurn} deadline={snapshot.turnDeadline} />
+      <TurnChip player={activePlayer} isMyTurn={isMyTurn && focusIsSelf} deadline={snapshot.turnDeadline} />
       {snapshot.pendingStack ? <StackPenaltyChip stack={snapshot.pendingStack} /> : null}
 
       <div className="flex items-center justify-center gap-4">
