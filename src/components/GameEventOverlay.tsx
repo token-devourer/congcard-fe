@@ -365,13 +365,9 @@ function toastContent(
     case "drawResult":
       return {
         label: `+${event.count}`,
-        sublabel: event.color
-          ? event.self
-            ? t("events.drawColorResultSelf", { count: event.count, color: t(`colors.${event.color}`) })
-            : t("events.drawColorResultOther", { name: event.nickname, count: event.count, color: t(`colors.${event.color}`) })
-          : event.self
-            ? t("events.youDrew", { count: event.count })
-            : t("events.playerDrew", { name: event.nickname, count: event.count }),
+        sublabel: event.self
+          ? t("events.drawColorResultSelf", { count: event.count, color: t(`colors.${event.color}`) })
+          : t("events.drawColorResultOther", { name: event.nickname, count: event.count, color: t(`colors.${event.color}`) }),
         background: "linear-gradient(180deg, #fff0a8, #ffc533 56%, #b66f08)",
         color: "#211405"
       };

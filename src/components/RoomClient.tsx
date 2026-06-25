@@ -29,7 +29,7 @@ import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { batchCardGroups } from "@/lib/batch";
-import { jumpInCardInHand, needsColor, playableCardInHand } from "@/lib/rules";
+import { isSelfColorHunt, jumpInCardInHand, needsColor, playableCardInHand } from "@/lib/rules";
 import { isShortcutWindowOpen, resolveGameShortcut, shortcutKey, shouldIgnoreShortcut } from "@/lib/shortcuts";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
@@ -830,7 +830,7 @@ export function Board({
   // While you hunt for a Wild Draw Color, the controls + collection inflate the
   // hand row; flag it so the board lets the table compress instead of growing
   // the page past the viewport (a scrollbar that vanished on dismount).
-  const selfColorDraw = pendingDraw?.reason === "colorHunt" && pendingDraw.playerId === snapshot.self?.id;
+  const selfColorDraw = isSelfColorHunt(snapshot);
   const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving || drawResolving;
   const canCallOne =
     isPlayer &&

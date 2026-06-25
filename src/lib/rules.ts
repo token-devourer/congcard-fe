@@ -1,5 +1,19 @@
 import type { Card, GameSnapshot, PendingStack } from "@congcard/shared";
 
+/**
+ * True while the local player is the one hunting for a Wild Draw Color. The
+ * draw controls + running collection inflate the hand row, so the board and
+ * round table both shrink the felt during a self color hunt instead of letting
+ * the page grow past the viewport.
+ */
+export function isSelfColorHunt(snapshot: GameSnapshot | null): boolean {
+  const pendingDraw = snapshot?.pendingDraw;
+  if (!pendingDraw) {
+    return false;
+  }
+  return pendingDraw.reason === "colorHunt" && pendingDraw.playerId === snapshot?.self?.id;
+}
+
 export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean {
   if (
     !snapshot?.self ||
