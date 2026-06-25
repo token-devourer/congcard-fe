@@ -327,6 +327,22 @@ button:disabled {
   grid-template-rows: minmax(min(280px, 34dvh), 1fr) auto;
 }
 
+/* While you hunt for a Wild Draw Color you keep drawing, so the fan hand grows
+   card by card past the compressed felt and tips the board over the viewport — a
+   scrollbar flashes in beside the table until the hunt resolves. The hand is
+   non-interactive during a draw (no card is playable), so cap the fan and let it
+   scroll internally instead of growing the board. Large hands past the grouping
+   threshold already ride the capped .hand-group-rail. */
+.board--color-draw .hand-stack {
+  max-height: clamp(150px, 22dvh, 220px);
+  /* explicit x:hidden so the y-scroll doesn't promote overflow-x to auto and
+     flash a horizontal bar; the floor keeps one card row fully visible. */
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(242, 193, 78, 0.35) transparent;
+}
+
 /* ---------- Round table ---------- */
 
 .table-rim {
