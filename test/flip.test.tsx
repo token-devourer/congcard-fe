@@ -224,4 +224,72 @@ describe("Flip presentation", () => {
     expect(seatFor("Penalty")).toHaveClass("active");
     expect(seatFor("Next")).not.toHaveClass("active");
   });
+
+  it("keeps the highlight on the penalty drawer during the wild color draw", () => {
+    const game = flipSnapshot();
+    delete game.pendingFlip;
+    // Once drawing starts the engine has already cleared pendingStack and moved
+    // the turn to the next seat, so only pendingDraw marks the real drawer.
+    game.currentPlayerId = "next";
+    game.activeColor = "blue";
+    game.discardTop = card("top-blue", "blue", 7);
+    game.pendingDraw = {
+      playerId: "penalty",
+      reason: "colorHunt",
+      mode: "choice",
+      drawnCount: 2,
+      targetColor: "blue",
+      requiredMatches: 1,
+      matchesFound: 0
+    };
+    game.players = [
+      {
+        id: "penalty",
+        nickname: "Penalty",
+        avatarId: "sun",
+        seat: 0,
+        cardCount: 5,
+        score: 0,
+        connected: true,
+        away: false,
+        isHost: true,
+        ready: false,
+        calledOne: false,
+        autoPlay: false,
+        missedDisconnectedTurns: 0,
+        ping: 0
+      },
+      {
+        id: "next",
+        nickname: "Next",
+        avatarId: "moon",
+        seat: 1,
+        cardCount: 4,
+        score: 0,
+        connected: true,
+        away: false,
+        isHost: false,
+        ready: false,
+        calledOne: false,
+        autoPlay: false,
+        missedDisconnectedTurns: 0,
+        ping: 0
+      }
+    ];
+
+    render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <RoundTable snapshot={game} isMyTurn={false} canDraw={false} onDraw={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    const seatFor = (nickname: string) =>
+      screen
+        .getAllByText(nickname)
+        .map((element) => element.closest(".tableseat"))
+        .find((seat): seat is HTMLElement => seat !== null);
+
+    expect(seatFor("Penalty")).toHaveClass("active");
+    expect(seatFor("Next")).not.toHaveClass("active");
+  });
 });
