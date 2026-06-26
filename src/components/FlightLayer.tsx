@@ -208,8 +208,8 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   if (flight.kind === "card") {
     el.className = "flight-card-shell";
     const card = document.createElement("div");
-    const faceClass = `card-face small ${flight.card.side ? `card-side-${flight.card.side}` : "card-side-light"} ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
-    card.className = flight.drawReveal ? "card-face small card-back flight-reveal-flip" : faceClass;
+    const faceClass = `card-face card-small ${flight.card.side ? `card-side-${flight.card.side}` : "card-side-light"} ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
+    card.className = flight.drawReveal ? "card-face card-small card-back flight-reveal-flip" : faceClass;
     el.appendChild(card);
     const label = document.createElement("span");
     label.className = "flight-card-label";
@@ -232,7 +232,7 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   } else if (flight.kind === "back") {
     el.className = "flight-card-shell";
     const card = document.createElement("div");
-    card.className = "card-face small card-back";
+    card.className = "card-face card-small card-back";
     el.appendChild(card);
     if (!flight.dealing && flight.drawTotal && flight.drawTotal > 1 && flight.drawIndex) {
       const badge = document.createElement("span");

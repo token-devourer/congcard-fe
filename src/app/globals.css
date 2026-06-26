@@ -48,9 +48,7 @@ body {
   min-height: 100dvh;
   overflow-x: hidden;
   background:
-    radial-gradient(1100px 720px at 50% -8%, rgba(47, 155, 103, 0.32), transparent 64%),
-    radial-gradient(900px 600px at 88% 110%, rgba(61, 126, 219, 0.12), transparent 60%),
-    radial-gradient(900px 600px at 8% 108%, rgba(224, 73, 60, 0.1), transparent 60%),
+    radial-gradient(ellipse at 50% 0%, rgba(47, 155, 103, 0.2), transparent 70%),
     var(--bg);
   color: var(--text);
   font-family: var(--font-body, "Nunito"), Arial, Helvetica, sans-serif;
@@ -212,14 +210,12 @@ button:disabled {
 
 .panel {
   border: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(52, 80, 66, 0.55), rgba(22, 32, 27, 0.94)),
-    radial-gradient(600px 200px at 50% -20%, rgba(242, 193, 78, 0.10), transparent 70%);
+  background: linear-gradient(180deg, rgba(52, 80, 66, 0.55), rgba(22, 32, 27, 0.94));
   border-radius: 18px;
-  backdrop-filter: blur(8px);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 24px 60px rgba(0, 0, 0, 0.4);
+  contain: layout paint;
 }
 
 .button {
@@ -240,9 +236,7 @@ button:disabled {
   cursor: pointer;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 -3px 0 rgba(0, 0, 0, 0.2) inset,
-    0 6px 0 rgba(0, 0, 0, 0.28),
-    0 14px 32px rgba(242, 193, 78, 0.32);
+    0 8px 24px rgba(242, 193, 78, 0.25);
   transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
   overflow: hidden;
 }
@@ -361,8 +355,8 @@ button:disabled {
   border-radius: 50%;
   background: radial-gradient(ellipse at 50% 35%, #2e8552, #1e5c38 55%, #143f27 100%);
   box-shadow:
-    inset 0 0 70px rgba(0, 0, 0, 0.5),
     inset 0 0 0 2px rgba(242, 193, 78, 0.16);
+  contain: layout paint style;
 }
 
 .tableseat {
@@ -435,6 +429,7 @@ button:disabled {
   gap: clamp(0px, 0.8vw, 8px);
   overflow: visible;
   padding-inline: clamp(4px, 1vw, 16px);
+  contain: layout paint;
 }
 
 .hand-row {
@@ -697,14 +692,12 @@ button:disabled {
   overflow: hidden;
   border: 1px solid rgba(242, 193, 78, 0.58);
   border-radius: 18px;
-  background:
-    radial-gradient(120% 48% at 50% 0%, rgba(242, 193, 78, 0.16), transparent 68%),
-    linear-gradient(160deg, rgba(25, 50, 37, 0.98), rgba(5, 15, 10, 0.98));
+  background: linear-gradient(160deg, rgba(25, 50, 37, 0.98), rgba(5, 15, 10, 0.98));
   box-shadow:
     0 24px 64px rgba(0, 0, 0, 0.62),
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
     0 0 30px rgba(242, 193, 78, 0.14);
-  backdrop-filter: blur(14px);
+  contain: layout paint style;
 }
 
 body.flip-dark .opponent-face-tray {
@@ -824,9 +817,8 @@ body.flip-dark .opponent-face-tray {
   padding: 9px 11px;
   border: 1px solid rgba(242, 193, 78, 0.65);
   border-radius: 12px;
-  background: rgba(8, 18, 13, 0.94);
+  background: rgba(8, 18, 13, 0.96);
   box-shadow: 0 0 26px rgba(242, 193, 78, 0.22);
-  backdrop-filter: blur(8px);
 }
 
 .draw-progress-panel .card-face {
@@ -943,7 +935,7 @@ body.flip-dark .opponent-face-tray {
 
 body.flip-light .table-felt {
   background: radial-gradient(ellipse at 50% 28%, #54a86c, #27724a 58%, #174631 100%);
-  box-shadow: inset 0 0 64px rgba(40, 25, 6, 0.28), inset 0 0 0 2px rgba(255, 229, 154, 0.28);
+  box-shadow: inset 0 0 0 2px rgba(255, 229, 154, 0.28);
 }
 
 body.flip-dark .table-rim {
@@ -956,7 +948,7 @@ body.flip-dark .table-felt {
     radial-gradient(circle at 72% 66%, rgba(107,211,255,.75) 0 1px, transparent 2px),
     radial-gradient(ellipse at 50% 38%, #263c61, #171f3d 58%, #0b1025 100%);
   background-size: 160px 160px, 210px 210px, auto;
-  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.64), inset 0 0 0 2px rgba(137, 119, 255, 0.26);
+  box-shadow: inset 0 0 0 2px rgba(137, 119, 255, 0.26);
 }
 
 .table-rim,
@@ -966,8 +958,7 @@ body.flip-dark .table-felt {
 
 body.flip-light {
   background:
-    radial-gradient(900px 520px at 50% -4%, rgba(255, 232, 159, 0.28), transparent 68%),
-    radial-gradient(760px 520px at 15% 105%, rgba(90, 196, 140, 0.2), transparent 64%),
+    radial-gradient(ellipse at 50% 0%, rgba(255, 232, 159, 0.2), transparent 70%),
     linear-gradient(180deg, #153c2b, #0a1812 74%);
 }
 
@@ -975,10 +966,9 @@ body.flip-dark {
   background:
     radial-gradient(circle at 14% 12%, rgba(255,255,255,0.82) 0 1px, transparent 2px),
     radial-gradient(circle at 78% 22%, rgba(126,208,255,0.7) 0 1px, transparent 2px),
-    radial-gradient(circle at 42% 8%, rgba(255,189,230,0.75) 0 1px, transparent 2px),
-    radial-gradient(900px 650px at 50% 30%, rgba(77, 60, 150, 0.24), transparent 70%),
+    radial-gradient(ellipse at 50% 30%, rgba(77, 60, 150, 0.2), transparent 70%),
     linear-gradient(180deg, #080b22, #080d18 68%, #05080d);
-  background-size: 190px 190px, 240px 240px, 310px 310px, auto, auto;
+  background-size: 190px 190px, 240px 240px, auto, auto;
 }
 
 .challenge-panel {
@@ -1380,6 +1370,57 @@ body.flip-dark .deal-table {
 
 /* ---------- Cards ---------- */
 
+/* Card sizing classes — replace inline --card-width */
+.card-normal {
+  --card-width: 88px;
+  --card-radius: 14px;
+  --card-corner-x: calc(var(--card-width) * 0.038);
+  --card-corner-y: calc(var(--card-width) * 0.028);
+  --card-corner-text-nudge: calc(var(--card-width) * 0.028);
+  --card-corner-font-size: calc(var(--card-width) * 0.19);
+  --card-corner-icon-size: calc(var(--card-width) * 0.175);
+  --card-center-number-size: calc(var(--card-width) * 0.29);
+  --card-center-symbol-size: calc(var(--card-width) * 0.43);
+  --card-center-icon-size: calc(var(--card-width) * 0.43);
+  --card-draw-label-size: calc(var(--card-width) * 0.24);
+  --card-draw-label-corner-size: calc(var(--card-width) * 0.16);
+  --card-draw-glyph-height: calc(var(--card-width) * 0.74);
+  --card-wild-badge-size: calc(var(--card-width) * 0.46);
+  --card-back-mark-size: calc(var(--card-width) * 0.55);
+  --card-back-mark-font-size: calc(var(--card-width) * 0.16);
+}
+
+.card-small {
+  --card-width: 56px;
+  --card-radius: 9px;
+  --card-corner-x: calc(var(--card-width) * 0.038);
+  --card-corner-y: calc(var(--card-width) * 0.028);
+  --card-corner-text-nudge: calc(var(--card-width) * 0.028);
+  --card-corner-font-size: calc(var(--card-width) * 0.19);
+  --card-corner-icon-size: calc(var(--card-width) * 0.175);
+  --card-center-number-size: calc(var(--card-width) * 0.29);
+  --card-center-symbol-size: calc(var(--card-width) * 0.43);
+  --card-center-icon-size: calc(var(--card-width) * 0.43);
+  --card-draw-label-size: calc(var(--card-width) * 0.24);
+  --card-draw-label-corner-size: calc(var(--card-width) * 0.16);
+  --card-draw-glyph-height: calc(var(--card-width) * 0.74);
+  --card-wild-badge-size: calc(var(--card-width) * 0.46);
+  --card-back-mark-size: calc(var(--card-width) * 0.55);
+  --card-back-mark-font-size: calc(var(--card-width) * 0.16);
+}
+
+.card-micro {
+  --card-width: 12px;
+  --card-radius: 2px;
+  border-width: 0;
+  box-shadow: none;
+}
+
+.card-micro .cartouche,
+.card-micro .card-corner-br {
+  display: none;
+}
+
 .card-face {
   --card-width: 88px;
   --card-radius: 14px;
@@ -1407,32 +1448,15 @@ body.flip-dark .deal-table {
   color: white;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
-    0 -2px 6px rgba(0, 0, 0, 0.3) inset,
-    0 14px 28px rgba(0, 0, 0, 0.45);
+    0 10px 24px rgba(0, 0, 0, 0.4);
   transform-style: preserve-3d;
   transition:
     transform 180ms cubic-bezier(.2,.8,.2,1),
     box-shadow 180ms ease,
     filter 180ms ease;
-  will-change: transform;
 }
 
-.card-face.small {
-  --card-width: 56px;
-  --card-radius: 9px;
-}
 
-.card-face.micro {
-  --card-width: 12px;
-  --card-radius: 2px;
-  border-width: 0;
-  box-shadow: none;
-}
-
-.card-face.micro .cartouche,
-.card-face.micro .card-corner-br {
-  display: none;
-}
 
 button.card-face:not(:disabled) {
   cursor: pointer;
@@ -1445,6 +1469,7 @@ button.card-face:not(:disabled) {
     0 0 24px rgba(242, 193, 78, 0.55),
     0 22px 36px rgba(242, 193, 78, 0.32);
   animation: card-idle-rock 3.6s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* Stagger the idle rock across siblings so the hand breathes instead of marching. */
@@ -1625,59 +1650,35 @@ button.card-face.playable:active {
    read as a single, congkak monochrome piece instead of a clashing rainbow. */
 
 .card-red {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 153, 122, 0.76), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(255, 26, 95, 0.46), transparent 58%),
-    linear-gradient(145deg, #ff6f58 0%, #ff284a 46%, #a9002d 100%);
+  background: linear-gradient(145deg, #ff6f58 0%, #ff284a 50%, #a9002d 100%);
 }
 
 .card-blue {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(107, 205, 255, 0.78), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(22, 211, 255, 0.44), transparent 58%),
-    linear-gradient(145deg, #35b8ff 0%, #1275ff 48%, #1231ac 100%);
+  background: linear-gradient(145deg, #35b8ff 0%, #1275ff 50%, #1231ac 100%);
 }
 
 .card-green {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(153, 255, 159, 0.78), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(46, 255, 86, 0.4), transparent 58%),
-    linear-gradient(145deg, #5bf071 0%, #1bc651 48%, #0b712c 100%);
+  background: linear-gradient(145deg, #5bf071 0%, #1bc651 50%, #0b712c 100%);
 }
 
 .card-yellow {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.82), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(255, 216, 54, 0.4), transparent 58%),
-    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
+  background: linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
 }
 
 .card-orange {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 242, 153, 0.84), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(255, 184, 35, 0.48), transparent 58%),
-    linear-gradient(145deg, #ffd65a 0%, #f4aa18 52%, #bd6900 100%);
+  background: linear-gradient(145deg, #ffd65a 0%, #f4aa18 50%, #bd6900 100%);
 }
 
 .card-cyan {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(154, 250, 255, 0.8), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(23, 120, 210, 0.42), transparent 58%),
-    linear-gradient(145deg, #56e8f2 0%, #19b9d1 50%, #12618d 100%);
+  background: linear-gradient(145deg, #56e8f2 0%, #19b9d1 50%, #12618d 100%);
 }
 
 .card-purple {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(218, 177, 255, 0.76), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(86, 40, 176, 0.5), transparent 58%),
-    linear-gradient(145deg, #b483ff 0%, #784bd0 50%, #3d237e 100%);
+  background: linear-gradient(145deg, #b483ff 0%, #784bd0 50%, #3d237e 100%);
 }
 
 .card-pink {
-  background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 185, 225, 0.8), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(196, 26, 111, 0.48), transparent 58%),
-    linear-gradient(145deg, #ff8bc8 0%, #e84999 50%, #8e235f 100%);
+  background: linear-gradient(145deg, #ff8bc8 0%, #e84999 50%, #8e235f 100%);
 }
 
 .card-wild-color-label {
@@ -1694,8 +1695,7 @@ button.card-face.playable:active {
   place-items: center;
   overflow: hidden;
   pointer-events: none;
-  background: rgba(3, 6, 14, 0.3);
-  backdrop-filter: blur(2px);
+  background: rgba(3, 6, 14, 0.5);
 }
 
 .flip-transition-ring {
@@ -1752,12 +1752,7 @@ button.card-face.playable:active {
 
 /* Onyx with subtle damask pattern + faint gold vignette. No rainbow. */
 .card-wild {
-  background:
-    radial-gradient(90% 75% at 23% 18%, rgba(255, 74, 99, 0.42), transparent 46%),
-    radial-gradient(88% 72% at 80% 20%, rgba(79, 167, 255, 0.44), transparent 50%),
-    radial-gradient(88% 76% at 24% 86%, rgba(65, 255, 161, 0.32), transparent 48%),
-    radial-gradient(82% 70% at 82% 84%, rgba(255, 218, 68, 0.3), transparent 48%),
-    linear-gradient(145deg, #343845 0%, #141824 50%, #070912 100%);
+  background: linear-gradient(145deg, #343845 0%, #141824 50%, #070912 100%);
   color: #ffe39a;
 }
 
@@ -1986,7 +1981,7 @@ body.flip-dark .card-back {
     --card-width: 70px;
   }
 
-  .card-face.small {
+  .card-small {
     --card-width: 46px;
   }
 
@@ -2105,7 +2100,7 @@ body.flip-dark .card-back {
     border-radius: 11px;
   }
 
-  .card-face.small {
+  .card-small {
     --card-width: 42px;
   }
 
@@ -2206,7 +2201,7 @@ body.flip-dark .card-back {
     --card-width: 58px;
   }
 
-  .card-face.small {
+  .card-small {
     --card-width: 39px;
   }
 
@@ -2233,7 +2228,7 @@ body.flip-dark .card-back {
     border-radius: 10px;
   }
 
-  .card-face.small {
+  .card-small {
     --card-width: 44px;
   }
 
@@ -2366,3 +2361,88 @@ body.flip-dark .card-back {
   flex: 0 0 auto;
   scroll-snap-align: start;
 }
+
+/* ==========================================================================
+   LOW GRAPHICS PRESET — Applied via .low-graphics on <html> or <body>
+   ========================================================================== */
+.low-graphics {
+  /* Disable all expensive gradients */
+  --gradient-simplify: 1;
+}
+
+.low-graphics .card-face {
+  /* Remove shine animation */
+}
+.low-graphics .card-face.playable::before {
+  animation: none !important;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.15), transparent 40%) !important;
+}
+
+.low-graphics .card-face.playable {
+  transform: translateY(-8px) !important;
+  animation: none !important;
+  box-shadow:
+    0 0 0 3px rgba(242, 193, 78, 0.95),
+    0 12px 24px rgba(242, 193, 78, 0.25) !important;
+}
+
+.low-graphics .button {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 6px 0 rgba(0, 0, 0, 0.25) !important;
+}
+.low-graphics .button::after { display: none !important; }
+
+.low-graphics .tableseat.active { animation: none !important; }
+
+.low-graphics .panel,
+.low-graphics .draw-progress-panel,
+.low-graphics .opponent-face-tray,
+.low-graphics .challenge-panel,
+.low-graphics .batch-selector {
+  backdrop-filter: none !important;
+  background: rgba(8, 12, 9, 0.92) !important;
+}
+
+.low-graphics .table-felt {
+  background: #1e5c38 !important;
+  box-shadow: inset 0 0 0 2px rgba(242, 193, 78, 0.16) !important;
+}
+
+.low-graphics .flip-transition-layer {
+  backdrop-filter: none !important;
+  background: rgba(3, 6, 14, 0.5) !important;
+}
+
+/* Card color gradients simplified */
+.low-graphics .card-red,
+.low-graphics .card-blue,
+.low-graphics .card-green,
+.low-graphics .card-yellow,
+.low-graphics .card-orange,
+.low-graphics .card-cyan,
+.low-graphics .card-purple,
+.low-graphics .card-pink {
+  background-image: none !important;
+  background-color: var(--card-bg-color, #1e5c38) !important;
+}
+
+/* Wild card simplified */
+.low-graphics .card-wild {
+  background: linear-gradient(145deg, #343845 0%, #141824 50%, #070912 100%) !important;
+}
+
+/* Disable heavy CSS keyframe animations */
+.low-graphics @keyframes card-idle-rock { }
+.low-graphics @keyframes card-shine { }
+.low-graphics @keyframes seat-glow { }
+.low-graphics @keyframes pulse-ring { }
+.low-graphics @keyframes pulse-ring-red { }
+.low-graphics @keyframes shake { }
+.low-graphics @keyframes urgent-pop { }
+.low-graphics @keyframes deal-target-pulse { }
+.low-graphics @keyframes hand-reveal { }
+.low-graphics @keyframes synchronized-card-flip { }
+.low-graphics @keyframes shuffle-card-riffle { }
+.low-graphics @keyframes draw-face-reveal { }
