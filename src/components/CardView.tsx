@@ -125,7 +125,7 @@ function drawAmount(value: CardValue): "+2" | "+3" | "+4" | "+5" | null {
 function WildBadge({ small, value, dark = false }: { small?: boolean; value: CardValue; dark?: boolean }) {
   return (
     <div className="grid place-items-center gap-1 text-center">
-      <svg className="card-wild-badge" aria-hidden="true">
+      <svg className="card-wild-badge" viewBox="0 0 64 64" aria-hidden="true">
         <use href={`/sprites/card-icons.svg#${dark ? "icon-wild-dark" : "icon-wild"}`} />
       </svg>
       {value === "wild3" ? <DrawAmountLabel amount="+3" small={small} /> : null}
@@ -188,7 +188,7 @@ function ColorSymbol({ color }: { color: Color | null }) {
   const wideClass = color === "blue" ? "wide" : color === "yellow" ? "narrow" : "";
 
   return (
-    <svg className={`card-color-symbol ${wideClass}`} aria-hidden="true">
+    <svg className={`card-color-symbol ${wideClass}`} viewBox="0 0 48 48" aria-hidden="true">
       <use href={`/sprites/card-icons.svg#icon-color-${color}`} />
     </svg>
   );
