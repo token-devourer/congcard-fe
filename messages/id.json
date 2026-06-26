@@ -44,6 +44,7 @@
     "return": "Kembali",
     "leave": "Keluar",
     "leaveHint": "Keluar ruangan dan hapus nama tersimpan",
+    "cards": "Kartu",
     "connecting": "Menyambung ke ruangan...",
     "chooseSeatName": "Pilih nama kursimu",
     "join": "Gabung ruangan",
@@ -453,5 +454,22 @@
     "spark": "Percik",
     "cloud": "Awan",
     "gem": "Permata"
+  },
+  "cardsModal": {
+    "title": "Kartu",
+    "close": "Tutup",
+    "lightSide": "Sisi terang",
+    "darkSide": "Sisi gelap",
+    "wild": "Wild",
+    "color": {
+      "red": "Merah",
+      "blue": "Biru",
+      "green": "Hijau",
+      "yellow": "Kuning",
+      "orange": "Oranye",
+      "cyan": "Cyan",
+      "purple": "Ungu",
+      "pink": "Merah muda"
+    }
   }
 }

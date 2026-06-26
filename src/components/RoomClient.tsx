@@ -50,6 +50,7 @@ import { RulesModal } from "./RulesModal";
 import { TurnBanner } from "./TurnBanner";
 import { TurnAlertLayer } from "./TurnAlertLayer";
 import { NotifyToggle } from "./NotifyToggle";
+import { CardsModal } from "./CardsModal";
 import { UnoButton } from "./UnoButton";
 import { useGraphicsPreset } from "./AnimationProvider";
 import type { BatchShortcutCommand } from "./BatchSelector";
@@ -83,6 +84,7 @@ export function RoomClient({ code }: RoomClientProps) {
   const [profileReady, setProfileReady] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const [showCards, setShowCards] = useState(false);
 
   useEffect(() => {
     const savedName = safeGet("congcard:nickname");
@@ -121,16 +123,20 @@ export function RoomClient({ code }: RoomClientProps) {
     }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (shouldIgnoreShortcut(event) || shortcutKey(event) !== "r" || showRules) {
-        return;
+      if (shouldIgnoreShortcut(event)) return;
+      const key = shortcutKey(event);
+      if (key === "r" && !showRules) {
+        event.preventDefault();
+        setShowRules(true);
+      } else if (key === "c" && !showCards) {
+        event.preventDefault();
+        setShowCards(true);
       }
-      event.preventDefault();
-      setShowRules(true);
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showRules, snapshot]);
+  }, [showRules, showCards, snapshot]);
 
   const connect = useCallback(async () => {
     if (!nickname.trim() || connectingRef.current || roomRef.current) {
@@ -335,6 +341,13 @@ export function RoomClient({ code }: RoomClientProps) {
           </button>
           <button
             type="button"
+            className="toolbar-pill text-[var(--text)] transition-colors hover:border-[var(--gold)]"
+            onClick={() => setShowCards(true)}
+          >
+            {t("room.cards")}
+          </button>
+          <button
+            type="button"
             className="toolbar-pill border-red-400/40 font-bold text-red-200 transition-colors hover:border-red-400 hover:text-red-100"
             onClick={leaveAndForget}
             title={t("room.leaveHint")}
@@ -347,6 +360,7 @@ export function RoomClient({ code }: RoomClientProps) {
       <ErrorToast />
 
       <RulesModal open={showRules} onClose={() => setShowRules(false)} settings={snapshot?.settings} />
+      <CardsModal open={showCards} onClose={() => setShowCards(false)} modeId={snapshot?.settings.modeId ?? "standard"} />
 
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>

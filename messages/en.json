@@ -44,6 +44,7 @@
     "return": "Return",
     "leave": "Leave",
     "leaveHint": "Leave the room and clear your saved name",
+    "cards": "Cards",
     "connecting": "Connecting to room...",
     "chooseSeatName": "Choose your seat name",
     "join": "Join room",
@@ -453,5 +454,22 @@
     "spark": "Spark",
     "cloud": "Cloud",
     "gem": "Gem"
+  },
+  "cardsModal": {
+    "title": "Cards",
+    "close": "Close",
+    "lightSide": "Light side",
+    "darkSide": "Dark side",
+    "wild": "Wild",
+    "color": {
+      "red": "Red",
+      "blue": "Blue",
+      "green": "Green",
+      "yellow": "Yellow",
+      "orange": "Orange",
+      "cyan": "Cyan",
+      "purple": "Purple",
+      "pink": "Pink"
+    }
   }
 }
