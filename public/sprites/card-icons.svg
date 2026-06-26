@@ -31,7 +31,7 @@
   <symbol id="icon-wild-dark" viewBox="0 0 64 64">
     <g stroke="rgba(255,255,255,0.68)" stroke-width="1">
       <rect x="27" y="1" width="10" height="10" rx="2" fill="#ff8a34" transform="rotate(45 32 6)" />
-      <rect x="53" y="27" width="10" height="10" rx="2" fill="#2db888" transform="rotate(45 58 32)" />
+      <rect x="53" y="27" width="10" height="10" rx="2" fill="#2db86a" transform="rotate(45 58 32)" />
       <rect x="27" y="53" width="10" height="10" rx="2" fill="#9b6dff" transform="rotate(45 32 58)" />
       <rect x="1" y="27" width="10" height="10" rx="2" fill="#ff5fb7" transform="rotate(45 6 32)" />
     </g>
