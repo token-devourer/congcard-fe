@@ -7,6 +7,7 @@ import { anchorRect } from "@/lib/anchors";
 import { cardText } from "@/lib/rules";
 import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
+import { useGraphicsPreset } from "./AnimationProvider";
 
 type Flight =
   | { kind: "card"; card: Card | VisibleCardFace; from: string; to: string; delay?: number; pitchLevel?: number; batchIndex?: number; batchTotal?: number; drawReveal?: boolean; drawIndex?: number; drawTotal?: number }
@@ -15,9 +16,23 @@ type Flight =
 
 const MAX_DRAW_FLIGHTS = 12;
 const DRAW_STAGGER_SEC = 0.22;
+const POOL_SIZE = 30;
 
-// Derives card movements by diffing consecutive snapshots (the server sends no
-// structured events) and flies GSAP-animated clones between registered anchors.
+// Pooled DOM elements for flights to reduce GC pressure
+const elPool: HTMLDivElement[] = [];
+
+function acquireEl(): HTMLDivElement {
+  return elPool.pop() ?? document.createElement("div");
+}
+
+function releaseEl(el: HTMLDivElement) {
+  el.innerHTML = "";
+  el.style.cssText = "";
+  if (elPool.length < POOL_SIZE) {
+    elPool.push(el);
+  }
+}
+
 export function FlightLayer() {
   const layerRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<GameSnapshot | null>(null);
@@ -27,6 +42,7 @@ export function FlightLayer() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const snapshot = useRoomStore((state) => state.snapshot);
   const clockOffset = useRoomStore((state) => state.clockOffset);
+  const { preset } = useGraphicsPreset();
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -51,7 +67,7 @@ export function FlightLayer() {
       animatedDrawIds.current.clear();
     }
 
-    if (reducedMotion) {
+    if (reducedMotion || preset.reduceMotion) {
       return;
     }
 
@@ -99,7 +115,7 @@ export function FlightLayer() {
     }
     if (!prev || prev.code !== snapshot.code) {
       for (const flight of flights) {
-        spawnFlight(layer, flight);
+        spawnFlight(layer, flight, preset);
       }
       return;
     }
@@ -170,9 +186,9 @@ export function FlightLayer() {
     }
 
     for (const flight of flights) {
-      spawnFlight(layer, flight);
+      spawnFlight(layer, flight, preset);
     }
-  }, [clockOffset, reducedMotion, snapshot]);
+  }, [clockOffset, reducedMotion, snapshot, preset]);
 
   useEffect(() => {
     const layer = layerRef.current;
@@ -197,14 +213,14 @@ export function FlightLayer() {
   );
 }
 
-function spawnFlight(layer: HTMLDivElement, flight: Flight) {
+function spawnFlight(layer: HTMLDivElement, flight: Flight, preset: import("@/lib/animationPresets").AnimationPreset) {
   const from = anchorRect(flight.from);
   const to = anchorRect(flight.to);
   if (!from || !to) {
     return;
   }
 
-  const el = document.createElement("div");
+  const el = acquireEl();
   if (flight.kind === "card") {
     el.className = "flight-card-shell";
     const card = document.createElement("div");
@@ -253,20 +269,20 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const startY = from.top + from.height / 2 - el.offsetHeight / 2;
   const endX = to.left + to.width / 2 - el.offsetWidth / 2;
   const endY = to.top + to.height / 2 - el.offsetHeight / 2;
-  const lift = Math.max(40, Math.abs(endY - startY) * 0.35);
+  const lift = preset.flightArc ? Math.max(40, Math.abs(endY - startY) * 0.35) : 0;
   const isDrawReveal = flight.kind !== "token" && Boolean(flight.drawReveal);
   const isDealFlight = flight.kind === "back" && Boolean(flight.dealing);
   const spin = flight.kind === "token" || isDrawReveal ? 0 : startX < endX ? 14 : -14;
-  const firstLegDuration = isDrawReveal ? 0.1 : isDealFlight ? 0.15 : flight.kind === "back" ? 0.42 : 0.3;
-  const secondLegDuration = isDrawReveal ? 0.11 : isDealFlight ? 0.16 : flight.kind === "back" ? 0.38 : 0.3;
-  const fadeDuration = isDrawReveal ? 0.05 : isDealFlight ? 0.05 : flight.kind === "back" ? 0.18 : 0.16;
+  const scale = preset.durationScale;
+  const firstLegDuration = (isDrawReveal ? 0.1 : isDealFlight ? 0.15 : flight.kind === "back" ? 0.42 : 0.3) * scale;
+  const secondLegDuration = (isDrawReveal ? 0.11 : isDealFlight ? 0.16 : flight.kind === "back" ? 0.38 : 0.3) * scale;
+  const fadeDuration = (isDrawReveal ? 0.05 : isDealFlight ? 0.05 : flight.kind === "back" ? 0.18 : 0.16) * scale;
   if (flight.kind === "back") {
     const pitchLevel = Math.min(8, Math.max(1, flight.drawIndex ?? 1));
     window.setTimeout(() => playSound(flight.dealing ? "dealTick" : "drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
   } else if (flight.kind === "card" && flight.pitchLevel) {
     const delayMs = Math.max(0, (flight.delay ?? 0) * 1000);
     window.setTimeout(() => playSound("matchChain", flight.pitchLevel), delayMs);
-    // Crown the last card of a batch with a festive finale as it lands.
     if (flight.batchTotal && flight.batchIndex === flight.batchTotal) {
       const landMs = Math.max(0, ((flight.delay ?? 0) + firstLegDuration + secondLegDuration) * 1000);
       window.setTimeout(() => playSound("batchFinale", Math.min(8, flight.batchTotal!)), landMs);
@@ -278,21 +294,35 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
     );
   }
 
-  gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });
-  gsap.to(el, {
-    delay: flight.delay ?? 0,
-    keyframes: [
-      {
-        x: (startX + endX) / 2,
-        y: Math.min(startY, endY) - lift,
-        scale: flight.kind === "token" ? 1 : 1.04,
-        rotation: spin,
-        duration: firstLegDuration,
-        ease: "power2.out"
-      },
-      { x: endX, y: endY, scale: 1, rotation: 0, duration: secondLegDuration, ease: "power2.in" },
-      { opacity: 0, scale: 0.8, duration: fadeDuration, ease: "power1.in" }
-    ],
-    onComplete: () => el.remove()
-  });
+  if (preset.flightArc && lift > 0) {
+    gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });
+    gsap.to(el, {
+      delay: flight.delay ?? 0,
+      keyframes: [
+        {
+          x: (startX + endX) / 2,
+          y: Math.min(startY, endY) - lift,
+          scale: flight.kind === "token" ? 1 : 1.04,
+          rotation: spin,
+          duration: firstLegDuration,
+          ease: "power2.out"
+        },
+        { x: endX, y: endY, scale: 1, rotation: 0, duration: secondLegDuration, ease: "power2.in" },
+        { opacity: 0, scale: 0.8, duration: fadeDuration, ease: "power1.in" }
+      ],
+      onComplete: () => { releaseEl(el); el.remove(); }
+    });
+  } else {
+    gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95 });
+    gsap.to(el, {
+      delay: flight.delay ?? 0,
+      x: endX,
+      y: endY,
+      scale: 1,
+      opacity: 0,
+      duration: firstLegDuration + secondLegDuration + fadeDuration,
+      ease: "power1.out",
+      onComplete: () => { releaseEl(el); el.remove(); }
+    });
+  }
 }
