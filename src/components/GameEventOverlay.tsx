@@ -25,7 +25,7 @@ const COLOR_WASH: Record<string, string> = {
   green: "rgba(47, 155, 103, 0.4)",
   blue: "rgba(61, 126, 219, 0.42)",
   orange: "rgba(242, 169, 27, 0.42)",
-  cyan: "rgba(27, 155, 78, 0.42)",
+  cyan: "rgba(29, 165, 113, 0.42)",
   purple: "rgba(130, 87, 216, 0.42)",
   pink: "rgba(232, 79, 154, 0.42)"
 };
