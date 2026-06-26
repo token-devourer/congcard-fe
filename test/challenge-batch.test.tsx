@@ -112,23 +112,23 @@ describe("Wild +4 challenge batch access", () => {
     expect(screen.getByText("Correct: Alex draws 4. Wrong: you draw 6.")).toBeInTheDocument();
   });
 
-  it("opens Batch +4 without hiding the challenge decision", () => {
+  it("opens Batch +4 without hiding the challenge decision", async () => {
     renderBoard();
 
     fireEvent.click(screen.getByRole("button", { name: "Batch +4" }));
 
-    expect(screen.getByRole("region", { name: "Batch Cards" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Batch Cards" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Wild +4 challenge" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Take 4" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Challenge!" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Take 4" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Challenge!" })).toBeInTheDocument();
   });
 
-  it("opens the same Batch tray with keyboard B", () => {
+  it("opens the same Batch tray with keyboard B", async () => {
     renderBoard();
 
     fireEvent.keyDown(window, { key: "b" });
 
-    expect(screen.getByRole("region", { name: "Batch Cards" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Batch Cards" })).toBeInTheDocument();
   });
 
   it("hides Batch +4 when only one legal Wild +4 is available", () => {

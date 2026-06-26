@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import dynamic from "next/dynamic";
-import type { CSSProperties } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
@@ -11,7 +11,7 @@ import { useNow } from "@/lib/useNow";
 import { CardView } from "./CardView";
 import { PlayerSeat } from "./PlayerSeat";
 
-const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })), { ssr: false });
+const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })));
 
 interface RoundDealBoardProps {
   snapshot: GameSnapshot;
@@ -152,7 +152,7 @@ export function RoundDealBoard({ snapshot, send }: RoundDealBoardProps) {
         <strong>{self?.cardCount ?? 0}/{deal.cardsPerPlayer}</strong>
       </button>
 
-      <FlightLayer />
+      <Suspense fallback={null}><FlightLayer /></Suspense>
     </section>
   );
 }

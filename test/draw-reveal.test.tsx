@@ -77,11 +77,11 @@ function renderBoard(game: GameSnapshot, send = vi.fn()) {
 }
 
 describe("authoritative draw controls", () => {
-  it("offers Auto and Manual for Wild Draw Color while locking normal cards", () => {
+  it("offers Auto and Manual for Wild Draw Color while locking normal cards", async () => {
     const send = renderBoard(snapshot());
 
     expect(screen.getByRole("region", { name: "Wild Draw Color" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play red 5" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "Play red 5" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Manual Draw" }));
     expect(send).toHaveBeenCalledWith("game.chooseColorDraw", { mode: "manual" });
     fireEvent.click(screen.getByRole("button", { name: "Auto Draw" }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { FormEvent, Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
@@ -57,10 +57,10 @@ import type { BatchShortcutCommand } from "./BatchSelector";
 import { PingBadge } from "./PingBadge";
 import { unlockSound } from "@/lib/sound";
 
-const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })), { ssr: false });
-const GameEventOverlay = dynamic(() => import("./GameEventOverlay").then((m) => ({ default: m.GameEventOverlay })), { ssr: false });
-const Hand = dynamic(() => import("./Hand").then((m) => ({ default: m.Hand })), { ssr: false });
-const RoundTable = dynamic(() => import("./RoundTable").then((m) => ({ default: m.RoundTable })), { ssr: false });
+const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })));
+const GameEventOverlay = dynamic(() => import("./GameEventOverlay").then((m) => ({ default: m.GameEventOverlay })));
+const Hand = dynamic(() => import("./Hand").then((m) => ({ default: m.Hand })));
+const RoundTable = dynamic(() => import("./RoundTable").then((m) => ({ default: m.RoundTable })));
 
 interface RoomClientProps {
   code: string;
@@ -1063,7 +1063,7 @@ export function Board({
     <>
       <section className={`board${selfColorDraw ? " board--color-draw" : ""}`}>
         <div className="board-zone relative">
-          <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
+          <Suspense fallback={null}><RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} /></Suspense>
           {snapshot.pendingDraw ? <DrawProgress snapshot={snapshot} /> : null}
           {paused ? <PauseBanner /> : null}
         </div>
@@ -1123,16 +1123,18 @@ export function Board({
                 {pendingDraw?.playerId === snapshot.self?.id && pendingDraw?.reason === "colorHunt" ? (
                   <ColorDrawControls snapshot={snapshot} send={send} />
                 ) : null}
-                <Hand
-                  snapshot={snapshot}
-                  isMyTurn={isMyTurn}
-                  actionLocked={actionLocked}
-                  batchShortcutCommand={batchShortcutCommand}
-                  onPlay={play}
-                  onPlayBatch={playBatch}
-                  onBatchSelectionChange={setBatchSelecting}
-                  onPassDrawn={() => send("game.playDrawn", { play: false })}
-                />
+                <Suspense fallback={null}>
+                  <Hand
+                    snapshot={snapshot}
+                    isMyTurn={isMyTurn}
+                    actionLocked={actionLocked}
+                    batchShortcutCommand={batchShortcutCommand}
+                    onPlay={play}
+                    onPlayBatch={playBatch}
+                    onBatchSelectionChange={setBatchSelecting}
+                    onPassDrawn={() => send("game.playDrawn", { play: false })}
+                  />
+                </Suspense>
               </>
             ) : (
               <ViewerStatus snapshot={snapshot} role={finished ? "spectator" : selfRole} finishedRank={me?.finishedRank} />
@@ -1148,10 +1150,10 @@ export function Board({
         onClose={() => setUtilityPanel(null)}
       />
 
-      <FlightLayer />
+      <Suspense fallback={null}><FlightLayer /></Suspense>
       <TurnBanner />
       <TurnAlertLayer isMyTurn={isMyTurn} isAway={playerAway} roomCode={snapshot.code} />
-      <GameEventOverlay />
+      <Suspense fallback={null}><GameEventOverlay /></Suspense>
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker disabled={eventLocked} flipSide={snapshot.flipSide} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}

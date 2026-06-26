@@ -65,7 +65,7 @@ describe("Flip presentation", () => {
 
     const wild = screen.getByLabelText("wild Wild Color");
     expect(wild).toHaveClass("card-side-dark", "card-wild-dark-ink");
-    expect(wild.querySelector(".card-wild-badge path")).toHaveAttribute("fill", "#f5c84c");
+    expect(wild.querySelector(".card-wild-badge use")).toHaveAttribute("href", "/sprites/card-icons.svg#icon-wild-dark");
   });
 
   it("marks light cards with light ink including yellow", () => {
