@@ -2416,16 +2416,29 @@ body.flip-dark .card-back {
 }
 
 /* Card color gradients simplified */
-.low-graphics .card-red,
-.low-graphics .card-blue,
-.low-graphics .card-green,
-.low-graphics .card-yellow,
-.low-graphics .card-orange,
-.low-graphics .card-cyan,
-.low-graphics .card-purple,
+.low-graphics .card-red {
+  background: #a9002d !important;
+}
+.low-graphics .card-blue {
+  background: #1231ac !important;
+}
+.low-graphics .card-green {
+  background: #0b712c !important;
+}
+.low-graphics .card-yellow {
+  background: #c89900 !important;
+}
+.low-graphics .card-orange {
+  background: #b8400f !important;
+}
+.low-graphics .card-cyan {
+  background: #008080 !important;
+}
+.low-graphics .card-purple {
+  background: #4a1a7a !important;
+}
 .low-graphics .card-pink {
-  background-image: none !important;
-  background-color: var(--card-bg-color, #1e5c38) !important;
+  background: #8f1a5c !important;
 }
 
 /* Wild card simplified */
