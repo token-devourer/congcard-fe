@@ -1683,7 +1683,7 @@ button.card-face.playable:active {
 }
 
 .card-cyan {
-  background: linear-gradient(145deg, #56e8f2 0%, #19b9d1 50%, #12618d 100%);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--cyan) 85%, white) 0%, var(--cyan) 50%, color-mix(in srgb, var(--cyan) 85%, black) 100%);
 }
 
 .card-purple {
@@ -2454,7 +2454,7 @@ body.flip-dark .card-back {
   background: #b8400f !important;
 }
 .low-graphics .card-cyan {
-  background: #008080 !important;
+  background: var(--cyan) !important;
 }
 .low-graphics .card-purple {
   background: #4a1a7a !important;
