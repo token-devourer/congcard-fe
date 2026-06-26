@@ -1856,6 +1856,10 @@ body.flip-dark .card-back {
   color: #f5c84c;
 }
 
+.card-wild .card-draw-label {
+  font-size: calc(var(--card-width) * 0.14);
+}
+
 /* ---------- Animations ---------- */
 
 @keyframes seat-glow {
