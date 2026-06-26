@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
@@ -17,6 +18,7 @@ import {
   Link2,
   List,
   Loader2,
+  Monitor,
   Settings2,
   Sparkles,
   Trophy,
@@ -38,24 +40,26 @@ import { useNow } from "@/lib/useNow";
 import { ChallengeModal } from "./ChallengeModal";
 import { CardView } from "./CardView";
 import { ColorPicker } from "./ColorPicker";
-import { FlightLayer } from "./FlightLayer";
 import { FlipTransitionLayer } from "./FlipTransitionLayer";
-import { GameEventOverlay } from "./GameEventOverlay";
-import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
 import { MusicLayer } from "./MusicLayer";
 import { AudioControls } from "./AudioControls";
 import { RoundEndOverlay } from "./RoundEndOverlay";
 import { RoundDealBoard } from "./RoundDealBoard";
-import { RoundTable } from "./RoundTable";
 import { RulesModal } from "./RulesModal";
 import { TurnBanner } from "./TurnBanner";
 import { TurnAlertLayer } from "./TurnAlertLayer";
 import { NotifyToggle } from "./NotifyToggle";
 import { UnoButton } from "./UnoButton";
+import { useGraphicsPreset } from "./AnimationProvider";
 import type { BatchShortcutCommand } from "./BatchSelector";
 import { PingBadge } from "./PingBadge";
 import { unlockSound } from "@/lib/sound";
+
+const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })), { ssr: false });
+const GameEventOverlay = dynamic(() => import("./GameEventOverlay").then((m) => ({ default: m.GameEventOverlay })), { ssr: false });
+const Hand = dynamic(() => import("./Hand").then((m) => ({ default: m.Hand })), { ssr: false });
+const RoundTable = dynamic(() => import("./RoundTable").then((m) => ({ default: m.RoundTable })), { ssr: false });
 
 interface RoomClientProps {
   code: string;
@@ -482,6 +486,7 @@ export function Lobby({
   const isHost = Boolean(me?.isHost);
   const deckBoxMinimum = Math.max(1, Math.ceil(snapshot.players.length / 4));
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const { tier, setTier, autoDetected } = useGraphicsPreset();
 
   function updateSetting(input: Partial<RoomSettings>) {
     send("room.updateSettings", input);
@@ -774,6 +779,22 @@ export function Lobby({
             <span className="text-sm font-bold text-[var(--text)]">{t("lobby.keyboardShortcuts")}</span>
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.keyboardShortcutsHint")}</span>
           </span>
+        </label>
+        </SettingsSection>
+        <SettingsSection title={t("lobby.sectionGraphics")} icon={<Monitor size={17} />}>
+        <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.graphicsQuality")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{autoDetected ? t("lobby.graphicsAuto") : ""}</span>
+          </span>
+          <select
+            className="field ml-auto w-auto min-w-[100px]"
+            value={tier}
+            onChange={(event) => setTier(event.target.value as "high" | "low")}
+          >
+            <option value="high">{t("lobby.graphicsHigh")}</option>
+            <option value="low">{t("lobby.graphicsLow")}</option>
+          </select>
         </label>
         </SettingsSection>
         {isHost ? (

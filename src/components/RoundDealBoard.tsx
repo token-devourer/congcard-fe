@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
 import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
@@ -8,8 +9,9 @@ import { anchorRef } from "@/lib/anchors";
 import { useRoomStore } from "@/lib/store";
 import { useNow } from "@/lib/useNow";
 import { CardView } from "./CardView";
-import { FlightLayer } from "./FlightLayer";
 import { PlayerSeat } from "./PlayerSeat";
+
+const FlightLayer = dynamic(() => import("./FlightLayer").then((m) => ({ default: m.FlightLayer })), { ssr: false });
 
 interface RoundDealBoardProps {
   snapshot: GameSnapshot;
