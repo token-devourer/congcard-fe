@@ -1448,12 +1448,14 @@ body.flip-dark .deal-table {
   color: white;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.35) inset,
-    0 10px 24px rgba(0, 0, 0, 0.4);
+    0 -2px 6px rgba(0, 0, 0, 0.3) inset,
+    0 14px 28px rgba(0, 0, 0, 0.45);
   transform-style: preserve-3d;
   transition:
     transform 180ms cubic-bezier(.2,.8,.2,1),
     box-shadow 180ms ease,
     filter 180ms ease;
+  will-change: transform;
 }
 
 
@@ -1469,7 +1471,6 @@ button.card-face:not(:disabled) {
     0 0 24px rgba(242, 193, 78, 0.55),
     0 22px 36px rgba(242, 193, 78, 0.32);
   animation: card-idle-rock 3.6s ease-in-out infinite;
-  will-change: transform;
 }
 
 /* Stagger the idle rock across siblings so the hand breathes instead of marching. */
@@ -1650,19 +1651,31 @@ button.card-face.playable:active {
    read as a single, congkak monochrome piece instead of a clashing rainbow. */
 
 .card-red {
-  background: linear-gradient(145deg, #ff6f58 0%, #ff284a 50%, #a9002d 100%);
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 153, 122, 0.76), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(255, 26, 95, 0.46), transparent 58%),
+    linear-gradient(145deg, #ff6f58 0%, #ff284a 46%, #a9002d 100%);
 }
 
 .card-blue {
-  background: linear-gradient(145deg, #35b8ff 0%, #1275ff 50%, #1231ac 100%);
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(107, 205, 255, 0.78), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(22, 211, 255, 0.44), transparent 58%),
+    linear-gradient(145deg, #35b8ff 0%, #1275ff 48%, #1231ac 100%);
 }
 
 .card-green {
-  background: linear-gradient(145deg, #5bf071 0%, #1bc651 50%, #0b712c 100%);
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(153, 255, 159, 0.78), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(46, 255, 86, 0.4), transparent 58%),
+    linear-gradient(145deg, #5bf071 0%, #1bc651 48%, #0b712c 100%);
 }
 
 .card-yellow {
-  background: linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
+  background:
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.82), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(255, 216, 54, 0.4), transparent 58%),
+    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
 }
 
 .card-orange {
@@ -1752,7 +1765,12 @@ button.card-face.playable:active {
 
 /* Onyx with subtle damask pattern + faint gold vignette. No rainbow. */
 .card-wild {
-  background: linear-gradient(145deg, #343845 0%, #141824 50%, #070912 100%);
+  background:
+    radial-gradient(90% 75% at 23% 18%, rgba(255, 74, 99, 0.42), transparent 46%),
+    radial-gradient(88% 72% at 80% 20%, rgba(79, 167, 255, 0.44), transparent 50%),
+    radial-gradient(88% 76% at 24% 86%, rgba(65, 255, 161, 0.32), transparent 48%),
+    radial-gradient(82% 70% at 82% 84%, rgba(255, 218, 68, 0.3), transparent 48%),
+    linear-gradient(145deg, #343845 0%, #141824 50%, #070912 100%);
   color: #ffe39a;
 }
 
