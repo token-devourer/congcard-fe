@@ -2,6 +2,8 @@ import type { UiEvent } from "./events";
 import { audioAvailable, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
 import { duckMusic } from "./music";
 import { safeGet, safeSet } from "./storage";
+import { loadAudioSprite, spriteReady, getSpriteBuffer, getSpriteEntry } from "./audioSprite";
+import type { SpriteManifest } from "./audioSprite";
 
 export type SoundName =
   | "turn"
@@ -35,6 +37,49 @@ export type SoundName =
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
 
+let spriteInitPromise: Promise<void> | null = null;
+
+export function initAudioSprite(): Promise<void> {
+  if (spriteInitPromise) return spriteInitPromise;
+  if (typeof window === "undefined" || !audioAvailable()) {
+    spriteInitPromise = Promise.resolve();
+    return spriteInitPromise;
+  }
+  const ctx = sharedAudioContext();
+  unlockAudio();
+
+  const manifest: SpriteManifest = {
+    totalDuration: 30,
+    src: "/audio/sfx.ogg",
+    sprites: {}
+  };
+
+  spriteInitPromise = loadAudioSprite(ctx, manifest).catch(() => {
+    // Sprite loading failed - procedural fallback will be used
+    spriteInitPromise = null;
+  });
+  return spriteInitPromise;
+}
+
+function playSprite(name: SoundName, ctx: AudioContext, t: number, level: number): boolean {
+  if (!spriteReady()) return false;
+  const entry = getSpriteEntry(name);
+  if (!entry) return false;
+
+  const buffer = getSpriteBuffer();
+  if (!buffer) return false;
+
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const g = ctx.createGain();
+  const levelGain = 0.5 + (level - 1) * 0.08;
+  g.gain.setValueAtTime(Math.min(1, levelGain), t);
+  src.connect(g);
+  g.connect(sfxDestination());
+  src.start(t, entry.start, entry.dur);
+  return true;
+}
+
 export function isSoundMuted(): boolean {
   if (typeof window === "undefined") return true;
   return safeGet(STORAGE_KEY) === "1";
@@ -56,6 +101,7 @@ export function playTurnAlert(): void {
   const ctx = sharedAudioContext();
   unlockAudio();
   const t0 = ctx.currentTime + 0.005;
+  if (playSprite(TURN_ALERT_SOUND, ctx, t0, 1)) return;
   render(TURN_ALERT_SOUND, ctx, t0, 1);
 }
 
@@ -99,13 +145,16 @@ function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
   const ctx = sharedAudioContext();
   unlockAudio();
-  render(name, ctx, ctx.currentTime + Math.max(0.005, startsInMs / 1000), level);
+  const t = ctx.currentTime + Math.max(0.005, startsInMs / 1000);
+  if (playSprite(name, ctx, t, level)) return;
+  render(name, ctx, t, level);
 }
 export function playSound(name: SoundName, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
   const ctx = sharedAudioContext();
   unlockAudio();
   const t0 = ctx.currentTime + 0.005;
+  if (playSprite(name, ctx, t0, level)) return;
   render(name, ctx, t0, level);
 }
 
