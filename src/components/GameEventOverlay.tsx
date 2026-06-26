@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRoomStore } from "@/lib/store";
 import type { UiEvent } from "@/lib/events";
 import { useNow } from "@/lib/useNow";
+import { useGraphicsPreset } from "./AnimationProvider";
 
 const COLOR_VAR: Record<string, string> = {
   red: "var(--red)",
@@ -45,6 +46,7 @@ export function GameEventOverlay() {
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
   const clockOffset = useRoomStore((state) => state.clockOffset);
   const now = useNow(50) + clockOffset;
+  const { preset } = useGraphicsPreset();
   const toasts = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
   const active = toasts
     .filter((event) => (!event.startsAt || event.startsAt <= now) && (!event.resolvesAt || event.resolvesAt + 500 > now))
@@ -59,7 +61,7 @@ export function GameEventOverlay() {
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center overflow-hidden">
       <AnimatePresence>
-        {active ? <EventToast key={active.id} event={active} onDone={() => dismissEvent(active.id)} /> : null}
+        {active ? <EventToast key={active.id} event={active} onDone={() => dismissEvent(active.id)} preset={preset} /> : null}
       </AnimatePresence>
     </div>
   );
@@ -103,9 +105,9 @@ export function eventToastDurationMs(event: UiEvent): number {
   return 1600;
 }
 
-function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
+function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => void; preset: import("@/lib/animationPresets").AnimationPreset }) {
   const t = useTranslations();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() || preset.reduceMotion;
   const onDoneRef = useRef(onDone);
 
   useEffect(() => {
@@ -137,7 +139,7 @@ function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
         transition={{ duration: reduceMotion ? 0.12 : eventToastDurationMs(event) / 1000, ease: "easeOut" }}
       />
 
-      <EventVfx event={event} reduceMotion={Boolean(reduceMotion)} />
+      <EventVfx event={event} reduceMotion={Boolean(reduceMotion)} preset={preset} />
 
       <motion.div
         initial={reduceMotion ? { opacity: 0 } : { scale: 0.45, opacity: 0, y: 28 }}
@@ -170,7 +172,7 @@ function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
   );
 }
 
-function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boolean }) {
+function EventVfx({ event, reduceMotion, preset }: { event: UiEvent; reduceMotion: boolean; preset: import("@/lib/animationPresets").AnimationPreset }) {
   if (reduceMotion) {
     return null;
   }
@@ -217,7 +219,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
           animate={{ scale: [0.3, 1.55], opacity: [0.9, 0] }}
           transition={{ duration: 1.25, ease: "easeOut" }}
         />
-        {BURST_POINTS.map(([x, y, rotate], index) => (
+        {BURST_POINTS.slice(0, preset.particleCount).map(([x, y, rotate], index) => (
           <motion.div
             key={index}
             className="absolute h-16 w-11 rounded-md border border-red-100/35 bg-gradient-to-b from-red-200/80 to-red-600/60 shadow-[0_0_18px_rgba(224,73,60,0.5)]"
@@ -241,7 +243,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
         >
           +{event.totalDraw}
         </motion.div>
-        {Array.from({ length: 8 }, (_, index) => (
+        {Array.from({ length: preset.particleCount }, (_, index) => (
           <motion.div
             key={index}
             className="absolute h-24 w-16 rounded-lg border border-yellow-100/35 bg-gradient-to-b from-yellow-200/75 to-yellow-600/60"
@@ -261,7 +263,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
   if (event.type === "colorChange") {
     return (
       <div className="absolute inset-0 z-[1] grid place-items-center">
-        {(["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink"] as const).map((color, index) => (
+        {(["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink"] as const).slice(0, preset.particleCount).map((color, index) => (
           <motion.div
             key={color}
             className="absolute h-24 w-24 rounded-full"
@@ -284,7 +286,7 @@ function EventVfx({ event, reduceMotion }: { event: UiEvent; reduceMotion: boole
     const urgent = event.type === "catchWindow";
     return (
       <div className="absolute inset-0 z-[1] grid place-items-center">
-        {[0, 1, 2].map((index) => (
+        {Array.from({ length: Math.min(3, preset.particleCount) }, (_, index) => (
           <motion.div
             key={index}
             className={`absolute rounded-full border-4 ${urgent ? "border-red-200/45" : "border-[var(--gold)]/45"}`}
