@@ -41,6 +41,7 @@
   <symbol id="icon-color-blue" viewBox="0 0 48 48"><path fill="currentColor" d="M6 28c6-8 13-8 20-3 5 4 9 4 16-3-2 10-9 16-18 14-6-1-10-6-18-8Zm0 10c6-5 12-5 19-1 6 3 10 2 17-4-3 8-10 12-19 10-6-1-10-4-17-5Z" /></symbol>
   <symbol id="icon-color-green" viewBox="0 0 48 48"><path fill="currentColor" d="M42 8C25 8 11 17 9 34c12 3 25-3 33-26ZM10 39c7-11 16-18 29-26-10 9-18 18-23 30l-6-4Z" /></symbol>
   <symbol id="icon-color-yellow" viewBox="0 0 48 48"><path fill="currentColor" d="M28 3 9 28h14l-3 17 19-25H25l3-17Z" /></symbol>
+  <symbol id="icon-star" viewBox="0 0 48 48"><path d="M24 4 29 18 44 19 32 28 36 43 24 34 12 43 16 28 4 19 19 18Z" fill="currentColor" /></symbol>
   <symbol id="icon-color-orange" viewBox="0 0 48 48"><circle cx="24" cy="25" r="15" fill="currentColor" /><path d="M25 10c2-5 7-7 12-5-2 5-6 8-12 8Z" fill="currentColor" /></symbol>
   <symbol id="icon-color-cyan" viewBox="0 0 48 48"><path fill="currentColor" d="M24 4C17 15 10 23 10 31a14 14 0 0 0 28 0c0-8-7-16-14-27Z" /></symbol>
   <symbol id="icon-color-purple" viewBox="0 0 48 48"><path fill="currentColor" d="m24 3 6 14 15 2-11 10 3 15-13-8-13 8 3-15L3 19l15-2 6-14Z" /></symbol>

@@ -93,17 +93,10 @@ function CornerIndex({ card, small, position }: { card: DisplayCard; small?: boo
       ? "card-corner-tl items-start"
       : "card-corner-br items-end rotate-180";
   const amount = drawAmount(card.value);
-  const isWild = !card.color;
   return (
     <div className={`card-corner absolute z-10 flex flex-col gap-0.5 ${place}`}>
       {amount ? (
         <DrawAmountLabel amount={amount} small={small} corner />
-      ) : isWild ? (
-        <span
-          className="card-corner-number font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-        >
-          {String(card.value)}
-        </span>
       ) : isActionValue(card.value) ? (
         <ActionGlyph value={card.value} small corner />
       ) : (
@@ -186,7 +179,7 @@ function iconForValue(value: Extract<CardValue, string>): string {
     case "draw2": return "icon-draw2";
     case "draw5": return "icon-draw5";
     case "flip": return "icon-flip";
-    default: return "icon-skip";
+    default: return "icon-star";
   }
 }
 
