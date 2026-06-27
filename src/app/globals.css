@@ -1673,9 +1673,18 @@ button.card-face.playable:active {
 
 .card-yellow {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.82), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(255, 216, 54, 0.4), transparent 58%),
-    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.12), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(255, 235, 120, 0.3), transparent 58%),
+    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #d4a020 100%);
+}
+
+.card-yellow .card-corner-icon,
+.card-yellow .card-draw-label.corner {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.15));
+}
+
+.card-yellow .card-action-glyph.corner {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.15)) !important;
 }
 
 .card-orange {
