@@ -12,6 +12,10 @@
       <rect x="0" y="0" width="48" height="48" fill="white" />
       <rect x="25" y="13" width="16" height="23" rx="3" fill="black" transform="rotate(12 33 24)" />
     </mask>
+    <mask id="mask-flip">
+      <rect x="0" y="0" width="48" height="48" fill="white" />
+      <rect x="13" y="8" width="22" height="30" rx="4" fill="black" />
+    </mask>
   </defs>
   <symbol id="icon-skip" viewBox="0 0 48 48">
     <circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="5.4" />
@@ -32,8 +36,10 @@
   </symbol>
   <symbol id="icon-flip" viewBox="0 0 48 48">
     <rect x="16" y="11" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="3.2" />
-    <path d="M33 36c0-9-7-16-16-16S1 27 1 36" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
-    <path d="M7 34l-3 4 4 1" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    <g mask="url(#mask-flip)">
+      <path d="M33 36c0-9-7-16-16-16S1 27 1 36" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
+      <path d="M7 34l-3 4 4 1" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
   </symbol>
   <symbol id="icon-wild" viewBox="0 0 64 64">
     <g stroke="rgba(255,255,255,0.68)" stroke-width="1">
