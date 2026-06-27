@@ -80,6 +80,8 @@ function generateCards(modeId: string): CardGroup[] {
 }
 
 function groupLabel(label: string, t: (key: string) => string): string {
+  if (label === "flip-light-wild") return `${t("lightSide")} — ${t("wild")}`;
+  if (label === "flip-dark-wild") return `${t("darkSide")} — ${t("wild")}`;
   if (label.startsWith("flip-light-")) {
     const color = label.replace("flip-light-", "");
     return `${t("lightSide")} — ${t(`color.${color}`)}`;
@@ -91,8 +93,6 @@ function groupLabel(label: string, t: (key: string) => string): string {
   if (label.startsWith("color-")) {
     return t(`color.${label.replace("color-", "")}`);
   }
-  if (label === "flip-light-wild") return `${t("lightSide")} — ${t("wild")}`;
-  if (label === "flip-dark-wild") return `${t("darkSide")} — ${t("wild")}`;
   return t(label);
 }
 
