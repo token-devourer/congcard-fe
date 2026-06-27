@@ -31,17 +31,9 @@
     <rect x="25" y="13" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="4" transform="rotate(12 33 24)" />
   </symbol>
   <symbol id="icon-flip" viewBox="0 0 48 48">
-    <defs>
-      <mask id="mask-flip" maskUnits="userSpaceOnUse" x="0" y="-2" width="48" height="48">
-        <path d="M48 -2H0V48H48V-2Z" fill="white"/>
-        <path d="M31 6H17C14.8 6 13 7.8 13 11V32C13 34.2 14.8 36 17 36H31C33.2 36 35 34.2 35 32V11C35 7.8 33.2 6 31 6Z" fill="black"/>
-      </mask>
-    </defs>
     <path d="M31.5 13.9L21.7 11.6C20.1 11.2 18.5 12.2 18.1 13.9L14.3 30.4C13.9 32 14.9 33.6 16.5 34L26.3 36.3C27.9 36.6 29.5 35.6 29.9 34L33.7 17.5C34.1 15.8 33.1 14.2 31.5 13.9Z" fill="none" stroke="currentColor" stroke-width="3.2"/>
-    <g mask="url(#mask-flip)">
-      <path d="M15.6 17.4C6.7 16.6-4.7 24.4 10.4 25.6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
-      <path d="M7 28.2L11.1 25.8L8.5 22.6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    </g>
+    <path d="M16 17C7.5 16.2-3 23 10.4 25.6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M7 25.6L10.4 25.6L10.4 22" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
   <symbol id="icon-wild" viewBox="0 0 64 64">
     <g stroke="rgba(255,255,255,0.68)" stroke-width="1">
