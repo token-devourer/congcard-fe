@@ -31,9 +31,16 @@
     <rect x="25" y="13" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="4" transform="rotate(12 33 24)" />
   </symbol>
   <symbol id="icon-flip" viewBox="0 0 48 48">
-    <path d="M31.5 13.9L21.7 11.6C20.1 11.2 18.5 12.2 18.1 13.9L14.3 30.4C13.9 32 14.9 33.6 16.5 34L26.3 36.3C27.9 36.6 29.5 35.6 29.9 34L33.7 17.5C34.1 15.8 33.1 14.2 31.5 13.9Z" fill="none" stroke="currentColor" stroke-width="3.2"/>
-    <path d="M16 17C7.5 16.2-3 23 10.4 25.6" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
-    <path d="M7 25.6L10.4 25.6L10.4 22" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <defs>
+      <mask id="mask-flip" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="4" y="-2" width="48" height="48">
+        <path d="M52 -2H4V48H52V-2Z" fill="white"/>
+        <path d="M35.3 6H21.3C19.1 6 17.3 7.8 17.3 10.1V32.1C17.3 34.3 19.1 36.1 21.3 36.1H35.3C37.5 36.1 39.3 34.3 39.3 32.1V10.1C39.3 7.8 37.5 6 35.3 6Z" fill="black"/>
+      </mask>
+    </defs>
+    <path d="M35.8 13.9L26 11.6C24.4 11.2 22.8 12.2 22.4 13.9L18.6 30.4C18.2 32 19.2 33.6 20.9 34L30.6 36.3C32.2 36.6 33.8 35.6 34.2 34L38 17.5C38.4 15.8 37.4 14.2 35.8 13.9Z" fill="none" stroke="currentColor" stroke-width="3.2"/>
+    <g mask="url(#mask-flip)">
+      <path d="M12.7 16.5C15 15.8 17.6 15.4 20.1 15.7C21 15.8 21.7 16.6 21.6 17.6C21.5 18.5 20.7 19.2 19.8 19.1C17.8 18.9 15.7 19.2 13.8 19.8C11.8 20.4 10.3 21.2 9.6 21.9C9.3 22.2 9.2 22.3 9.1 22.4C9.3 22.6 9.8 22.8 10.7 23.1C11 23.2 11.3 23.2 11.6 23.4C11.2 22.7 11.3 21.9 11.9 21.4C12.6 20.9 13.5 21 14 21.7L16.6 24.9C16.9 25.2 17 25.7 16.9 26.1C16.8 26.5 16.6 26.9 16.2 27.1L12 28.3C11.3 28.7 10.4 28.5 10 27.8C9.6 27.1 9.8 26.2 10.5 25.8L10.8 25.7C10.4 25.6 10.1 25.5 9.8 25.5C8.5 25.1 7.4 24.6 6.7 23.8C5.9 22.9 5.5 21.8 5.7 20.7C5.9 19.7 6.5 18.9 7.2 18.2C8.5 16.9 10.6 15.9 12.7 16.5Z" fill="currentColor"/>
+    </g>
   </symbol>
   <symbol id="icon-wild" viewBox="0 0 64 64">
     <g stroke="rgba(255,255,255,0.68)" stroke-width="1">
