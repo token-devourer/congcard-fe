@@ -31,7 +31,11 @@
     <rect x="25" y="13" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="4" transform="rotate(12 33 24)" />
   </symbol>
   <symbol id="icon-flip" viewBox="0 0 48 48">
-    <path d="M9 17h24l-5-5m5 5-5 5M39 31H15l5 5m-5-5 5-5" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" />
+    <rect x="12" y="11" width="24" height="28" rx="3.5" fill="none" stroke="currentColor" stroke-width="3" />
+    <path d="M16 8.5C16 8.5 20 6 24 6s8 2.5 8 2.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" />
+    <path d="M30 6l2 2.5-2.5 2" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M32 39.5C32 39.5 28 42 24 42s-8-2.5-8-2.5" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" />
+    <path d="M18 42l-2-2.5 2.5-2" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
   </symbol>
   <symbol id="icon-wild" viewBox="0 0 64 64">
     <g stroke="rgba(255,255,255,0.68)" stroke-width="1">
