@@ -55,7 +55,7 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
           ) : card.value === "draw2" || card.value === "draw5" ? (
             <DrawActionGlyph small={compact} amount={card.value === "draw2" ? "+2" : "+5"} />
           ) : isActionValue(card.value) ? (
-            <ActionGlyph value={card.value} small={compact} />
+            <ActionGlyph value={card.value} small={compact} side={card.side} />
           ) : (
             <div className="grid place-items-center gap-1 text-center">
               <ColorSymbol color={card.color} />
@@ -98,7 +98,7 @@ function CornerIndex({ card, small, position }: { card: DisplayCard; small?: boo
       {amount ? (
         <DrawAmountLabel amount={amount} small={small} corner />
       ) : isActionValue(card.value) ? (
-        <ActionGlyph value={card.value} small corner />
+        <ActionGlyph value={card.value} small corner side={card.side} />
       ) : (
         <span
           className="card-corner-number font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
@@ -161,8 +161,8 @@ function DrawActionGlyph({ small, amount }: { small?: boolean; amount: "+2" | "+
   );
 }
 
-function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, string>; small?: boolean; corner?: boolean }) {
-  const iconId = iconForValue(value);
+function ActionGlyph({ value, small, corner, side }: { value: Extract<CardValue, string>; small?: boolean; corner?: boolean; side?: FlipSide }) {
+  const iconId = iconForValue(value, side);
   const className = `card-action-glyph ${corner ? "corner" : ""} drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]`;
 
   return (
@@ -172,13 +172,13 @@ function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, strin
   );
 }
 
-function iconForValue(value: Extract<CardValue, string>): string {
+function iconForValue(value: Extract<CardValue, string>, side?: FlipSide): string {
   switch (value) {
     case "skip": return "icon-skip";
     case "reverse": return "icon-reverse";
     case "draw2": return "icon-draw2";
     case "draw5": return "icon-draw5";
-    case "flip": return "icon-flip";
+    case "flip": return side === "dark" ? "icon-flip-dark" : "icon-flip";
     default: return "icon-star";
   }
 }
