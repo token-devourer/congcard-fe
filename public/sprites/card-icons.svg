@@ -12,10 +12,6 @@
       <rect x="0" y="0" width="48" height="48" fill="white" />
       <rect x="25" y="13" width="16" height="23" rx="3" fill="black" transform="rotate(12 33 24)" />
     </mask>
-    <mask id="mask-flip">
-      <rect x="0" y="0" width="48" height="48" fill="white" />
-      <rect x="13" y="8" width="22" height="30" rx="4" fill="black" />
-    </mask>
   </defs>
   <symbol id="icon-skip" viewBox="0 0 48 48">
     <circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" stroke-width="5.4" />
@@ -35,10 +31,16 @@
     <rect x="25" y="13" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="4" transform="rotate(12 33 24)" />
   </symbol>
   <symbol id="icon-flip" viewBox="0 0 48 48">
-    <rect x="16" y="11" width="16" height="23" rx="3" fill="none" stroke="currentColor" stroke-width="3.2" />
+    <defs>
+      <mask id="mask-flip" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+        <path d="M48 0H0V48H48V0Z" fill="white"/>
+        <path d="M31 8H17C14.8 8 13 9.8 13 12V34C13 36.2 14.8 38 17 38H31C33.2 38 35 36.2 35 34V12C35 9.8 33.2 8 31 8Z" fill="black"/>
+      </mask>
+    </defs>
+    <path d="M29 11H19C17.3 11 16 12.3 16 14V31C16 32.7 17.3 34 19 34H29C30.7 34 32 32.7 32 31V14C32 12.3 30.7 11 29 11Z" stroke="currentColor" stroke-width="3.2"/>
     <g mask="url(#mask-flip)">
-      <path d="M33 36c0-9-7-16-16-16S1 27 1 36" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" />
-      <path d="M7 34l-3 4 4 1" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M15.6 19.3C6.7 18.5-4.7 26.3 10.4 27.5" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M7 28.9L11.1 26.5L8.5 23.3" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     </g>
   </symbol>
   <symbol id="icon-wild" viewBox="0 0 64 64">
