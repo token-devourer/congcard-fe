@@ -1774,11 +1774,169 @@ button.card-face.playable:active {
   color: #b300b3;
 }
 
+.card-special .cartouche,
+.card-meme-color .cartouche {
+  width: 78%;
+  height: 74%;
+  padding: calc(var(--card-width) * 0.045);
+  border-radius: calc(var(--card-width) * 0.14);
+  background:
+    radial-gradient(75% 62% at 50% 5%, rgba(255, 255, 255, 0.86), transparent 58%),
+    linear-gradient(180deg, rgba(255, 252, 246, 0.86), rgba(230, 222, 208, 0.52));
+  box-shadow:
+    0 2px 8px rgba(38, 22, 36, 0.18),
+    0 0 0 1.2px rgba(255, 219, 92, 0.88),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    inset 0 -1px 0 rgba(130, 82, 124, 0.18);
+}
+
+.card-special .cartouche.cartouche-meme-image,
+.card-meme-color .cartouche.cartouche-meme-image {
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 72% at 50% 0%, rgba(255, 255, 255, 0.55), transparent 62%),
+    linear-gradient(180deg, rgba(255, 245, 188, 0.2), rgba(49, 30, 42, 0.1));
+  box-shadow:
+    0 2px 8px rgba(38, 22, 36, 0.22),
+    0 0 0 1.35px rgba(255, 219, 92, 0.94),
+    0 0 0 2.2px rgba(255, 255, 255, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+    inset 0 0 12px rgba(38, 20, 32, 0.2);
+}
+
 .card-special-icon {
   width: calc(var(--card-width) * 0.46);
   height: auto;
   color: #2a1a3e;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+}
+
+.card-meme-badge {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  height: 100%;
+  width: 100%;
+  place-items: center;
+  gap: calc(var(--card-width) * 0.025);
+  text-align: center;
+}
+
+.card-meme-art {
+  position: relative;
+  display: grid;
+  width: calc(var(--card-width) * 0.52);
+  aspect-ratio: 1 / 1.12;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(74, 42, 89, 0.26);
+  border-radius: calc(var(--card-width) * 0.105);
+  background:
+    radial-gradient(80% 70% at 50% 8%, rgba(255, 255, 255, 0.92), transparent 62%),
+    linear-gradient(145deg, #fffaf0, #dfd6c6);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.82) inset,
+    0 -1px 0 rgba(79, 48, 78, 0.12) inset,
+    0 3px 8px rgba(35, 22, 31, 0.2);
+}
+
+.card-meme-badge.with-image .card-meme-art {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 190, 0.34),
+    inset 0 -10px 16px rgba(22, 12, 20, 0.18);
+}
+
+.card-meme-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 32%),
+    radial-gradient(80% 56% at 50% 104%, rgba(0, 0, 0, 0.32), transparent 72%),
+    radial-gradient(90% 82% at 50% 45%, transparent 48%, rgba(26, 13, 24, 0.24) 100%);
+  pointer-events: none;
+}
+
+.card-green .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 32%),
+    radial-gradient(110% 72% at 48% 108%, rgba(7, 94, 48, 0.48), transparent 74%),
+    radial-gradient(86% 76% at 50% 44%, transparent 45%, rgba(6, 86, 43, 0.36) 100%);
+}
+
+.card-red .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 32%),
+    radial-gradient(110% 72% at 48% 108%, rgba(128, 20, 36, 0.44), transparent 74%),
+    radial-gradient(86% 76% at 50% 44%, transparent 45%, rgba(118, 15, 31, 0.34) 100%);
+}
+
+.card-blue .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 32%),
+    radial-gradient(110% 72% at 48% 108%, rgba(16, 69, 150, 0.44), transparent 74%),
+    radial-gradient(86% 76% at 50% 44%, transparent 45%, rgba(18, 49, 172, 0.32) 100%);
+}
+
+.card-yellow .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.5), transparent 32%),
+    radial-gradient(110% 72% at 48% 108%, rgba(130, 85, 6, 0.34), transparent 74%),
+    radial-gradient(86% 76% at 50% 44%, transparent 45%, rgba(128, 86, 8, 0.28) 100%);
+}
+
+.card-special .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.44), transparent 32%),
+    radial-gradient(110% 72% at 48% 108%, rgba(102, 42, 126, 0.38), transparent 74%),
+    radial-gradient(86% 76% at 50% 44%, transparent 45%, rgba(85, 35, 115, 0.3) 100%);
+}
+
+.card-meme-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.02);
+  filter: saturate(1.06) contrast(1.06);
+}
+
+.card-meme-art > .card-special-icon {
+  width: 88%;
+  max-height: 96%;
+}
+
+.card-meme-label {
+  position: absolute;
+  right: calc(var(--card-width) * 0.045);
+  bottom: calc(var(--card-width) * 0.045);
+  left: calc(var(--card-width) * 0.045);
+  display: block;
+  max-width: 100%;
+  padding: calc(var(--card-width) * 0.018) calc(var(--card-width) * 0.04);
+  border: 1px solid rgba(255, 239, 171, 0.48);
+  border-radius: calc(var(--card-width) * 0.05);
+  background: linear-gradient(180deg, rgba(28, 18, 31, 0.18), rgba(28, 18, 31, 0.62));
+  color: #fff8d8;
+  font-size: calc(var(--card-width) * 0.07);
+  font-weight: 1000;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 1px 4px rgba(20, 10, 22, 0.28);
+}
+
+.card-meme-badge.compact {
+  gap: 0;
+}
+
+.card-meme-badge.compact .card-meme-art {
+  width: 100%;
 }
 
 .card-special .card-center-number {
@@ -1938,6 +2096,161 @@ body.flip-dark .card-back {
   background:
     radial-gradient(80% 70% at 50% 8%, rgba(255, 230, 158, 0.18), transparent 60%),
     linear-gradient(180deg, rgba(28, 31, 44, 0.78), rgba(5, 7, 14, 0.52));
+}
+
+.cartouche.cartouche-meme-image {
+  width: 78%;
+  height: 74%;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(88% 62% at 50% 0%, rgba(255, 255, 255, 0.58), transparent 62%),
+    linear-gradient(180deg, rgba(255, 238, 156, 0.2), rgba(34, 18, 30, 0.12));
+  box-shadow:
+    0 2px 8px rgba(38, 22, 36, 0.24),
+    0 0 0 1.4px rgba(255, 219, 92, 0.96),
+    0 0 0 2.3px rgba(255, 255, 255, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.38),
+    inset 0 0 14px rgba(38, 20, 32, 0.22);
+}
+
+.cartouche.cartouche-sm.cartouche-meme-image {
+  width: 78%;
+  height: 76%;
+  padding: 0;
+  border-radius: calc(var(--card-width) * 0.13);
+}
+
+.cartouche-meme-image .card-meme-badge.with-image,
+.cartouche-meme-image .card-meme-art,
+.cartouche-meme-image .card-meme-image {
+  width: 100%;
+  height: 100%;
+}
+
+.cartouche-meme-image .card-meme-art {
+  border: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 190, 0.34),
+    inset 0 -10px 16px rgba(22, 12, 20, 0.2);
+}
+
+.cartouche-meme-image .card-meme-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.52) 0%, rgba(255, 255, 255, 0.18) 18%, transparent 38%),
+    linear-gradient(18deg, transparent 43%, rgba(255, 255, 255, 0.28) 49%, transparent 56%);
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, -72% 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.cartouche-meme-image .card-meme-image {
+  object-fit: cover;
+  transform: scale(1.04);
+  position: relative;
+  z-index: 0;
+}
+
+.cartouche-meme-image .card-meme-art::after {
+  z-index: 2;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.42), transparent 32%),
+    radial-gradient(78% 55% at 50% 106%, rgba(0, 0, 0, 0.4), transparent 72%),
+    radial-gradient(90% 80% at 50% 45%, transparent 42%, rgba(18, 10, 18, 0.38) 100%);
+}
+
+.card-meme-art-card {
+  --meme-tint: 40 198 82;
+  --meme-deep: 6 84 42;
+  --meme-rim: 255 224 102;
+}
+
+.card-red.card-meme-art-card {
+  --meme-tint: 255 54 80;
+  --meme-deep: 128 18 36;
+}
+
+.card-yellow.card-meme-art-card {
+  --meme-tint: 255 213 57;
+  --meme-deep: 137 88 9;
+}
+
+.card-green.card-meme-art-card {
+  --meme-tint: 43 205 91;
+  --meme-deep: 5 96 47;
+}
+
+.card-blue.card-meme-art-card {
+  --meme-tint: 38 135 255;
+  --meme-deep: 18 55 168;
+}
+
+.card-special.card-meme-art-card {
+  --meme-tint: 181 73 213;
+  --meme-deep: 76 30 104;
+}
+
+.card-meme-art-card .cartouche.cartouche-meme-image {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.58),
+    0 0 0 1.45px rgba(var(--meme-rim), 0.98),
+    0 0 0 2.25px rgba(var(--meme-tint), 0.42),
+    0 0 14px rgba(var(--meme-tint), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    inset 0 -12px 20px rgba(var(--meme-deep), 0.22);
+}
+
+.card-meme-art-card .cartouche-meme-image .card-meme-art {
+  background:
+    radial-gradient(100% 70% at 50% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    rgb(var(--meme-tint));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 250, 205, 0.36),
+    inset 0 0 0 2px rgba(var(--meme-deep), 0.14),
+    inset 0 -14px 18px rgba(var(--meme-deep), 0.26);
+  isolation: isolate;
+}
+
+.card-meme-art-card .cartouche-meme-image .card-meme-image {
+  filter: saturate(1.08) contrast(1.08) brightness(0.98);
+  transform: scale(1.035);
+}
+
+.card-meme-art-card .cartouche-meme-image .card-meme-art::before {
+  background:
+    linear-gradient(152deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.22) 18%, transparent 39%),
+    linear-gradient(22deg, transparent 42%, rgba(255, 255, 255, 0.26) 48%, transparent 56%),
+    radial-gradient(80% 52% at 50% 4%, rgba(255, 246, 185, 0.26), transparent 68%);
+  background-size: 100% 100%, 230% 100%, 100% 100%;
+  background-position: 0 0, -66% 0, 0 0;
+  mix-blend-mode: screen;
+}
+
+.card-meme-art-card .cartouche-meme-image .card-meme-art::after {
+  background:
+    linear-gradient(180deg, rgba(var(--meme-tint), 0.18), transparent 34%, rgba(var(--meme-deep), 0.24)),
+    radial-gradient(78% 58% at 50% 106%, rgba(var(--meme-deep), 0.5), transparent 74%),
+    radial-gradient(96% 86% at 50% 45%, transparent 40%, rgba(var(--meme-deep), 0.46) 100%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.28), transparent 30%);
+  mix-blend-mode: soft-light;
+}
+
+.card-meme-art-card .cartouche.cartouche-meme-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 248, 204, 0.46),
+    inset 0 0 18px rgba(var(--meme-deep), 0.18);
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* The side class is carried by each card, so inactive opponent faces keep

@@ -32,6 +32,7 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
   const isWild = !card.color;
   const isSpecial = isWild && isSpecialValue(card.value);
   const isMeme = isMemeValue(card.value);
+  const hasMemeArt = isMeme && Boolean(memeArtForValue(card.value));
 
   const className = [
     "card-face",
@@ -40,6 +41,7 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
     dimmed ? "dimmed" : "",
     card.side ? `card-side-${card.side}` : "card-side-light",
     card.color ? (isMeme ? `card-${card.color} card-meme-color` : `card-${card.color}`) : isSpecial ? "card-special" : "card-wild",
+    hasMemeArt ? "card-meme-art-card" : "",
     !card.color && card.side === "dark" && !isSpecial ? "card-wild-dark-ink" : ""
   ]
     .filter(Boolean)
@@ -51,7 +53,7 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
       <CornerIndex card={card} small={compact} position="br" />
 
       <div className="absolute inset-0 z-[5] grid place-items-center">
-        <div className={`cartouche ${compact ? "cartouche-sm" : ""}`}>
+        <div className={`cartouche ${compact ? "cartouche-sm" : ""} ${hasMemeArt ? "cartouche-meme-image" : ""}`}>
           {isSpecial || (isMeme && card.color) ? (
             <SpecialBadge value={card.value} small={compact} />
           ) : isWild ? (
@@ -193,14 +195,53 @@ function iconForValue(value: Extract<CardValue, string>): string {
 
 function SpecialBadge({ value, small }: { value: CardValue; small?: boolean }) {
   const iconId = iconForSpecialValue(value);
+  const viewBox = specialIconViewBox(value);
+  const art = memeArtForValue(value);
+  const label = cardText({ value });
+  const className = [
+    "card-meme-badge",
+    small ? "compact" : "",
+    art ? "with-image" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="grid place-items-center gap-1 text-center">
-      <svg className="card-special-icon" viewBox="0 0 64 64" aria-hidden="true">
-        <use href={`/sprites/card-icons.svg#${iconId}`} />
-      </svg>
+    <div className={className}>
+      <div className="card-meme-art">
+        {art ? (
+          <img
+            className="card-meme-image"
+            src={art.src}
+            alt=""
+            style={{ objectPosition: art.position }}
+          />
+        ) : (
+          <svg className="card-special-icon" viewBox={viewBox} aria-hidden="true">
+            <use href={`/sprites/card-icons.svg#${iconId}`} />
+          </svg>
+        )}
+      </div>
+      {!small ? <span className="card-meme-label">{label}</span> : null}
     </div>
   );
 }
+
+type MemeArt = {
+  src: string;
+  position: string;
+};
+
+const MEME_ART: Record<string, MemeArt> = {
+  throwup: {
+    src: "/memes/throwup-cat.png",
+    position: "50% 42%"
+  },
+  peek: {
+    src: "/memes/peek-frog.png",
+    position: "50% 40%"
+  }
+};
 
 const SPECIAL_ICONS: Record<string, string> = {
   flashbang: "icon-meme-flashbang",
@@ -222,6 +263,14 @@ const SPECIAL_ICONS: Record<string, string> = {
 
 function iconForSpecialValue(value: CardValue): string {
   return SPECIAL_ICONS[String(value)] ?? "icon-star";
+}
+
+function memeArtForValue(value: CardValue): MemeArt | null {
+  return MEME_ART[String(value)] ?? null;
+}
+
+function specialIconViewBox(value: CardValue): string {
+  return value === "peek" || value === "throwup" ? "0 0 64 76" : "0 0 64 64";
 }
 
 function ColorSymbol({ color }: { color: Color | null }) {

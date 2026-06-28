@@ -14,4 +14,18 @@ describe("CardView", () => {
 
     expect(screen.getByLabelText("Hidden card")).toBeInTheDocument();
   });
+
+  it("renders meme cards with image art when available", () => {
+    const { container } = render(
+      <>
+        <CardView card={{ id: "throwup", color: "green", value: "throwup", deckIndex: 0 }} />
+        <CardView card={{ id: "peek", color: null, value: "peek", deckIndex: 1 }} />
+      </>
+    );
+
+    const images = container.querySelectorAll(".card-meme-image");
+    expect(images).toHaveLength(2);
+    expect(container.querySelector("use[href$='icon-meme-throwup']")).not.toBeInTheDocument();
+    expect(container.querySelector("use[href$='icon-meme-peek']")).not.toBeInTheDocument();
+  });
 });
