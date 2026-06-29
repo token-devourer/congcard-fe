@@ -25,6 +25,10 @@ describe("CardView", () => {
 
     const images = container.querySelectorAll(".card-meme-image");
     expect(images).toHaveLength(2);
+    expect(images[0]).toHaveAttribute("src", "/memes/gag-cat.png");
+    expect(images[0]).toHaveStyle({ objectFit: "contain" });
+    expect(container.querySelector(".card-meme-art-card")).not.toBeInTheDocument();
+    expect(container.querySelector(".cartouche-meme-image")).not.toBeInTheDocument();
     expect(container.querySelector("use[href$='icon-meme-throwup']")).not.toBeInTheDocument();
     expect(container.querySelector("use[href$='icon-meme-peek']")).not.toBeInTheDocument();
   });

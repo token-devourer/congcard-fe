@@ -52,6 +52,10 @@ export type SoundName =
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
 
+const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
+  memeThrowup: "/audio/cagGag.mp3"
+};
+
 let spriteInitPromise: Promise<void> | null = null;
 
 export function initAudioSprite(): Promise<void> {
@@ -92,6 +96,24 @@ function playSprite(name: SoundName, ctx: AudioContext, t: number, level: number
   src.connect(g);
   g.connect(sfxDestination());
   src.start(t, entry.start, entry.dur);
+  return true;
+}
+
+function playClip(name: SoundName, startsInMs: number, level: number): boolean {
+  const src = SOUND_CLIPS[name];
+  if (!src || typeof Audio === "undefined") return false;
+
+  const audio = new Audio(src);
+  audio.volume = Math.min(1, 0.58 + (Math.max(1, level) - 1) * 0.06);
+  const play = () => {
+    void audio.play().catch(() => undefined);
+  };
+
+  if (startsInMs > 0) {
+    window.setTimeout(play, startsInMs);
+  } else {
+    play();
+  }
   return true;
 }
 
@@ -158,6 +180,7 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
 
 function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  if (playClip(name, startsInMs, level)) return;
   const ctx = sharedAudioContext();
   unlockAudio();
   const t = ctx.currentTime + Math.max(0.005, startsInMs / 1000);
@@ -166,6 +189,7 @@ function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
 }
 export function playSound(name: SoundName, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  if (playClip(name, 0, level)) return;
   const ctx = sharedAudioContext();
   unlockAudio();
   const t0 = ctx.currentTime + 0.005;
