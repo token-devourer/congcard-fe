@@ -37,6 +37,7 @@ export function FlightLayer() {
   const layerRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<GameSnapshot | null>(null);
   const animatedBatchIds = useRef(new Set<number>());
+  const animatedChaosIds = useRef(new Set<number>());
   const animatedDealIds = useRef(new Set<number>());
   const animatedDrawIds = useRef(new Set<number>());
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -63,6 +64,7 @@ export function FlightLayer() {
 
     if (prev && prev.code !== snapshot.code) {
       animatedBatchIds.current.clear();
+      animatedChaosIds.current.clear();
       animatedDealIds.current.clear();
       animatedDrawIds.current.clear();
     }
@@ -148,6 +150,25 @@ export function FlightLayer() {
             pitchLevel: Math.min(8, index + 1),
             batchIndex: index + 1,
             batchTotal: batch.cards.length
+          });
+        });
+      }
+
+      const chaos = snapshot.pendingChaos;
+      if (chaos?.kind === "throwup" && chaos.affectedCards?.length && !animatedChaosIds.current.has(chaos.id)) {
+        animatedChaosIds.current.add(chaos.id);
+        const source = chaos.actorId === snapshot.self?.id ? "hand" : `seat:${chaos.actorId}`;
+        const serverNow = Date.now() + clockOffset;
+        chaos.affectedCards.forEach((card, index) => {
+          flights.push({
+            kind: "card",
+            card,
+            from: source,
+            to: "discard",
+            delay: Math.max(0, chaos.startsAt + 650 + index * 90 - serverNow) / 1000,
+            pitchLevel: Math.min(8, index + 1),
+            batchIndex: index + 1,
+            batchTotal: chaos.affectedCards?.length
           });
         });
       }

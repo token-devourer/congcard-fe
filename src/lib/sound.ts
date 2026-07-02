@@ -32,10 +32,47 @@ export type SoundName =
   | "lose"
   | "jumpIn"
   | "uiHover"
-  | "uiClick";
+  | "uiClick"
+  | "memeFlashbang"
+  | "memeThrowup"
+  | "memeSteal"
+  | "memeFavor"
+  | "memePeek"
+  | "memeVote"
+  | "memeChaos"
+  | "memeTimeskip"
+  | "memeMirror"
+  | "memePandemic"
+  | "memeMagnet"
+  | "memeJackpot"
+  | "memeRoulette"
+  | "memeNuke"
+  | "memeMime"
+  | "memeStealExecute"
+  | "memeFavorExecute"
+  | "memeFlashbangSfx"
+  | "memeFlashbangCat"
+  | "memeNukeCountdown"
+  | "memeNukeExecute";
 
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
+
+const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
+  memeThrowup: "/audio/gag-cat.mp3",
+  memeSteal: "/audio/muehehehe-cat-initiate.mp3",
+  memeStealExecute: "/audio/muehehehe-cat-execute.mp3",
+  memeFlashbang: "/audio/flashbang-cat.mp3",
+  memeFlashbangSfx: "/audio/flashbang-sfx.mp3",
+  memeFlashbangCat: "/audio/flashbang-cat.mp3",
+  memeFavor: "/audio/awowo-cat-initiate.mp3",
+  memeFavorExecute: "/audio/awowo-cat-execute.mp3",
+  memePeek: "/audio/acumalaka-frog.mp3",
+  memeTimeskip: "/audio/timeskip-cat.mp3",
+  memeNuke: "/audio/nuke-cat-initiate.mp3",
+  memeNukeCountdown: "/audio/nuke-cat-countdown.mp3",
+  memeNukeExecute: "/audio/nuke-cat-execute.mp3"
+};
 
 let spriteInitPromise: Promise<void> | null = null;
 
@@ -77,6 +114,24 @@ function playSprite(name: SoundName, ctx: AudioContext, t: number, level: number
   src.connect(g);
   g.connect(sfxDestination());
   src.start(t, entry.start, entry.dur);
+  return true;
+}
+
+function playClip(name: SoundName, startsInMs: number, level: number): boolean {
+  const src = SOUND_CLIPS[name];
+  if (!src || typeof Audio === "undefined") return false;
+
+  const audio = new Audio(src);
+  audio.volume = Math.min(1, 0.58 + (Math.max(1, level) - 1) * 0.06);
+  const play = () => {
+    void audio.play().catch(() => undefined);
+  };
+
+  if (startsInMs > 0) {
+    window.setTimeout(play, startsInMs);
+  } else {
+    play();
+  }
   return true;
 }
 
@@ -125,6 +180,12 @@ export function soundForEvent(event: UiEvent): SoundName | null {
 }
 export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   for (const event of events) {
+    if (event.type === "chaos") {
+      const startsInMs = event.startsAt ? Math.max(0, event.startsAt - (Date.now() + clockOffset)) : 0;
+      playChaosEventSounds(event, startsInMs);
+      duckMusic(startsInMs, event.kind === "nuke" ? 2_200 : 1_200);
+      continue;
+    }
     const sound = soundForEvent(event);
     if (!sound) continue;
     const serverStart = event.type === "catchWindow" ? event.opensAt : event.startsAt;
@@ -141,8 +202,60 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   }
 }
 
+function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number): void {
+  const at = (sound: SoundName, offsetMs = 0, level = 1) => playSoundAt(sound, startsInMs + offsetMs, level);
+
+  if (event.phase === "detonating" && event.kind === "nuke") {
+    at("memeNukeExecute");
+    return;
+  }
+
+  if (event.phase === "sequence" && (event.kind === "steal" || event.kind === "favor")) {
+    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorExecute");
+    return;
+  }
+
+  if (event.phase === "chooseCard") {
+    if (event.kind === "favor") {
+      at("memeFavor");
+    }
+    return;
+  }
+
+  at(event.kind === "nuke" || event.kind === "timeskip" ? "batchFinale" : "opening");
+
+  switch (event.kind) {
+    case "throwup":
+      at("memeThrowup", 650);
+      break;
+    case "steal":
+      at("memeSteal", 650);
+      break;
+    case "favor":
+      at("memeFavor", 650);
+      break;
+    case "flashbang":
+      at("memeFlashbangSfx", 650);
+      at("memeFlashbangCat", 850);
+      break;
+    case "peek":
+      at("memePeek", 650);
+      break;
+    case "timeskip":
+      at("memeTimeskip", 650);
+      break;
+    case "nuke":
+      at("memeNuke", 650);
+      at("memeNukeCountdown", 1_000);
+      break;
+    default:
+      break;
+  }
+}
+
 function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  if (playClip(name, startsInMs, level)) return;
   const ctx = sharedAudioContext();
   unlockAudio();
   const t = ctx.currentTime + Math.max(0.005, startsInMs / 1000);
@@ -151,6 +264,7 @@ function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
 }
 export function playSound(name: SoundName, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !audioAvailable()) return;
+  if (playClip(name, 0, level)) return;
   const ctx = sharedAudioContext();
   unlockAudio();
   const t0 = ctx.currentTime + 0.005;
@@ -575,6 +689,120 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
         gain: rand(0.06, 0.09),
         lp: 7500
       });
+      break;
+    }
+    // ---- Chaos meme sounds ----
+    case "memeFlashbang": {
+      noise(ctx, t, { dur: 0.35, gain: 0.5, hp: 200, lp: 12000 });
+      noise(ctx, t + 0.08, { dur: 0.2, gain: 0.3, hp: 2000, lp: 8000 });
+      tone(ctx, t, { freq: 2000, dur: 0.25, type: "sawtooth", gain: 0.1, sweepTo: 300, lp: 3000 });
+      tone(ctx, t + 0.02, { freq: 3500, dur: 0.15, type: "square", gain: 0.06, sweepTo: 500, lp: 4000, detune: -20 });
+      break;
+    }
+    case "memeThrowup": {
+      for (let i = 0; i < 4; i++) {
+        tone(ctx, t + i * 0.1, { freq: 200 - i * 20, dur: 0.2, type: "square", gain: 0.12, sweepTo: 80, lp: 1200 });
+      }
+      noise(ctx, t + 0.15, { dur: 0.25, gain: 0.18, hp: 100, lp: 800 });
+      break;
+    }
+    case "memeSteal": {
+      tone(ctx, t,        { freq: 400, dur: 0.08, type: "square", gain: 0.14, lp: 2000 });
+      tone(ctx, t + 0.07, { freq: 500, dur: 0.08, type: "square", gain: 0.16, lp: 2200 });
+      tone(ctx, t + 0.14, { freq: 600, dur: 0.08, type: "square", gain: 0.18, lp: 2400 });
+      tone(ctx, t + 0.21, { freq: 800, dur: 0.14, type: "triangle", gain: 0.12, lp: 5000 });
+      noise(ctx, t + 0.05, { dur: 0.04, gain: 0.08, hp: 3000, lp: 9000 });
+      noise(ctx, t + 0.18, { dur: 0.04, gain: 0.08, hp: 3000, lp: 9000 });
+      break;
+    }
+    case "memeFavor": {
+      const swoop = (startFreq: number, offset: number) => {
+        tone(ctx, t + offset, { freq: startFreq, dur: 0.18, type: "triangle", gain: 0.12, sweepTo: startFreq * 1.5, lp: 4000 });
+        tone(ctx, t + offset + 0.12, { freq: startFreq * 1.5, dur: 0.16, type: "sine", gain: 0.1, sweepTo: startFreq * 0.8, lp: 3000 });
+      };
+      swoop(500, 0);
+      swoop(600, 0.22);
+      tone(ctx, t + 0.4, { freq: 700, dur: 0.25, type: "sine", gain: 0.08, sweepTo: 400, lp: 3500 });
+      break;
+    }
+    case "memePeek": {
+      noise(ctx, t, { dur: 0.06, gain: 0.15, hp: 1500, lp: 7000 });
+      tone(ctx, t + 0.01, { freq: 260, dur: 0.12, type: "square", gain: 0.16, lp: 1800 });
+      tone(ctx, t + 0.08, { freq: 320, dur: 0.1, type: "square", gain: 0.14, lp: 2000 });
+      tone(ctx, t + 0.16, { freq: 220, dur: 0.2, type: "triangle", gain: 0.08, lp: 1500 });
+      tone(ctx, t + 0.2, { freq: 180, dur: 0.25, type: "sine", gain: 0.06, lp: 1200 });
+      break;
+    }
+    case "memeVote": {
+      for (let i = 0; i < 5; i++) {
+        tone(ctx, t + i * 0.06, { freq: 400 + i * 80, dur: 0.05, type: "square", gain: 0.08, lp: 3000 });
+      }
+      tone(ctx, t + 0.35, { freq: 600, dur: 0.18, type: "triangle", gain: 0.14, lp: 4000 });
+      break;
+    }
+    case "memeChaos": {
+      for (let i = 0; i < 8; i++) {
+        tone(ctx, t + i * 0.04, { freq: 300 + Math.random() * 400, dur: 0.04, type: "sawtooth", gain: 0.06, lp: 5000 });
+      }
+      noise(ctx, t, { dur: 0.35, gain: 0.2, hp: 500, lp: 9000 });
+      tone(ctx, t + 0.3, { freq: 800, dur: 0.12, type: "sine", gain: 0.1, sweepTo: 200, lp: 3000 });
+      break;
+    }
+    case "memeTimeskip": {
+      for (let i = 0; i < 4; i++) {
+        tone(ctx, t + i * 0.08, { freq: 600 - i * 100, dur: 0.06, type: "triangle", gain: 0.1, lp: 4000 });
+      }
+      tone(ctx, t + 0.4, { freq: 1200, dur: 0.15, type: "sine", gain: 0.08, lp: 5000 });
+      break;
+    }
+    case "memeMirror": {
+      tone(ctx, t, { freq: 300, dur: 0.06, type: "sine", gain: 0.1, lp: 3000 });
+      tone(ctx, t + 0.05, { freq: 300, dur: 0.06, type: "sine", gain: 0.08, lp: 3000, detune: -10 });
+      tone(ctx, t + 0.1, { freq: 300, dur: 0.06, type: "sine", gain: 0.06, lp: 3000, detune: 10 });
+      tone(ctx, t + 0.2, { freq: 600, dur: 0.12, type: "triangle", gain: 0.1, lp: 4000 });
+      noise(ctx, t + 0.15, { dur: 0.08, gain: 0.06, hp: 3000, lp: 10000 });
+      break;
+    }
+    case "memePandemic": {
+      noise(ctx, t, { dur: 0.2, gain: 0.15, hp: 200, lp: 3000 });
+      for (let i = 0; i < 3; i++) {
+        tone(ctx, t + i * 0.15, { freq: 250 - i * 30, dur: 0.1, type: "square", gain: 0.08, lp: 1500 });
+      }
+      break;
+    }
+    case "memeMagnet": {
+      tone(ctx, t, { freq: 150, dur: 0.3, type: "sawtooth", gain: 0.08, sweepTo: 600, lp: 2000 });
+      tone(ctx, t + 0.15, { freq: 200, dur: 0.2, type: "sine", gain: 0.06, sweepTo: 500, lp: 3000 });
+      tone(ctx, t + 0.35, { freq: 800, dur: 0.08, type: "triangle", gain: 0.12, lp: 4000 });
+      break;
+    }
+    case "memeJackpot": {
+      for (let i = 0; i < 6; i++) {
+        tone(ctx, t + i * 0.07, { freq: 300 + i * 80, dur: 0.05, type: "square", gain: 0.1, lp: 3500 });
+      }
+      tone(ctx, t + 0.5, { freq: 900, dur: 0.2, type: "sine", gain: 0.14, lp: 5000 });
+      break;
+    }
+    case "memeRoulette": {
+      tone(ctx, t, { freq: 200, dur: 0.04, type: "square", gain: 0.06, lp: 2000 });
+      tone(ctx, t + 0.06, { freq: 320, dur: 0.04, type: "square", gain: 0.06, lp: 2000 });
+      tone(ctx, t + 0.12, { freq: 440, dur: 0.04, type: "square", gain: 0.06, lp: 2000 });
+      tone(ctx, t + 0.18, { freq: 560, dur: 0.04, type: "square", gain: 0.06, lp: 2000 });
+      tone(ctx, t + 0.24, { freq: 300, dur: 0.12, type: "triangle", gain: 0.1, lp: 3000 });
+      break;
+    }
+    case "memeNuke": {
+      noise(ctx, t, { dur: 0.4, gain: 0.35, hp: 50, lp: 12000 });
+      tone(ctx, t, { freq: 40, dur: 0.5, type: "sine", gain: 0.2, lp: 200 });
+      tone(ctx, t + 0.1, { freq: 60, dur: 0.3, type: "sawtooth", gain: 0.08, lp: 500 });
+      tone(ctx, t + 0.4, { freq: 2000, dur: 0.1, type: "sine", gain: 0.06, lp: 8000 });
+      break;
+    }
+    case "memeMime": {
+      tone(ctx, t, { freq: 500, dur: 0.1, type: "triangle", gain: 0.06, lp: 3000 });
+      tone(ctx, t + 0.1, { freq: 550, dur: 0.1, type: "triangle", gain: 0.05, lp: 3000 });
+      tone(ctx, t + 0.2, { freq: 600, dur: 0.15, type: "sine", gain: 0.08, lp: 4000 });
+      noise(ctx, t + 0.18, { dur: 0.06, gain: 0.05, hp: 2000, lp: 6000 });
       break;
     }
   }

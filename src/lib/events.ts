@@ -1,4 +1,4 @@
-import type { CardValue, Color, GameSnapshot, PendingStack, PresentationEvent } from "@congcard/shared";
+import type { CardValue, ChaosEffectKind, Color, GameSnapshot, PendingChaosPhase, PendingStack, PresentationEvent } from "@congcard/shared";
 
 export type UiEvent = (
   | { id: number; type: "yourTurn" }
@@ -10,6 +10,7 @@ export type UiEvent = (
   | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
+  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; countdownEndsAt?: number; detonationEndsAt?: number }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
@@ -146,7 +147,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
 
   if (
     topChanged &&
-    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild3" || next.discardTop?.value === "wild4" || next.discardTop?.value === "wildColor") &&
+    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild2" || next.discardTop?.value === "wild3" || next.discardTop?.value === "wild4" || next.discardTop?.value === "wildColor") &&
     next.activeColor
   ) {
     events.push({ id: eventId(), type: "colorChange", color: next.activeColor, ...(matchLevel > 1 ? { level: matchLevel } : {}) });
@@ -286,6 +287,20 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, p
       })();
     case "one":
       return actor ? [{ id: idBase, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
+    case "chaos":
+      return event.chaosKind && event.phase
+        ? [{
+            id: idBase,
+            type: "chaos",
+            kind: event.chaosKind,
+            phase: event.phase,
+            ...(event.actorId ? { actorId: event.actorId } : {}),
+            ...(event.targetIds ? { targetIds: event.targetIds } : {}),
+            ...(snapshot.pendingChaos?.countdownEndsAt ? { countdownEndsAt: snapshot.pendingChaos.countdownEndsAt } : {}),
+            ...(snapshot.pendingChaos?.detonationEndsAt ? { detonationEndsAt: snapshot.pendingChaos.detonationEndsAt } : {}),
+            ...timing
+          }]
+        : [];
     default:
       return [];
   }
@@ -344,7 +359,7 @@ function sameValueRunFromLog(snapshot: GameSnapshot, value: CardValue): number {
 }
 
 function playedCardValue(message?: string): CardValue | undefined {
-  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild)\.$/)?.[1];
+  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw1|draw2|draw5|flip|wild2|wild3|wild4|wildColor|wild|flashbang|throwup|steal|favor|peek|vote|chaosCard|timeskip|mirror|pandemic|magnet|jackpot|roulette|nuke|mime)\.$/)?.[1];
   if (!raw) {
     return undefined;
   }

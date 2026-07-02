@@ -13,14 +13,33 @@ interface Pattern {
 const CARD_VALUE_KEYS: Record<string, string> = {
   skip: "log.valSkip",
   reverse: "log.valReverse",
+  draw1: "log.valDraw1",
   draw2: "log.valDraw2",
   draw5: "log.valDraw5",
   flip: "log.valFlip",
   wild: "log.valWild",
+  wild2: "log.valWild2",
   wild3: "log.valWild3",
   wild4: "log.valWild4",
-  wildColor: "log.valWildColor"
+  wildColor: "log.valWildColor",
+  flashbang: "log.valFlashbang",
+  throwup: "log.valThrowup",
+  steal: "log.valSteal",
+  favor: "log.valFavor",
+  peek: "log.valPeek",
+  vote: "log.valVote",
+  chaosCard: "log.valChaosCard",
+  timeskip: "log.valTimeskip",
+  mirror: "log.valMirror",
+  pandemic: "log.valPandemic",
+  magnet: "log.valMagnet",
+  jackpot: "log.valJackpot",
+  roulette: "log.valRoulette",
+  nuke: "log.valNuke",
+  mime: "log.valMime"
 };
+
+const CARD_VALUE_PATTERN = "\\d|skip|reverse|draw1|draw2|draw5|flip|wild2|wild3|wild4|wildColor|wild|flashbang|throwup|steal|favor|peek|vote|chaosCard|timeskip|mirror|pandemic|magnet|jackpot|roulette|nuke|mime";
 
 function cardName(color: string | undefined, value: string, t: Translate): string {
   const valueLabel = CARD_VALUE_KEYS[value] ? t(CARD_VALUE_KEYS[value]) : value;
@@ -47,15 +66,27 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) must choose: challenge, stack, or accept (\d+) cards\.$/, key: "mustChallengeStack", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^Game paused until at least two active players return\.$/, key: "gamePaused", values: () => ({}) },
   { re: /^Game resumed\.$/, key: "gameResumed", values: () => ({}) },
+  { re: /^(.+) chose (.+) for (steal|favor)\.$/, key: "chaosChoseTarget", values: (match, t) => ({ name: match[1], target: match[2], value: cardName(undefined, match[3], t) }) },
+  { re: /^(.+) received a card from (.+)\.$/, key: "chaosReceivedCard", values: (match) => ({ name: match[1], target: match[2] }) },
+  { re: /^(.+) threw up (\d+) cards?\.$/, key: "chaosThrowup", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
+  { re: /^Flashbang shuffled every active hand\.$/, key: "chaosFlashbang", values: () => ({}) },
+  { re: /^(.+)'s Time Skip returned the turn\.$/, key: "chaosTimeskipReturned" },
+  { re: /^(.+) auto-drew during Time Skip\.$/, key: "chaosTimeskipDrew" },
   {
-    re: /^(.+) played a batch of (\d+) (\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild) cards\.$/,
+    re: new RegExp(`^(.+) auto-played (?:(red|yellow|green|blue|orange|cyan|purple|pink) )?(${CARD_VALUE_PATTERN}) during Time Skip\\.$`),
+    key: "chaosTimeskipPlayed",
+    values: (match, t) => ({ name: match[1], card: cardName(match[2], match[3], t) })
+  },
+  { re: /^(.+) took (\d+) Nuke countdown cards?\.$/, key: "chaosNukePenalty", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
+  {
+    re: new RegExp(`^(.+) played a batch of (\\d+) (${CARD_VALUE_PATTERN}) cards\\.$`),
     key: "playedBatch",
     values: (match, t) => ({ name: match[1], count: Number(match[2]), value: cardName(undefined, match[3], t) })
   },
   { re: /^(\d+) players were skipped by the batch\.$/, key: "batchSkipped", values: (match) => ({ count: Number(match[1]) }) },
   { re: /^Turn direction changed (\d+) times\.$/, key: "batchReversed", values: (match) => ({ count: Number(match[1]) }) },
   {
-    re: /^(.+) played (?:(red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild)\.$/,
+    re: new RegExp(`^(.+) played (?:(red|yellow|green|blue|orange|cyan|purple|pink) )?(${CARD_VALUE_PATTERN})\\.$`),
     key: "played",
     values: (match, t) => ({ name: match[1], card: cardName(match[2], match[3], t) })
   },

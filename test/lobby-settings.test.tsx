@@ -66,12 +66,15 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
 
 function LobbyHarness() {
   const [state, setState] = useState<GameSnapshot>(snapshot());
+  const [localModeId, setLocalModeId] = useState<string | null>(null);
 
   return (
     <NextIntlClientProvider locale="en" messages={messages}>
       <Lobby
         snapshot={state}
         code={state.code}
+        localModeId={localModeId}
+        setLocalModeId={setLocalModeId}
         send={(type, payload) => {
           if (type !== "room.updateSettings") {
             return;
@@ -167,11 +170,16 @@ describe("Lobby settings", () => {
   it("allows only the host to change keyboard shortcuts", () => {
     const guestSnapshot = snapshot({ self: { id: "guest", role: "player", hand: [] } });
 
-    render(
-      <NextIntlClientProvider locale="en" messages={messages}>
-        <Lobby snapshot={guestSnapshot} code={guestSnapshot.code} send={() => undefined} />
-      </NextIntlClientProvider>
-    );
+    function GuestHarness() {
+      const [lm, setLm] = useState<string | null>(null);
+      return (
+        <NextIntlClientProvider locale="en" messages={messages}>
+          <Lobby snapshot={guestSnapshot} code={guestSnapshot.code} localModeId={lm} setLocalModeId={setLm} send={() => undefined} />
+        </NextIntlClientProvider>
+      );
+    }
+
+    render(<GuestHarness />);
 
     const shortcuts = screen.getByText("Enable keyboard shortcuts").closest("label")?.querySelector("input") as HTMLInputElement | null;
     expect(shortcuts).toBeDisabled();

@@ -69,6 +69,7 @@ export function GameEventOverlay() {
 
 function eventPriority(event: UiEvent): number {
   switch (event.type) {
+    case "chaos": return event.kind === "nuke" ? 6 : 4;
     case "catchWindow": return 5;
     case "jumpIn": return 4;
     case "calledOne": return 4;
@@ -83,6 +84,18 @@ function eventPriority(event: UiEvent): number {
 }
 
 export function eventToastDurationMs(event: UiEvent): number {
+  if (event.type === "chaos") {
+    if (event.kind === "nuke" && event.phase === "countdown" && event.startsAt && event.resolvesAt) {
+      return Math.max(2_400, event.resolvesAt - event.startsAt);
+    }
+    if (event.kind === "nuke" && event.phase === "detonating") {
+      return 3_200;
+    }
+    if (event.kind === "peek" && event.phase === "reveal") {
+      return 5_200;
+    }
+    return 1_900;
+  }
   if (event.startsAt && event.resolvesAt) {
     return Math.max(700, Math.min(2_400, event.resolvesAt - event.startsAt));
   }
@@ -119,7 +132,8 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
     return () => window.clearTimeout(id);
   }, [event]);
 
-  const { label, sublabel, background, color } = toastContent(event, t);
+  const now = useNow(200);
+  const { label, sublabel, background, color } = toastContent(event, t, now);
   const wash = eventWash(event);
 
   return (
@@ -328,6 +342,10 @@ function EventVfx({ event, reduceMotion, preset }: { event: UiEvent; reduceMotio
 
 function eventWash(event: UiEvent): string {
   switch (event.type) {
+    case "chaos":
+      return event.kind === "nuke"
+        ? "radial-gradient(circle at center, rgba(255, 80, 40, 0.42), transparent 42%), rgba(20, 4, 2, 0.48)"
+        : "radial-gradient(circle at center, rgba(255, 255, 255, 0.26), transparent 34%), radial-gradient(circle at 30% 30%, rgba(255, 0, 180, 0.24), transparent 34%), radial-gradient(circle at 70% 60%, rgba(0, 190, 255, 0.22), transparent 38%)";
     case "penalty":
       return "radial-gradient(circle at center, rgba(255, 92, 73, 0.42), transparent 38%), radial-gradient(ellipse at center, transparent 38%, rgba(224, 73, 60, 0.5))";
     case "skip":
@@ -353,9 +371,41 @@ function eventWash(event: UiEvent): string {
 
 function toastContent(
   event: UiEvent,
-  t: ReturnType<typeof useTranslations>
+  t: ReturnType<typeof useTranslations>,
+  now: number
 ): { label: string; sublabel?: string; background: string; color?: string } {
   switch (event.type) {
+    case "chaos": {
+      if (event.kind === "nuke" && event.phase === "countdown") {
+        const remaining = Math.max(0, Math.ceil(((event.countdownEndsAt ?? event.resolvesAt ?? now) - now) / 1000));
+        return {
+          label: `${remaining}`,
+          sublabel: t("events.nukeCountdown"),
+          background: "linear-gradient(180deg, #ffcb7a, #ff3e28 54%, #631009)"
+        };
+      }
+      if (event.kind === "nuke" && event.phase === "detonating") {
+        const remaining = Math.max(0, Math.ceil(((event.detonationEndsAt ?? event.resolvesAt ?? now) - now) / 1000));
+        return {
+          label: remaining > 0 ? `${remaining}` : "BOOM",
+          sublabel: t("events.nukeDetonating"),
+          background: "linear-gradient(180deg, #fff0a8, #ff6b1f 46%, #7d1207)"
+        };
+      }
+      const labels: Record<string, string> = {
+        throwup: "THROW UP",
+        steal: "STEAL",
+        flashbang: "FLASHBANG",
+        favor: "FAVOR",
+        peek: "PEEK",
+        timeskip: "TIME SKIP"
+      };
+      return {
+        label: labels[event.kind] ?? "CHAOS",
+        sublabel: event.phase === "chooseTarget" ? t("events.chaosChooseTarget") : event.phase === "chooseCard" ? t("events.chaosChooseCard") : undefined,
+        background: "linear-gradient(135deg, #ff4ed8, #f2c14e 38%, #45d483 62%, #4f8cff)"
+      };
+    }
     case "penalty":
       return {
         label: `+${event.count}!`,
