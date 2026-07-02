@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { CardValue, Color, FlipSide } from "@congcard/shared";
-import { LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES, LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
 import { CardView } from "./CardView";
 import { playSound, type SoundName } from "@/lib/sound";
 import { shouldIgnoreShortcut } from "@/lib/shortcuts";
@@ -172,11 +172,7 @@ function generateFlip(): CardGroup[] {
 }
 
 const CHAOS_ACTIONS = ["skip", "reverse", "draw1", "throwup"] as CardValue[];
-const CHAOS_SPECIALS = [
-  "flashbang", "steal", "favor", "peek",
-  "vote", "chaosCard", "timeskip", "mirror",
-  "pandemic", "magnet", "jackpot", "roulette", "nuke", "mime"
-] as CardValue[];
+const CHAOS_SPECIALS = [...ACTIVE_CHAOS_SPECIAL_VALUES] as CardValue[];
 
 function generateChaos(): CardGroup[] {
   const groups: CardGroup[] = [];

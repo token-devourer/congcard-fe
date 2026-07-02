@@ -237,11 +237,41 @@ const MEME_ART: Record<string, MemeArt> = {
     src: "/memes/gag-cat.png",
     position: "50% 50%"
   },
+  steal: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/muhehehe-cat.png",
+    position: "50% 50%"
+  },
+  flashbang: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/flashbang-cat.png",
+    position: "50% 50%"
+  },
+  favor: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/awowo-cat.png",
+    position: "50% 50%"
+  },
   peek: {
-    fit: "cover",
-    mode: "frame",
-    src: "/memes/peek-frog.png",
-    position: "50% 40%"
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/acumalaka-frog.png",
+    position: "50% 50%"
+  },
+  timeskip: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/timeskip-cat.png",
+    position: "50% 50%"
+  },
+  nuke: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/nuke-cat.png",
+    position: "50% 50%"
   }
 };
 

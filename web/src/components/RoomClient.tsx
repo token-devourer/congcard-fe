@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
-import type { Card, Color, GameSnapshot, ParticipantRole, RoomSettings } from "@congcard/shared";
+import type { Card, ChaosSelectableCard, Color, GameSnapshot, ParticipantRole, RoomSettings } from "@congcard/shared";
 import { AVATARS } from "@congcard/shared";
 import {
   Accessibility,
@@ -31,7 +31,7 @@ import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { batchCardGroups } from "@/lib/batch";
-import { isSelfColorHunt, jumpInCardInHand, needsColor, playableCardInHand } from "@/lib/rules";
+import { cardText, isSelfColorHunt, jumpInCardInHand, needsColor, playableCardInHand } from "@/lib/rules";
 import { isShortcutWindowOpen, resolveGameShortcut, shortcutKey, shouldIgnoreShortcut } from "@/lib/shortcuts";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { safeGet, safeRemove, safeSet, safeStorage } from "@/lib/storage";
@@ -420,6 +420,14 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   round_setup_active: "errors.roundSetupActive",
   draw_in_progress: "errors.drawInProgress",
   color_draw_unavailable: "errors.colorDrawUnavailable",
+  chaos_pending: "errors.chaosPending",
+  nuke_blocked_card: "errors.nukeBlockedCard",
+  no_chaos_choice: "errors.noChaosChoice",
+  no_chaos_card_choice: "errors.noChaosChoice",
+  not_chaos_chooser: "errors.notChaosChooser",
+  invalid_chaos_target: "errors.invalidChaosTarget",
+  invalid_chaos_card: "errors.invalidChaosCard",
+  inactive_chaos_card: "errors.inactiveChaosCard",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -871,11 +879,12 @@ export function Board({
   const flipResolving = Boolean(snapshot.pendingFlip);
   const pendingDraw = snapshot.pendingDraw;
   const drawResolving = Boolean(pendingDraw);
+  const chaosBlocking = Boolean(snapshot.pendingChaos && !(snapshot.pendingChaos.kind === "nuke" && snapshot.pendingChaos.phase === "countdown"));
   // While you hunt for a Wild Draw Color, the controls + collection inflate the
   // hand row; flag it so the board lets the table compress instead of growing
   // the page past the viewport (a scrollbar that vanished on dismount).
   const selfColorDraw = isSelfColorHunt(snapshot);
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving || drawResolving;
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway || paused || batchResolving || flipResolving || drawResolving || chaosBlocking;
   const canCallOne =
     isPlayer &&
     !finished &&
@@ -937,7 +946,7 @@ export function Board({
         canPass: canPass && !rulesOpen,
         canCallOne: callShortcutReady && !selectedCard && !snapshot.pendingChallenge && !rulesOpen,
         catchTargetId: !selectedCard && !snapshot.pendingChallenge && !rulesOpen ? catchShortcutTarget?.id : undefined,
-        canJumpIn: Boolean(jumpInShortcutCard) && !selectedCard && !rulesOpen && !batchSelecting && !batchResolving && !drawResolving,
+        canJumpIn: Boolean(jumpInShortcutCard) && !selectedCard && !rulesOpen && !batchSelecting && !batchResolving && !drawResolving && !chaosBlocking,
         canBatch: canBatch && !rulesOpen,
         batchSelecting,
         canOpenRules:
@@ -1004,6 +1013,7 @@ export function Board({
     canDraw,
     canPass,
     catchShortcutTarget,
+    chaosBlocking,
     eventLocked,
     finished,
     isPlayer,
@@ -1025,7 +1035,7 @@ export function Board({
   }, [finished, isPlayer, playerAway, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer || finished || playerAway || eventLocked || batchSelecting || batchResolving || drawResolving) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchSelecting || batchResolving || drawResolving || chaosBlocking) {
       return;
     }
 
@@ -1043,7 +1053,7 @@ export function Board({
   }
 
   function chooseColor(color: Color) {
-    if (eventLocked || playerAway || batchResolving || drawResolving) {
+    if (eventLocked || playerAway || batchResolving || drawResolving || chaosBlocking) {
       return;
     }
 
@@ -1058,7 +1068,7 @@ export function Board({
   }
 
   function playBatch(cards: Card[], declaredColor?: Color) {
-    if (!isPlayer || finished || playerAway || eventLocked || batchResolving || drawResolving) {
+    if (!isPlayer || finished || playerAway || eventLocked || batchResolving || drawResolving || chaosBlocking) {
       return;
     }
 
@@ -1074,6 +1084,7 @@ export function Board({
         <div className="board-zone relative">
           <Suspense fallback={null}><RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} /></Suspense>
           {snapshot.pendingDraw ? <DrawProgress snapshot={snapshot} /> : null}
+          {snapshot.pendingChaos ? <ChaosChoicePanel snapshot={snapshot} send={send} /> : null}
           {paused ? <PauseBanner /> : null}
         </div>
 
@@ -1110,7 +1121,7 @@ export function Board({
               <ChallengeModal
                 snapshot={snapshot}
                 send={send}
-                actionLocked={eventLocked || batchSelecting || batchResolving || playerAway || paused || Boolean(selectedCard)}
+                actionLocked={eventLocked || batchSelecting || batchResolving || chaosBlocking || playerAway || paused || Boolean(selectedCard)}
                 canBatchStack={canBatchChallengeStack}
                 onBatchStack={() => setBatchShortcutCommand((current) => ({ id: (current?.id ?? 0) + 1, type: "toggle" }))}
               />
@@ -1200,6 +1211,62 @@ function PauseBanner() {
       </div>
     </div>
   );
+}
+
+function ChaosChoicePanel({ snapshot, send }: { snapshot: GameSnapshot; send: (type: string, payload?: unknown) => void }) {
+  const t = useTranslations();
+  const pending = snapshot.pendingChaos;
+  const selfId = snapshot.self?.id;
+  if (!pending || pending.chooserId !== selfId) {
+    return null;
+  }
+
+  if (pending.phase === "chooseTarget") {
+    const targets = snapshot.players.filter((player) => pending.eligibleTargetIds?.includes(player.id));
+    return (
+      <div className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 mx-auto max-w-xl rounded-2xl border border-white/15 bg-black/82 p-3 shadow-2xl backdrop-blur-md">
+        <div className="mb-2 text-center text-sm font-black uppercase text-[var(--gold)]">{t("chaos.chooseTarget")}</div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {targets.map((player) => (
+            <button
+              key={player.id}
+              type="button"
+              className="button secondary !min-h-10 !px-3 text-sm"
+              onClick={() => send("game.chooseChaosTarget", { targetId: player.id })}
+            >
+              {player.nickname}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (pending.phase === "chooseCard" && pending.selectableCards?.length) {
+    const target = snapshot.players.find((player) => player.id === pending.targetId);
+    return (
+      <div className="pointer-events-auto absolute inset-x-3 bottom-3 z-30 mx-auto max-w-3xl rounded-2xl border border-white/15 bg-black/82 p-3 shadow-2xl backdrop-blur-md">
+        <div className="mb-2 text-center text-sm font-black uppercase text-[var(--gold)]">
+          {t("chaos.chooseCard", { name: target?.nickname ?? "" })}
+        </div>
+        <div className="thin-scroll flex max-h-36 gap-2 overflow-x-auto pb-1">
+          {pending.selectableCards.map((card: ChaosSelectableCard) => (
+            <button
+              key={card.id}
+              type="button"
+              className="grid shrink-0 justify-items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1.5 hover:bg-white/10"
+              onClick={() => send("game.chooseChaosCard", { cardId: card.id })}
+              aria-label={`${t("chaos.choose")} ${cardText(card)}`}
+            >
+              <CardView card={card} small />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {

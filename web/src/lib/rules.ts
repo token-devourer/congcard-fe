@@ -1,4 +1,5 @@
 import type { Card, CardValue, GameSnapshot, PendingStack } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES } from "@congcard/shared";
 
 /**
  * True while the local player is the one hunting for a Wild Draw Color. The
@@ -30,6 +31,9 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
 
   const handCard = snapshot.self.hand.find((item) => item.id === card.id);
   if (!handCard) {
+    return false;
+  }
+  if (snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown" && isNukeBlockedCard(handCard)) {
     return false;
   }
 
@@ -71,6 +75,10 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
   }
 
   if (handCard.color === null) {
+    return handCard.value === "wild" || handCard.value === "wild2" || isSpecialValue(handCard.value);
+  }
+
+  if (snapshot.discardTop.color === null && isSpecialValue(snapshot.discardTop.value)) {
     return true;
   }
 
@@ -128,6 +136,9 @@ export function jumpInCardInHand(snapshot: GameSnapshot | null): Card | null {
   }
 
   return snapshot.self.hand.find((card) => {
+    if (snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown" && isNukeBlockedCard(card)) {
+      return false;
+    }
     if (!isJumpInMatch(card, snapshot.discardTop!)) {
       return false;
     }
@@ -136,13 +147,10 @@ export function jumpInCardInHand(snapshot: GameSnapshot | null): Card | null {
   }) ?? null;
 }
 
-const SPECIAL_VALUES = new Set([
+const SPECIAL_VALUES = new Set<CardValue>(ACTIVE_CHAOS_SPECIAL_VALUES);
+const MEME_VALUES = new Set<CardValue>(["throwup", ...ACTIVE_CHAOS_SPECIAL_VALUES]);
+const ALL_CHAOS_SPECIAL_VALUES = new Set<CardValue>([
   "flashbang", "steal", "favor", "peek",
-  "vote", "chaosCard", "timeskip", "mirror",
-  "pandemic", "magnet", "jackpot", "roulette", "nuke", "mime"
-]);
-const MEME_VALUES = new Set([
-  "flashbang", "throwup", "steal", "favor", "peek",
   "vote", "chaosCard", "timeskip", "mirror",
   "pandemic", "magnet", "jackpot", "roulette", "nuke", "mime"
 ]);
@@ -153,6 +161,10 @@ export function isSpecialValue(value: CardValue): boolean {
 
 export function isMemeValue(value: CardValue): boolean {
   return typeof value === "string" && MEME_VALUES.has(value);
+}
+
+export function isNukeBlockedCard(card: Card): boolean {
+  return card.color === null || card.value === "throwup" || (typeof card.value === "string" && ALL_CHAOS_SPECIAL_VALUES.has(card.value));
 }
 
 export function needsColor(card: Card): boolean {

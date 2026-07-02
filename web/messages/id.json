@@ -241,7 +241,16 @@
     "colorChange": "Warna jadi {color}",
     "calledOne": "{name}: SATU!",
     "catchWindow": "{name} tinggal 1 kartu!",
-    "youHaveOne": "Kartumu tinggal 1 - teriak SATU!"
+    "youHaveOne": "Kartumu tinggal 1 - teriak SATU!",
+    "nukeCountdown": "COUNTDOWN NUKE",
+    "nukeDetonating": "NUKE",
+    "chaosChooseTarget": "PILIH TARGET",
+    "chaosChooseCard": "PILIH KARTU"
+  },
+  "chaos": {
+    "chooseTarget": "Pilih target",
+    "chooseCard": "Pilih kartu dari {name}",
+    "choose": "Pilih"
   },
   "alerts": {
     "yourTurnTitle": "Giliranmu!",
@@ -319,6 +328,14 @@
     "batchReversed": "Arah putaran berubah {count} kali.",
     "gamePaused": "Game paused sampai dua pemain aktif kembali.",
     "gameResumed": "Game resumed.",
+    "chaosChoseTarget": "{name} memilih {target} untuk {value}.",
+    "chaosReceivedCard": "{name} menerima kartu dari {target}.",
+    "chaosThrowup": "{name} membuang {count} kartu Throw Up.",
+    "chaosFlashbang": "Flashbang mengacak semua hand aktif.",
+    "chaosTimeskipReturned": "Time Skip {name} mengembalikan giliran.",
+    "chaosTimeskipDrew": "{name} otomatis mengambil kartu saat Time Skip.",
+    "chaosTimeskipPlayed": "{name} otomatis memainkan {card} saat Time Skip.",
+    "chaosNukePenalty": "{name} menerima {count} kartu countdown Nuke.",
     "skipped": "{name} dilewati.",
     "reversed": "Arah putaran berbalik.",
     "activeColor": "Warna aktif: {color}.",
@@ -362,7 +379,14 @@
     "notDealing": "Ronde tidak sedang dalam tahap pembagian.",
     "roundSetupActive": "Pemain tidak bisa dikeluarkan saat kartu sedang dibagikan.",
     "drawInProgress": "Tunggu pembukaan kartu saat ini selesai.",
-    "colorDrawUnavailable": "Aksi Wild Draw Color tersebut sudah tidak tersedia."
+    "colorDrawUnavailable": "Aksi Wild Draw Color tersebut sudah tidak tersedia.",
+    "chaosPending": "Tunggu kartu Chaos selesai.",
+    "nukeBlockedCard": "Wild dan kartu Chaos diblokir saat countdown Nuke.",
+    "noChaosChoice": "Tidak ada pilihan Chaos yang perlu diselesaikan.",
+    "notChaosChooser": "Hanya pemilih Chaos saat ini yang bisa melakukan itu.",
+    "invalidChaosTarget": "Pilih target Chaos yang valid.",
+    "invalidChaosCard": "Pilih kartu yang valid.",
+    "inactiveChaosCard": "Kartu Chaos itu belum aktif di mode ini."
   },
   "challenge": {
     "title": "Tantangan Wild +4",
@@ -509,13 +533,13 @@
       "peek": "Membuka semua kartu pemain selama beberapa detik",
       "vote": "Setiap pemain vote. Pemain paling banyak vote kena penalti",
       "chaosCard": "Semua buang 1 kartu acak, lalu ambil 1",
-      "timeskip": "Lewati semua pemain lain. Giliranmu lagi",
+      "timeskip": "Autoplay satu putaran kembali ke kamu tanpa Wild atau kartu Chaos",
       "mirror": "Salin kartu terakhir discard ke tanganmu",
       "pandemic": "Setiap pemain berikan 1 kartu acak ke kiri",
       "magnet": "Ambil semua kartu wild dari semua pemain",
       "jackpot": "Ambil 3. Duplikat buang semua. Unik: simpan",
       "roulette": "50% kamu buang 2, 50% target buang 3",
-      "nuke": "Setiap pemain buang setengah tangan",
+      "nuke": "Memulai countdown. Wild dan kartu Chaos diblokir; pemain aktif saat ledakan menerima kartu countdown",
       "mime": "Ambil kartu apapun dari tumpukan discard"
     }
   }

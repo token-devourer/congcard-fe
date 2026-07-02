@@ -241,7 +241,16 @@
     "colorChange": "Color is now {color}",
     "calledOne": "{name}: ONE!",
     "catchWindow": "{name} has 1 card left!",
-    "youHaveOne": "One card left - shout ONE!"
+    "youHaveOne": "One card left - shout ONE!",
+    "nukeCountdown": "NUKE COUNTDOWN",
+    "nukeDetonating": "NUKE",
+    "chaosChooseTarget": "CHOOSE TARGET",
+    "chaosChooseCard": "CHOOSE CARD"
+  },
+  "chaos": {
+    "chooseTarget": "Choose target",
+    "chooseCard": "Choose card from {name}",
+    "choose": "Choose"
   },
   "alerts": {
     "yourTurnTitle": "Your turn!",
@@ -319,6 +328,14 @@
     "batchReversed": "Turn direction changed {count} times.",
     "gamePaused": "Game paused until two active players return.",
     "gameResumed": "Game resumed.",
+    "chaosChoseTarget": "{name} chose {target} for {value}.",
+    "chaosReceivedCard": "{name} received a card from {target}.",
+    "chaosThrowup": "{name} threw up {count} card(s).",
+    "chaosFlashbang": "Flashbang shuffled every active hand.",
+    "chaosTimeskipReturned": "{name}'s Time Skip returned the turn.",
+    "chaosTimeskipDrew": "{name} auto-drew during Time Skip.",
+    "chaosTimeskipPlayed": "{name} auto-played {card} during Time Skip.",
+    "chaosNukePenalty": "{name} took {count} Nuke countdown card(s).",
     "skipped": "{name} was skipped.",
     "reversed": "Turn direction changed.",
     "activeColor": "Active color: {color}.",
@@ -362,7 +379,14 @@
     "notDealing": "The round is not being dealt right now.",
     "roundSetupActive": "Players cannot be kicked while cards are being dealt.",
     "drawInProgress": "Wait for the current card reveal to finish.",
-    "colorDrawUnavailable": "That Wild Draw Color action is no longer available."
+    "colorDrawUnavailable": "That Wild Draw Color action is no longer available.",
+    "chaosPending": "Wait for the Chaos card to resolve.",
+    "nukeBlockedCard": "Wild and Chaos cards are blocked during the Nuke countdown.",
+    "noChaosChoice": "There is no Chaos choice to resolve.",
+    "notChaosChooser": "Only the current Chaos chooser can do that.",
+    "invalidChaosTarget": "Choose a valid Chaos target.",
+    "invalidChaosCard": "Choose a valid card.",
+    "inactiveChaosCard": "That Chaos card is not active in this mode."
   },
   "challenge": {
     "title": "Wild +4 challenge",
@@ -509,13 +533,13 @@
       "peek": "Reveals every player's hand for a few seconds",
       "vote": "Each player votes. Most voted player draws penalty cards",
       "chaosCard": "Everyone discards a random card, then draws one",
-      "timeskip": "Skips all other players. Your turn again",
+      "timeskip": "Autoplays one round back to you without Wild or Chaos cards",
       "mirror": "Copies the last discard into your hand",
       "pandemic": "Each player passes one random card to the left",
       "magnet": "Take all wild cards from every player's hand",
       "jackpot": "Draw 3. Duplicates discard them all. All unique: keep them",
       "roulette": "50% you discard 2, 50% target discards 3",
-      "nuke": "Every player discards half their hand",
+      "nuke": "Starts a countdown. Wild and Chaos cards are blocked; the active player at detonation takes countdown cards",
       "mime": "Take any card from the discard pile"
     }
   }

@@ -1,6 +1,8 @@
 import { Client, Room } from "@colyseus/core";
 import {
   challengeSchema,
+  chooseChaosCardSchema,
+  chooseChaosTargetSchema,
   chooseColorDrawSchema,
   catchOneSchema,
   dealCardSchema,
@@ -20,6 +22,8 @@ import {
   beginManualDeal,
   callOne,
   catchOne,
+  chooseChaosCard,
+  chooseChaosTarget,
   chooseColorDraw,
   createGame,
   drawCard,
@@ -36,6 +40,7 @@ import {
   resolveChallenge,
   resolveAutomatedTurns,
   resolvePendingBatchPlay,
+  resolvePendingChaos,
   resolvePendingFlip,
   resolvePendingDraw,
   resolveRoundDeal,
@@ -82,6 +87,7 @@ export class GameRoom extends Room {
       try {
         const dealChanged = resolveRoundDeal(this.game);
         const batchResolved = resolvePendingBatchPlay(this.game);
+        const chaosResolved = resolvePendingChaos(this.game);
         const flipResolved = resolvePendingFlip(this.game);
         const drawResolved = resolvePendingDraw(this.game);
         const oneCallResolved = resolvePendingOneCall(this.game);
@@ -92,6 +98,7 @@ export class GameRoom extends Room {
         if (
           dealChanged ||
           batchResolved ||
+          chaosResolved ||
           flipResolved ||
           drawResolved ||
           oneCallResolved ||
@@ -172,6 +179,18 @@ export class GameRoom extends Room {
     this.onMessage("game.playBatch", (client, message) => this.safe(client, () => {
       const payload = playBatchSchema.parse(message);
       playBatch(this.game, client.sessionId, payload.cardIds, payload.declaredColor);
+      this.broadcastState();
+    }));
+
+    this.onMessage("game.chooseChaosTarget", (client, message) => this.safe(client, () => {
+      const payload = chooseChaosTargetSchema.parse(message);
+      chooseChaosTarget(this.game, client.sessionId, payload.targetId);
+      this.broadcastState();
+    }));
+
+    this.onMessage("game.chooseChaosCard", (client, message) => this.safe(client, () => {
+      const payload = chooseChaosCardSchema.parse(message);
+      chooseChaosCard(this.game, client.sessionId, payload.cardId);
       this.broadcastState();
     }));
 

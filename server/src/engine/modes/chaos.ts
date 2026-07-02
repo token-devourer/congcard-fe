@@ -1,23 +1,8 @@
-import type { Card, CardValue, Color, GameMode, TurnContext } from "@congcard/shared";
-import { LIGHT_COLORS } from "@congcard/shared";
+import type { ActiveChaosSpecialValue, Card, CardValue, Color, GameMode, TurnContext } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES, LIGHT_COLORS } from "@congcard/shared";
 import { shuffleCards } from "./standard.js";
 
-const CHAOS_SPECIALS = [
-  "flashbang",
-  "steal",
-  "favor",
-  "peek",
-  "vote",
-  "chaosCard",
-  "timeskip",
-  "mirror",
-  "pandemic",
-  "magnet",
-  "jackpot",
-  "roulette",
-  "nuke",
-  "mime"
-] as const satisfies readonly CardValue[];
+const CHAOS_SPECIALS = ACTIVE_CHAOS_SPECIAL_VALUES;
 
 function numberCards(color: Color, deckIndex: number): Card[] {
   const cards: Card[] = [{ id: `${deckIndex}-${color}-0-0`, color, value: 0, deckIndex }];
@@ -74,12 +59,16 @@ export function buildChaosDeckBox(deckIndex: number): Card[] {
   return cards;
 }
 
-function isChaosSpecial(value: CardValue): boolean {
-  return CHAOS_SPECIALS.includes(value as (typeof CHAOS_SPECIALS)[number]);
+function isChaosSpecial(value: CardValue): value is ActiveChaosSpecialValue {
+  return CHAOS_SPECIALS.includes(value as ActiveChaosSpecialValue);
 }
 
 function isPlayable(card: Card, ctx: TurnContext): boolean {
   if (card.color === null) {
+    return card.value === "wild" || card.value === "wild2" || isChaosSpecial(card.value);
+  }
+
+  if (ctx.discardTop.color === null && isChaosSpecial(ctx.discardTop.value)) {
     return true;
   }
 

@@ -47,13 +47,31 @@ export type SoundName =
   | "memeJackpot"
   | "memeRoulette"
   | "memeNuke"
-  | "memeMime";
+  | "memeMime"
+  | "memeStealExecute"
+  | "memeFavorExecute"
+  | "memeFlashbangSfx"
+  | "memeFlashbangCat"
+  | "memeNukeCountdown"
+  | "memeNukeExecute";
 
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
 
 const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
-  memeThrowup: "/audio/cagGag.mp3"
+  memeThrowup: "/audio/gag-cat.mp3",
+  memeSteal: "/audio/muehehehe-cat-initiate.mp3",
+  memeStealExecute: "/audio/muehehehe-cat-execute.mp3",
+  memeFlashbang: "/audio/flashbang-cat.mp3",
+  memeFlashbangSfx: "/audio/flashbang-sfx.mp3",
+  memeFlashbangCat: "/audio/flashbang-cat.mp3",
+  memeFavor: "/audio/awowo-cat-initiate.mp3",
+  memeFavorExecute: "/audio/awowo-cat-execute.mp3",
+  memePeek: "/audio/acumalaka-frog.mp3",
+  memeTimeskip: "/audio/timeskip-cat.mp3",
+  memeNuke: "/audio/nuke-cat-initiate.mp3",
+  memeNukeCountdown: "/audio/nuke-cat-countdown.mp3",
+  memeNukeExecute: "/audio/nuke-cat-execute.mp3"
 };
 
 let spriteInitPromise: Promise<void> | null = null;
@@ -162,6 +180,12 @@ export function soundForEvent(event: UiEvent): SoundName | null {
 }
 export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   for (const event of events) {
+    if (event.type === "chaos") {
+      const startsInMs = event.startsAt ? Math.max(0, event.startsAt - (Date.now() + clockOffset)) : 0;
+      playChaosEventSounds(event, startsInMs);
+      duckMusic(startsInMs, event.kind === "nuke" ? 2_200 : 1_200);
+      continue;
+    }
     const sound = soundForEvent(event);
     if (!sound) continue;
     const serverStart = event.type === "catchWindow" ? event.opensAt : event.startsAt;
@@ -175,6 +199,57 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
       if (["penalty", "drawResult", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
         duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760);
     }
+  }
+}
+
+function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number): void {
+  const at = (sound: SoundName, offsetMs = 0, level = 1) => playSoundAt(sound, startsInMs + offsetMs, level);
+
+  if (event.phase === "detonating" && event.kind === "nuke") {
+    at("memeNukeExecute");
+    return;
+  }
+
+  if (event.phase === "sequence" && (event.kind === "steal" || event.kind === "favor")) {
+    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorExecute");
+    return;
+  }
+
+  if (event.phase === "chooseCard") {
+    if (event.kind === "favor") {
+      at("memeFavor");
+    }
+    return;
+  }
+
+  at(event.kind === "nuke" || event.kind === "timeskip" ? "batchFinale" : "opening");
+
+  switch (event.kind) {
+    case "throwup":
+      at("memeThrowup", 650);
+      break;
+    case "steal":
+      at("memeSteal", 650);
+      break;
+    case "favor":
+      at("memeFavor", 650);
+      break;
+    case "flashbang":
+      at("memeFlashbangSfx", 650);
+      at("memeFlashbangCat", 850);
+      break;
+    case "peek":
+      at("memePeek", 650);
+      break;
+    case "timeskip":
+      at("memeTimeskip", 650);
+      break;
+    case "nuke":
+      at("memeNuke", 650);
+      at("memeNukeCountdown", 1_000);
+      break;
+    default:
+      break;
   }
 }
 

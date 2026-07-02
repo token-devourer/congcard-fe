@@ -52,6 +52,7 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
     snapshot.phase !== "playing" ||
     snapshot.pauseReason ||
     snapshot.pendingBatchPlay ||
+    (snapshot.pendingChaos && !(snapshot.pendingChaos.kind === "nuke" && snapshot.pendingChaos.phase === "countdown")) ||
     snapshot.oneWindow ||
     snapshot.currentPlayerId !== snapshot.self.id
   ) {

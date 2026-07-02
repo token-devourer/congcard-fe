@@ -1,4 +1,4 @@
-import type { CardValue, Color, GameSnapshot, PendingStack, PresentationEvent } from "@congcard/shared";
+import type { CardValue, ChaosEffectKind, Color, GameSnapshot, PendingChaosPhase, PendingStack, PresentationEvent } from "@congcard/shared";
 
 export type UiEvent = (
   | { id: number; type: "yourTurn" }
@@ -10,6 +10,7 @@ export type UiEvent = (
   | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
+  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; countdownEndsAt?: number; detonationEndsAt?: number }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
@@ -286,6 +287,20 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, p
       })();
     case "one":
       return actor ? [{ id: idBase, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
+    case "chaos":
+      return event.chaosKind && event.phase
+        ? [{
+            id: idBase,
+            type: "chaos",
+            kind: event.chaosKind,
+            phase: event.phase,
+            ...(event.actorId ? { actorId: event.actorId } : {}),
+            ...(event.targetIds ? { targetIds: event.targetIds } : {}),
+            ...(snapshot.pendingChaos?.countdownEndsAt ? { countdownEndsAt: snapshot.pendingChaos.countdownEndsAt } : {}),
+            ...(snapshot.pendingChaos?.detonationEndsAt ? { detonationEndsAt: snapshot.pendingChaos.detonationEndsAt } : {}),
+            ...timing
+          }]
+        : [];
     default:
       return [];
   }

@@ -2,6 +2,8 @@ import { randomBytes } from "node:crypto";
 import type {
   Card,
   CardValue,
+  ChaosEffectKind,
+  ChaosSelectableCard,
   Color,
   DrawMode,
   DrawReason,
@@ -11,6 +13,8 @@ import type {
   GameSnapshot,
   LastStandPlacement,
   PendingBatchPlay,
+  PendingChaosPhase,
+  PendingChaosState,
   PendingFlip,
   PendingDrawState,
   PauseReason,
@@ -28,7 +32,7 @@ import type {
   RoundScoreBreakdown,
   VisibleCardFace
 } from "@congcard/shared";
-import { LIGHT_COLORS, mergeRoomSettings, type FlipSide } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES, LIGHT_COLORS, mergeRoomSettings, type FlipSide } from "@congcard/shared";
 import { standardMode, shuffleCards, buildSingleDeck } from "./modes/standard.js";
 import { applyFlipSide, buildFlipDeckBox, flipColors, flipMode, oppositeCardFace, publicCard, visibleCardFace } from "./modes/flip.js";
 import { buildChaosDeckBox, chaosMode, isChaosSpecialValue } from "./modes/chaos.js";
@@ -69,6 +73,29 @@ const DRAW_NEXT_GAP_MS = 40;
 const DRAW_SYNC_EXTRA_MS = 80;
 const DRAW_FINAL_SETTLE_MS = 700;
 const PRESENTATION_EVENT_HISTORY = 32;
+const CHAOS_CHOICE_MS = 8_000;
+const CHAOS_SEQUENCE_MS = 1_300;
+const CHAOS_REVEAL_MS = 5_000;
+const CHAOS_TIMESKIP_STEP_MS = 900;
+const NUKE_COUNTDOWN_MS = 40_000;
+const NUKE_DETONATION_MS = 3_000;
+const CHAOS_ALL_SPECIAL_VALUES = new Set<CardValue>([
+  "flashbang",
+  "steal",
+  "favor",
+  "peek",
+  "vote",
+  "chaosCard",
+  "timeskip",
+  "mirror",
+  "pandemic",
+  "magnet",
+  "jackpot",
+  "roulette",
+  "nuke",
+  "mime"
+]);
+const ACTIVE_CHAOS_SPECIAL_SET = new Set<CardValue>(ACTIVE_CHAOS_SPECIAL_VALUES);
 
 export interface PlayerState extends PublicPlayer {
   hand: Card[];
@@ -81,6 +108,15 @@ export type ViewerState = PublicViewer;
 interface PendingBatchPlayInternal extends PendingBatchPlay {
   handBefore: Card[];
   activeColorBefore: Color;
+}
+
+interface PendingChaosInternal extends Omit<PendingChaosState, "selectableCards" | "revealedHands" | "affectedCards" | "collectedCards"> {
+  affectedCards?: Card[];
+  collectedCards?: Card[];
+  playedCards?: Card[];
+  autoTargetIds?: string[];
+  autoIndex?: number;
+  nextAutoAt?: number;
 }
 
 interface DealQueueInternal {
@@ -133,6 +169,7 @@ export interface GameStateInternal {
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
   pendingBatchPlay?: PendingBatchPlayInternal;
+  pendingChaos?: PendingChaosInternal;
   pendingDraw?: PendingDrawInternal;
   flipSide?: FlipSide;
   pendingFlip?: PendingFlip;
@@ -426,6 +463,15 @@ export function kickPlayer(state: GameStateInternal, hostId: string, targetId: s
       delete state.pendingBatchPlay;
     }
 
+    if (
+      state.pendingChaos?.actorId === targetId ||
+      state.pendingChaos?.targetId === targetId ||
+      state.pendingChaos?.chooserId === targetId ||
+      state.pendingChaos?.punishedPlayerId === targetId
+    ) {
+      delete state.pendingChaos;
+    }
+
     // Resolve the next seat while the target still exists, then fold their
     // cards back into the draw pile so the deck never silently shrinks.
     const wasCurrent = state.currentSeat === target.seat;
@@ -506,6 +552,7 @@ export function startRound(state: GameStateInternal): void {
   delete state.pendingChallenge;
   delete state.pendingStack;
   delete state.pendingBatchPlay;
+  delete state.pendingChaos;
   delete state.pendingDraw;
   delete state.pendingFlip;
   delete state.roundDeal;
@@ -718,6 +765,7 @@ export function playCard(
   ensurePlaying(state);
   ensureNoPendingOneCall(state);
   ensureNoPendingBatchPlay(state);
+  ensureNoBlockingChaos(state);
   ensureNotPaused(state);
   const mode = getMode(state.settings);
   const current = currentPlayer(state);
@@ -776,6 +824,9 @@ export function playCard(
   if (needsDeclaredColor(card) && !declaredColor) {
     throw new GameError("color_required", "Choose a color for this Wild card.");
   }
+  if (isNukeCountdownActive(state) && isNukeBlockedCard(card)) {
+    throw new GameError("nuke_blocked_card", "Wild and Chaos cards are blocked during the Nuke countdown.");
+  }
   if (declaredColor && !modeColors(state).includes(declaredColor)) {
     throw new GameError("invalid_color", "That color is not active on this side.");
   }
@@ -791,6 +842,7 @@ export function playCard(
   player.cardCount = player.hand.length;
   delete player.drawnCardId;
   state.discardPile.push(card);
+  recordNukePlayedCards(state, [card]);
 
   if (card.color) {
     state.activeColor = card.color;
@@ -830,6 +882,7 @@ export function playBatch(
   ensurePlaying(state);
   ensureNoPendingOneCall(state);
   ensureNoPendingBatchPlay(state);
+  ensureNoBlockingChaos(state);
   ensureNotPaused(state);
 
   if (!state.settings.batchEnabled) {
@@ -867,6 +920,9 @@ export function playBatch(
   }
   if (!isBatchableValue(value)) {
     throw new GameError("invalid_batch", "Chaos special cards cannot be batched.");
+  }
+  if (isNukeCountdownActive(state) && orderedCards.some(isNukeBlockedCard)) {
+    throw new GameError("nuke_blocked_card", "Wild and Chaos cards are blocked during the Nuke countdown.");
   }
 
   const needsColor = value === "wild" || value === "wild2" || value === "wild3" || value === "wild4" || value === "wildColor";
@@ -966,6 +1022,7 @@ export function resolvePendingBatchPlay(state: GameStateInternal): boolean {
   player.cardCount = player.hand.length;
   player.calledOne = false;
   state.discardPile.push(...pending.cards);
+  recordNukePlayedCards(state, pending.cards);
 
   const finalCard = pending.cards.at(-1)!;
   const finalColor = pending.declaredColor ?? finalCard.color ?? state.activeColor;
@@ -1054,6 +1111,7 @@ export function drawCard(state: GameStateInternal, playerId: string, automated =
   ensurePlaying(state);
   ensureNoPendingOneCall(state);
   ensureNoPendingBatchPlay(state);
+  ensureNoBlockingChaos(state);
   ensureNotPaused(state);
   ensureNoPendingChallenge(state);
   const player = currentPlayer(state);
@@ -1086,6 +1144,7 @@ export function playDrawn(state: GameStateInternal, playerId: string, play: bool
   ensurePlaying(state);
   ensureNoPendingOneCall(state);
   ensureNoPendingBatchPlay(state);
+  ensureNoBlockingChaos(state);
   ensureNotPaused(state);
   ensureNoPendingChallenge(state);
   const player = currentPlayer(state);
@@ -1115,6 +1174,7 @@ export function playDrawn(state: GameStateInternal, playerId: string, play: bool
 export function callOne(state: GameStateInternal, playerId: string, automated = false): void {
   ensurePlaying(state);
   ensureNoPendingBatchPlay(state);
+  ensureNoBlockingChaos(state);
   ensureNotPaused(state);
   const player = findPlayer(state, playerId);
   if (!automated) {
@@ -1290,7 +1350,7 @@ export function handleTurnTimeout(state: GameStateInternal): boolean {
     return pause.changed;
   }
 
-  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw) {
+  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw || chaosBlocksActions(state)) {
     return false;
   }
 
@@ -1413,6 +1473,9 @@ export function snapshotFor(state: GameStateInternal, playerId?: string): GameSn
       resolvesAt: pending.resolvesAt
     };
   }
+  if (state.pendingChaos) {
+    snapshot.pendingChaos = publicPendingChaos(state, state.pendingChaos, playerId);
+  }
   if (state.pendingDraw) {
     snapshot.pendingDraw = publicPendingDraw(state, state.pendingDraw, playerId);
   }
@@ -1478,7 +1541,7 @@ export function resolveAutomatedTurns(state: GameStateInternal): boolean {
   }
 
   let changed = false;
-  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw) {
+  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw || chaosBlocksActions(state)) {
     return changed;
   }
   // Allow extra iterations beyond one-per-player so a chain of auto turns can
@@ -1921,59 +1984,40 @@ function isChaosCardValue(value: CardValue): boolean {
   return value === "throwup" || isChaosSpecialValue(value);
 }
 
+function isAnyChaosSpecialValue(value: CardValue): boolean {
+  return CHAOS_ALL_SPECIAL_VALUES.has(value);
+}
+
+function isActiveChaosSpecialValue(value: CardValue): boolean {
+  return ACTIVE_CHAOS_SPECIAL_SET.has(value);
+}
+
 function applyChaosCard(state: GameStateInternal, player: PlayerState, card: Card): void {
   switch (card.value) {
     case "throwup":
-      discardMatchingColorFromHand(state, player, card.color ?? state.activeColor);
-      break;
+      startThrowupSequence(state, player, card.color ?? state.activeColor);
+      return;
     case "flashbang":
-      shuffleActiveHands(state);
-      break;
+      startChaosSequence(state, "flashbang", player);
+      return;
     case "steal":
+      startChaosTargetChoice(state, "steal", player);
+      return;
     case "favor":
-      moveRandomCardFromNextOpponent(state, player);
-      break;
-    case "vote":
-      drawPenaltyForNextOpponent(state, player, 2);
+      startChaosTargetChoice(state, "favor", player);
       return;
-    case "chaosCard":
-      discardRandomThenDrawForEveryone(state);
-      break;
     case "timeskip":
-      state.currentSeat = player.seat;
-      setTurnDeadline(state);
-      pushLog(state, "skip", `${player.nickname} skipped everyone else.`, false);
+      startTimeSkip(state, player);
       return;
-    case "mirror":
-      copyPreviousDiscardToHand(state, player);
-      break;
-    case "pandemic":
-      passRandomCards(state);
-      break;
-    case "magnet":
-      pullWildCardsToPlayer(state, player);
-      break;
-    case "jackpot":
-      resolveJackpot(state, player);
-      break;
-    case "roulette":
-      resolveRoulette(state, player);
-      break;
     case "nuke":
-      discardHalfOfEveryHand(state);
-      break;
-    case "mime":
-      takePreviousDiscard(state, player);
-      break;
+      startNukeCountdown(state, player);
+      return;
     case "peek":
+      startPeekReveal(state, player);
+      return;
     default:
-      break;
+      throw new GameError("inactive_chaos_card", "That Chaos card is not active in this mode.");
   }
-
-  if (finishChaosCard(state, player)) {
-    return;
-  }
-  advanceTurn(state);
 }
 
 function finishChaosCard(state: GameStateInternal, player: PlayerState): boolean {
@@ -1989,109 +2033,133 @@ function finishChaosCard(state: GameStateInternal, player: PlayerState): boolean
   return state.phase !== "playing";
 }
 
-function discardMatchingColorFromHand(state: GameStateInternal, player: PlayerState, color?: Color): void {
-  if (!color) return;
-  const discarded = player.hand.filter((item) => item.color === color);
-  player.hand = player.hand.filter((item) => item.color !== color);
-  state.discardPile.push(...discarded);
-  if (discarded.length > 0) {
-    pushLog(state, "play", `${player.nickname} threw up ${discarded.length} ${color} card${discarded.length === 1 ? "" : "s"}.`, false);
-  }
+function startThrowupSequence(state: GameStateInternal, player: PlayerState, color?: Color): void {
+  const now = Date.now();
+  const affectedCards = color ? player.hand.filter((item) => item.color === color) : [];
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind: "throwup",
+    phase: "sequence",
+    actorId: player.id,
+    affectedCards,
+    startsAt: now,
+    resolvesAt: now + CHAOS_SEQUENCE_MS
+  };
+  delete state.turnDeadline;
+  delete state.autoPlayPendingAt;
+  emitChaosPresentation(state, "throwup", "sequence", player.id, now, now + CHAOS_SEQUENCE_MS);
 }
 
-function shuffleActiveHands(state: GameStateInternal): void {
-  const players = activePlayers(state);
-  if (players.length < 2) return;
-  const hands = shuffleCards(players.map((player) => [...player.hand]));
-  players.forEach((player, index) => {
-    player.hand = hands[index] ?? [];
+function startChaosSequence(state: GameStateInternal, kind: ChaosEffectKind, player: PlayerState): void {
+  const now = Date.now();
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind,
+    phase: "sequence",
+    actorId: player.id,
+    startsAt: now,
+    resolvesAt: now + CHAOS_SEQUENCE_MS
+  };
+  delete state.turnDeadline;
+  delete state.autoPlayPendingAt;
+  emitChaosPresentation(state, kind, "sequence", player.id, now, now + CHAOS_SEQUENCE_MS);
+}
+
+function startChaosTargetChoice(state: GameStateInternal, kind: "steal" | "favor", player: PlayerState): void {
+  const now = Date.now();
+  const eligibleTargetIds = activePlayers(state)
+    .filter((target) => target.id !== player.id && target.hand.length > 0)
+    .map((target) => target.id);
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind,
+    phase: "chooseTarget",
+    actorId: player.id,
+    chooserId: player.id,
+    eligibleTargetIds,
+    startsAt: now,
+    resolvesAt: now + CHAOS_CHOICE_MS
+  };
+  delete state.turnDeadline;
+  delete state.autoPlayPendingAt;
+  emitChaosPresentation(state, kind, "chooseTarget", player.id, now, now + CHAOS_CHOICE_MS);
+}
+
+function startPeekReveal(state: GameStateInternal, player: PlayerState): void {
+  const now = Date.now();
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind: "peek",
+    phase: "reveal",
+    actorId: player.id,
+    startsAt: now,
+    resolvesAt: now + CHAOS_REVEAL_MS
+  };
+  delete state.turnDeadline;
+  delete state.autoPlayPendingAt;
+  emitChaosPresentation(state, "peek", "reveal", player.id, now, now + CHAOS_REVEAL_MS);
+}
+
+function startTimeSkip(state: GameStateInternal, player: PlayerState): void {
+  const now = Date.now();
+  const autoTargetIds = playersUntilActor(state, player);
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind: "timeskip",
+    phase: "autoplay",
+    actorId: player.id,
+    autoTargetIds,
+    autoIndex: 0,
+    nextAutoAt: now + CHAOS_TIMESKIP_STEP_MS,
+    startsAt: now
+  };
+  if (autoTargetIds.length > 0) {
+    state.currentSeat = findPlayer(state, autoTargetIds[0]!).seat;
+  }
+  delete state.turnDeadline;
+  delete state.autoPlayPendingAt;
+  emitChaosPresentation(state, "timeskip", "autoplay", player.id, now, now + Math.max(1, autoTargetIds.length) * CHAOS_TIMESKIP_STEP_MS);
+}
+
+function startNukeCountdown(state: GameStateInternal, player: PlayerState): void {
+  const now = Date.now();
+  state.pendingChaos = {
+    id: nextChaosId(state),
+    kind: "nuke",
+    phase: "countdown",
+    actorId: player.id,
+    playedCards: [],
+    startsAt: now,
+    countdownEndsAt: now + NUKE_COUNTDOWN_MS
+  };
+  if (finishChaosCard(state, player)) {
+    return;
+  }
+  advanceTurn(state);
+  emitChaosPresentation(state, "nuke", "countdown", player.id, now, now + NUKE_COUNTDOWN_MS);
+}
+
+function emitChaosPresentation(
+  state: GameStateInternal,
+  chaosKind: ChaosEffectKind,
+  phase: PendingChaosPhase,
+  actorId: string,
+  startsAt: number,
+  resolvesAt: number
+): void {
+  emitPresentation(state, {
+    kind: "chaos",
+    chaosKind,
+    phase,
+    actorId,
+    startsAt,
+    resolvesAt
   });
-  pushLog(state, "play", "Chaos shuffled every hand.", false);
 }
 
-function moveRandomCardFromNextOpponent(state: GameStateInternal, player: PlayerState): void {
-  const target = nextOpponentWithCards(state, player);
-  if (!target) return;
-  const card = takeRandomHandCard(target);
-  if (!card) return;
-  player.hand.push(card);
-  pushLog(state, "play", `${player.nickname} took a card from ${target.nickname}.`, false);
-}
-
-function drawPenaltyForNextOpponent(state: GameStateInternal, player: PlayerState, amount: number): void {
-  const target = findPlayerBySeat(state, seatAfter(state, player.seat));
-  state.currentSeat = seatAfter(state, target.seat);
-  pushLog(state, "draw", `${target.nickname} drew ${amount} chaos cards.`);
-  queueFixedDraw(state, target, amount, "penalty", { type: "setDeadline", offenderId: player.id });
-}
-
-function discardRandomThenDrawForEveryone(state: GameStateInternal): void {
-  for (const player of activePlayers(state)) {
-    const discarded = takeRandomHandCard(player);
-    if (discarded) state.discardPile.push(discarded);
-    const drawn = takeCard(state);
-    if (drawn) player.hand.push(drawn);
-  }
-  pushLog(state, "play", "Chaos made everyone discard and draw.", false);
-}
-
-function copyPreviousDiscardToHand(state: GameStateInternal, player: PlayerState): void {
-  const source = state.discardPile.at(-2);
-  if (!source) return;
-  player.hand.push({
-    ...source,
-    id: `mirror-${randomBytes(12).toString("base64url")}`
-  });
-}
-
-function passRandomCards(state: GameStateInternal): void {
-  const players = activePlayers(state);
-  const passing = players
-    .map((player) => ({ from: player, card: takeRandomHandCard(player) }))
-    .filter((item): item is { from: PlayerState; card: Card } => Boolean(item.card));
-  for (const item of passing) {
-    findPlayerBySeat(state, seatAfter(state, item.from.seat)).hand.push(item.card);
-  }
-  if (passing.length > 0) {
-    pushLog(state, "play", "Pandemic passed random cards around the table.", false);
-  }
-}
-
-function pullWildCardsToPlayer(state: GameStateInternal, player: PlayerState): void {
-  for (const target of activePlayers(state)) {
-    if (target.id === player.id) continue;
-    const wilds = target.hand.filter((card) => card.color === null);
-    target.hand = target.hand.filter((card) => card.color !== null);
-    player.hand.push(...wilds);
-  }
-}
-
-function resolveJackpot(state: GameStateInternal, player: PlayerState): void {
-  const drawn = [takeCard(state), takeCard(state), takeCard(state)].filter((card): card is Card => Boolean(card));
-  const values = new Set(drawn.map((card) => card.value));
-  if (values.size === drawn.length) {
-    player.hand.push(...drawn);
-  } else {
-    state.discardPile.push(...drawn);
-  }
-}
-
-function resolveRoulette(state: GameStateInternal, player: PlayerState): void {
-  const target = nextOpponentWithCards(state, player);
-  const unlucky = Math.random() < 0.5 || !target;
-  discardRandomCards(state, unlucky ? player : target, unlucky ? 2 : 3);
-}
-
-function discardHalfOfEveryHand(state: GameStateInternal): void {
-  for (const player of activePlayers(state)) {
-    discardRandomCards(state, player, Math.floor(player.hand.length / 2));
-  }
-}
-
-function takePreviousDiscard(state: GameStateInternal, player: PlayerState): void {
-  if (state.discardPile.length <= 1) return;
-  const mime = state.discardPile.splice(state.discardPile.length - 2, 1)[0];
-  if (mime) player.hand.push(mime);
+function nextChaosId(state: GameStateInternal): number {
+  state.presentationEventSeq += 1;
+  return state.presentationEventSeq;
 }
 
 function nextOpponentWithCards(state: GameStateInternal, player: PlayerState): PlayerState | undefined {
@@ -2110,12 +2178,289 @@ function takeRandomHandCard(player: PlayerState): Card | undefined {
   return player.hand.splice(index, 1)[0];
 }
 
-function discardRandomCards(state: GameStateInternal, player: PlayerState, count: number): void {
-  for (let index = 0; index < count; index += 1) {
-    const card = takeRandomHandCard(player);
-    if (!card) return;
-    state.discardPile.push(card);
+export function chooseChaosTarget(state: GameStateInternal, playerId: string, targetId: string): void {
+  ensurePlaying(state);
+  ensureNotPaused(state);
+  const pending = state.pendingChaos;
+  if (!pending || pending.phase !== "chooseTarget") {
+    throw new GameError("no_chaos_choice", "There is no Chaos target to choose.");
   }
+  if (pending.chooserId !== playerId || pending.actorId !== playerId) {
+    throw new GameError("not_chaos_chooser", "Only the Chaos card player can choose this target.");
+  }
+  const chooser = findPlayer(state, playerId);
+  ensurePlayerInteractive(chooser);
+  const target = findPlayer(state, targetId);
+  if (target.id === chooser.id || target.finishedRank || target.hand.length === 0 || !pending.eligibleTargetIds?.includes(target.id)) {
+    throw new GameError("invalid_chaos_target", "Choose a valid Chaos target.");
+  }
+
+  setChaosCardChoice(state, pending, target);
+}
+
+export function chooseChaosCard(state: GameStateInternal, playerId: string, cardId: string): void {
+  ensurePlaying(state);
+  ensureNotPaused(state);
+  const pending = state.pendingChaos;
+  if (!pending || pending.phase !== "chooseCard" || !pending.targetId) {
+    throw new GameError("no_chaos_card_choice", "There is no Chaos card to choose.");
+  }
+  if (pending.chooserId !== playerId) {
+    throw new GameError("not_chaos_chooser", "Only the current Chaos chooser can choose this card.");
+  }
+  ensurePlayerInteractive(findPlayer(state, playerId));
+
+  resolveChaosCardChoice(state, pending, cardId);
+}
+
+export function resolvePendingChaos(state: GameStateInternal): boolean {
+  const pending = state.pendingChaos;
+  if (!pending || state.phase !== "playing") {
+    return false;
+  }
+
+  const now = Date.now();
+  if (pending.kind === "nuke") {
+    return resolveNukeChaos(state, pending, now);
+  }
+
+  if (pending.phase === "chooseTarget") {
+    if ((pending.resolvesAt ?? 0) > now) return false;
+    const actor = findPlayer(state, pending.actorId);
+    const fallback = nextOpponentWithCards(state, actor);
+    if (!fallback) {
+      finishPendingChaos(state, pending.actorId, true);
+      return true;
+    }
+    setChaosCardChoice(state, pending, fallback);
+    return true;
+  }
+
+  if (pending.phase === "chooseCard") {
+    if ((pending.resolvesAt ?? 0) > now) return false;
+    const target = pending.targetId ? findPlayer(state, pending.targetId) : undefined;
+    const fallback = target ? target.hand[0] : undefined;
+    if (!fallback) {
+      finishPendingChaos(state, pending.actorId, true);
+      return true;
+    }
+    resolveChaosCardChoice(state, pending, fallback.id);
+    return true;
+  }
+
+  if (pending.phase === "sequence" || pending.phase === "reveal") {
+    if ((pending.resolvesAt ?? 0) > now) return false;
+    if (pending.kind === "throwup") {
+      resolveThrowupSequence(state, pending);
+    } else if (pending.kind === "flashbang") {
+      resolveFlashbangSequence(state);
+    }
+    finishPendingChaos(state, pending.actorId, true);
+    return true;
+  }
+
+  if (pending.phase === "autoplay" && pending.kind === "timeskip") {
+    return resolveTimeSkipAutoplay(state, pending, now);
+  }
+
+  return false;
+}
+
+function setChaosCardChoice(state: GameStateInternal, pending: PendingChaosInternal, target: PlayerState): void {
+  const now = Date.now();
+  pending.phase = "chooseCard";
+  pending.targetId = target.id;
+  pending.chooserId = pending.kind === "steal" ? pending.actorId : target.id;
+  pending.resolvesAt = now + CHAOS_CHOICE_MS;
+  emitChaosPresentation(state, pending.kind, "chooseCard", pending.actorId, now, now + CHAOS_CHOICE_MS);
+  pushLog(state, "play", `${findPlayer(state, pending.actorId).nickname} chose ${target.nickname} for ${pending.kind}.`, false);
+}
+
+function resolveChaosCardChoice(state: GameStateInternal, pending: PendingChaosInternal, cardId: string): void {
+  const actor = findPlayer(state, pending.actorId);
+  const target = pending.targetId ? findPlayer(state, pending.targetId) : undefined;
+  if (!target) {
+    finishPendingChaos(state, actor.id, true);
+    return;
+  }
+  const cardIndex = target.hand.findIndex((card) => card.id === cardId);
+  if (cardIndex < 0) {
+    throw new GameError("invalid_chaos_card", "Choose a valid card from the target hand.");
+  }
+  const [chosen] = target.hand.splice(cardIndex, 1);
+  if (chosen) {
+    actor.hand.push(chosen);
+    target.cardCount = target.hand.length;
+    actor.cardCount = actor.hand.length;
+    pushLog(state, "play", `${actor.nickname} received a card from ${target.nickname}.`, false);
+  }
+  const now = Date.now();
+  emitChaosPresentation(state, pending.kind, "sequence", actor.id, now, now + 500);
+  finishPendingChaos(state, actor.id, true);
+}
+
+function resolveThrowupSequence(state: GameStateInternal, pending: PendingChaosInternal): void {
+  const actor = findPlayer(state, pending.actorId);
+  const affectedIds = new Set((pending.affectedCards ?? []).map((card) => card.id));
+  const discarded = actor.hand.filter((card) => affectedIds.has(card.id));
+  actor.hand = actor.hand.filter((card) => !affectedIds.has(card.id));
+  actor.cardCount = actor.hand.length;
+  state.discardPile.push(...discarded);
+  if (discarded.length > 0) {
+    pushLog(state, "play", `${actor.nickname} threw up ${discarded.length} card${discarded.length === 1 ? "" : "s"}.`, false);
+  }
+}
+
+function resolveFlashbangSequence(state: GameStateInternal): void {
+  const players = activePlayers(state);
+  if (players.length < 2) return;
+  const hands = shuffleCards(players.map((player) => [...player.hand]));
+  players.forEach((player, index) => {
+    player.hand = hands[index] ?? [];
+    player.cardCount = player.hand.length;
+  });
+  pushLog(state, "play", "Flashbang shuffled every active hand.", false);
+}
+
+function resolveTimeSkipAutoplay(state: GameStateInternal, pending: PendingChaosInternal, now: number): boolean {
+  const targets = pending.autoTargetIds ?? [];
+  if ((pending.nextAutoAt ?? 0) > now) return false;
+  const index = pending.autoIndex ?? 0;
+  if (index >= targets.length) {
+    const actor = findPlayer(state, pending.actorId);
+    delete state.pendingChaos;
+    state.currentSeat = actor.seat;
+    setTurnDeadline(state);
+    pushLog(state, "skip", `${actor.nickname}'s Time Skip returned the turn.`, false);
+    return true;
+  }
+
+  const target = findPlayer(state, targets[index]!);
+  state.currentSeat = target.seat;
+  resolveTimeSkipAutoTurn(state, target);
+  pending.autoIndex = index + 1;
+  pending.nextAutoAt = now + CHAOS_TIMESKIP_STEP_MS;
+  if (checkChaosEliminations(state)) {
+    return true;
+  }
+  return true;
+}
+
+function resolveTimeSkipAutoTurn(state: GameStateInternal, player: PlayerState): void {
+  if (player.finishedRank) return;
+  const card = player.hand.find((item) => timeSkipAutoPlayable(state, item));
+  if (!card) {
+    const drawn = takeCard(state);
+    if (drawn) {
+      player.hand.push(drawn);
+      player.cardCount = player.hand.length;
+      pushLog(state, "draw", `${player.nickname} auto-drew during Time Skip.`, false);
+    }
+    return;
+  }
+  player.hand = player.hand.filter((item) => item.id !== card.id);
+  player.cardCount = player.hand.length;
+  player.calledOne = false;
+  state.discardPile.push(card);
+  if (card.color) state.activeColor = card.color;
+  pushLog(state, "play", `${player.nickname} auto-played ${cardLabel(card)} during Time Skip.`, {
+    kind: "cardPlayed",
+    actorId: player.id,
+    cardValue: card.value,
+    ...(state.activeColor ? { color: state.activeColor } : {}),
+    level: sameValueDiscardRun(state, card.value)
+  });
+}
+
+function timeSkipAutoPlayable(state: GameStateInternal, card: Card): boolean {
+  if (card.color === null || card.value === "throwup" || isAnyChaosSpecialValue(card.value)) {
+    return false;
+  }
+  const discardTop = topDiscard(state);
+  if (discardTop.color === null && isActiveChaosSpecialValue(discardTop.value)) {
+    return true;
+  }
+  return Boolean(state.activeColor && (card.color === state.activeColor || card.value === discardTop.value));
+}
+
+function resolveNukeChaos(state: GameStateInternal, pending: PendingChaosInternal, now: number): boolean {
+  if (pending.phase === "countdown") {
+    if ((pending.countdownEndsAt ?? 0) > now) return false;
+    const punished = currentPlayer(state);
+    pending.phase = "detonating";
+    pending.punishedPlayerId = punished.id;
+    pending.detonationEndsAt = now + NUKE_DETONATION_MS;
+    pending.resolvesAt = pending.detonationEndsAt;
+    delete state.turnDeadline;
+    delete state.autoPlayPendingAt;
+    emitChaosPresentation(state, "nuke", "detonating", pending.actorId, now, pending.detonationEndsAt);
+    return true;
+  }
+
+  if (pending.phase !== "detonating" || (pending.detonationEndsAt ?? 0) > now) {
+    return false;
+  }
+
+  const punished = pending.punishedPlayerId ? findPlayer(state, pending.punishedPlayerId) : currentPlayer(state);
+  const collected = collectNukePlayedCards(state, pending);
+  punished.hand.push(...collected);
+  punished.cardCount = punished.hand.length;
+  delete punished.drawnCardId;
+  pushLog(state, "draw", `${punished.nickname} took ${collected.length} Nuke countdown card${collected.length === 1 ? "" : "s"}.`, false);
+  delete state.pendingChaos;
+  if (checkChaosEliminations(state)) {
+    return true;
+  }
+  state.currentSeat = seatAfter(state, punished.seat);
+  setTurnDeadline(state);
+  return true;
+}
+
+function collectNukePlayedCards(state: GameStateInternal, pending: PendingChaosInternal): Card[] {
+  const collectedIds = new Set((pending.playedCards ?? []).map((card) => card.id));
+  const collected: Card[] = [];
+  state.discardPile = state.discardPile.filter((card) => {
+    if (!collectedIds.has(card.id)) return true;
+    collected.push(card);
+    return false;
+  });
+  return collected;
+}
+
+function finishPendingChaos(state: GameStateInternal, actorId: string, advance: boolean): void {
+  const actor = findPlayer(state, actorId);
+  delete state.pendingChaos;
+  if (finishChaosCard(state, actor)) {
+    return;
+  }
+  if (advance) {
+    advanceTurn(state);
+  } else {
+    setTurnDeadline(state);
+  }
+}
+
+function playersUntilActor(state: GameStateInternal, actor: PlayerState): string[] {
+  const result: string[] = [];
+  let seat = actor.seat;
+  for (let index = 0; index < activePlayers(state).length - 1; index += 1) {
+    seat = seatAfter(state, seat);
+    const player = findPlayerBySeat(state, seat);
+    if (player.id === actor.id) break;
+    result.push(player.id);
+  }
+  return result;
+}
+
+function recordNukePlayedCards(state: GameStateInternal, cards: Card[]): void {
+  if (!isNukeCountdownActive(state)) return;
+  const pending = state.pendingChaos;
+  if (!pending) return;
+  const seen = new Set((pending.playedCards ?? []).map((card) => card.id));
+  pending.playedCards = [
+    ...(pending.playedCards ?? []),
+    ...cards.filter((card) => !seen.has(card.id))
+  ];
 }
 
 function startStack(
@@ -2276,7 +2621,7 @@ function wildPenaltyAmount(value: CardValue): number {
 }
 
 function isBatchableValue(value: CardValue): boolean {
-  return value !== "throwup" && !isChaosSpecialValue(value);
+  return value !== "throwup" && !isAnyChaosSpecialValue(value);
 }
 
 function canJumpIn(state: GameStateInternal, player: PlayerState, cardId: string): boolean {
@@ -2414,6 +2759,7 @@ function maybeCompleteLastStandRound(state: GameStateInternal): boolean {
   delete state.pendingChallenge;
   delete state.pendingStack;
   delete state.pendingBatchPlay;
+  delete state.pendingChaos;
   delete state.pendingDraw;
   delete state.pendingFlip;
   delete state.oneWindow;
@@ -2891,7 +3237,9 @@ function addFreshDeck(state: GameStateInternal): void {
     ...state.drawPile,
     ...state.discardPile,
     ...state.players.flatMap((player) => player.hand),
-    ...(state.pendingDraw?.reveal ? [state.pendingDraw.reveal.card] : [])
+    ...(state.pendingDraw?.reveal ? [state.pendingDraw.reveal.card] : []),
+    ...(state.pendingChaos?.affectedCards ?? []),
+    ...(state.pendingChaos?.playedCards ?? [])
   ];
   const nextDeckIndex = inPlay.reduce((max, item) => Math.max(max, item.deckIndex), -1) + 1;
 
@@ -3150,6 +3498,48 @@ function publicRoundDeal(deal: RoundDealState): RoundDealState {
   return { ...deal, event: { ...deal.event, card: publicCard(deal.event.card) } };
 }
 
+function publicPendingChaos(state: GameStateInternal, pending: PendingChaosInternal, viewerId?: string): PendingChaosState {
+  const target = pending.targetId ? state.players.find((player) => player.id === pending.targetId) : undefined;
+  const selectableCards =
+    viewerId && viewerId === pending.chooserId && target
+      ? target.hand.map(chaosSelectableCard)
+      : undefined;
+  const revealedHands =
+    pending.kind === "peek" && pending.phase === "reveal"
+      ? Object.fromEntries(activePlayers(state).map((player) => [player.id, player.hand.map(chaosSelectableCard)]))
+      : undefined;
+
+  return {
+    id: pending.id,
+    kind: pending.kind,
+    phase: pending.phase,
+    actorId: pending.actorId,
+    ...(pending.targetId ? { targetId: pending.targetId } : {}),
+    ...(pending.chooserId ? { chooserId: pending.chooserId } : {}),
+    ...(pending.eligibleTargetIds ? { eligibleTargetIds: pending.eligibleTargetIds } : {}),
+    ...(selectableCards ? { selectableCards } : {}),
+    ...(revealedHands ? { revealedHands } : {}),
+    ...(pending.affectedCards ? { affectedCards: pending.affectedCards.map(publicCard) } : {}),
+    ...(pending.playedCards ? { collectedCards: pending.playedCards.map(publicCard) } : {}),
+    ...(pending.autoTargetIds ? { autoTargetIds: pending.autoTargetIds } : {}),
+    ...(pending.countdownEndsAt ? { countdownEndsAt: pending.countdownEndsAt } : {}),
+    ...(pending.detonationEndsAt ? { detonationEndsAt: pending.detonationEndsAt } : {}),
+    ...(pending.punishedPlayerId ? { punishedPlayerId: pending.punishedPlayerId } : {}),
+    startsAt: pending.startsAt,
+    ...(pending.resolvesAt ? { resolvesAt: pending.resolvesAt } : {})
+  };
+}
+
+function chaosSelectableCard(card: Card): ChaosSelectableCard {
+  return {
+    id: card.id,
+    trackingId: card.id,
+    color: card.color,
+    value: card.value,
+    ...(card.side ? { side: card.side } : {})
+  };
+}
+
 function publicPendingDraw(state: GameStateInternal, pending: PendingDrawInternal, viewerId?: string): PendingDrawState {
   const reveal = pending.reveal;
   const visible = reveal
@@ -3201,10 +3591,19 @@ function publicPendingDraw(state: GameStateInternal, pending: PendingDrawInterna
 
 function toPublicPlayer(state: GameStateInternal, player: PlayerState, viewerId?: string): PublicPlayer {
   const oppositeHand =
-    state.settings.modeId === "flip" &&
-    state.phase === "playing" &&
-    state.flipSide &&
+    state.pendingChaos?.kind === "peek" &&
+    state.pendingChaos.phase === "reveal" &&
     viewerId !== player.id
+      ? player.hand.map((card) => ({
+          trackingId: card.id,
+          color: card.color,
+          value: card.value,
+          ...(card.side ? { side: card.side } : {})
+        }))
+      : state.settings.modeId === "flip" &&
+        state.phase === "playing" &&
+        state.flipSide &&
+        viewerId !== player.id
       ? player.hand.flatMap((card) => {
           const face = oppositeCardFace(card, state.flipSide!);
           return face ? [face] : [];
@@ -3335,6 +3734,25 @@ function rebindPlayerSession(state: GameStateInternal, oldId: string, newId: str
 
   if (state.pendingBatchPlay?.playerId === oldId) {
     state.pendingBatchPlay.playerId = newId;
+  }
+
+  if (state.pendingChaos?.actorId === oldId) {
+    state.pendingChaos.actorId = newId;
+  }
+  if (state.pendingChaos?.targetId === oldId) {
+    state.pendingChaos.targetId = newId;
+  }
+  if (state.pendingChaos?.chooserId === oldId) {
+    state.pendingChaos.chooserId = newId;
+  }
+  if (state.pendingChaos?.punishedPlayerId === oldId) {
+    state.pendingChaos.punishedPlayerId = newId;
+  }
+  if (state.pendingChaos?.eligibleTargetIds) {
+    state.pendingChaos.eligibleTargetIds = state.pendingChaos.eligibleTargetIds.map((id) => id === oldId ? newId : id);
+  }
+  if (state.pendingChaos?.autoTargetIds) {
+    state.pendingChaos.autoTargetIds = state.pendingChaos.autoTargetIds.map((id) => id === oldId ? newId : id);
   }
 
   if (state.pendingDraw?.playerId === oldId) {
@@ -3631,7 +4049,7 @@ function randomColor(state: GameStateInternal): Color {
 }
 
 function setTurnDeadline(state: GameStateInternal): void {
-  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw) {
+  if (state.pendingBatchPlay || state.pendingFlip || state.pendingDraw || chaosBlocksActions(state)) {
     delete state.turnDeadline;
     return;
   }
@@ -3654,7 +4072,7 @@ function syncPauseState(state: GameStateInternal): { paused: boolean; changed: b
   const resolvingLastStandFinish =
     isLastStand(state) &&
     activePlayers(state).length <= 1 &&
-    Boolean(state.pendingChallenge || state.pendingStack || state.pendingDraw);
+    Boolean(state.pendingChallenge || state.pendingStack || state.pendingDraw || state.pendingChaos);
   if (resolvingLastStandFinish) {
     const changed = Boolean(state.pauseReason);
     delete state.pauseReason;
@@ -3757,6 +4175,25 @@ function ensureNoPendingBatchPlay(state: GameStateInternal): void {
   if (state.pendingDraw) {
     throw new GameError("draw_in_progress", "Wait for the current draw reveal to finish.");
   }
+}
+
+function chaosBlocksActions(state: GameStateInternal): boolean {
+  const pending = state.pendingChaos;
+  return Boolean(pending && !(pending.kind === "nuke" && pending.phase === "countdown"));
+}
+
+function ensureNoBlockingChaos(state: GameStateInternal): void {
+  if (chaosBlocksActions(state)) {
+    throw new GameError("chaos_pending", "Wait for the Chaos card to resolve.");
+  }
+}
+
+function isNukeCountdownActive(state: GameStateInternal): boolean {
+  return state.pendingChaos?.kind === "nuke" && state.pendingChaos.phase === "countdown";
+}
+
+function isNukeBlockedCard(card: Card): boolean {
+  return card.color === null || card.value === "throwup" || isAnyChaosSpecialValue(card.value);
 }
 
 function cardLabel(card: Card): string {

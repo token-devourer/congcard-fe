@@ -69,6 +69,26 @@ export const CARD_VALUES = [
 ] as const;
 
 export type CardValue = (typeof CARD_VALUES)[number];
+export const ACTIVE_CHAOS_SPECIAL_VALUES = [
+  "flashbang",
+  "steal",
+  "favor",
+  "peek",
+  "timeskip",
+  "nuke"
+] as const satisfies readonly CardValue[];
+
+export type ActiveChaosSpecialValue = (typeof ACTIVE_CHAOS_SPECIAL_VALUES)[number];
+export type ChaosEffectKind = ActiveChaosSpecialValue | "throwup";
+export type PendingChaosPhase =
+  | "opening"
+  | "chooseTarget"
+  | "chooseCard"
+  | "reveal"
+  | "sequence"
+  | "autoplay"
+  | "countdown"
+  | "detonating";
 export type GamePhase = "lobby" | "dealing" | "playing" | "roundEnd" | "gameEnd";
 export type Direction = 1 | -1;
 export type ScoreTarget = 0 | 500 | "lastStand";
@@ -98,6 +118,11 @@ export interface VisibleCardFace {
 }
 
 export interface OpponentCardFace extends VisibleCardFace {
+  trackingId: string;
+}
+
+export interface ChaosSelectableCard extends VisibleCardFace {
+  id: string;
   trackingId: string;
 }
 
@@ -209,6 +234,26 @@ export interface PendingBatchPlay {
   startsAt: number;
   cardIntervalMs: number;
   resolvesAt: number;
+}
+
+export interface PendingChaosState {
+  id: number;
+  kind: ChaosEffectKind;
+  phase: PendingChaosPhase;
+  actorId: string;
+  targetId?: string;
+  chooserId?: string;
+  eligibleTargetIds?: string[];
+  selectableCards?: ChaosSelectableCard[];
+  revealedHands?: Record<string, ChaosSelectableCard[]>;
+  affectedCards?: Card[];
+  collectedCards?: Card[];
+  autoTargetIds?: string[];
+  countdownEndsAt?: number;
+  detonationEndsAt?: number;
+  punishedPlayerId?: string;
+  startsAt: number;
+  resolvesAt?: number;
 }
 
 export interface PendingFlip {
@@ -326,6 +371,7 @@ export type PresentationEventKind =
   | "deal"
   | "shuffle"
   | "flip"
+  | "chaos"
   | "pause"
   | "resume"
   | "roundEnd";
@@ -337,6 +383,8 @@ export interface PresentationEvent {
   actorId?: string;
   targetIds?: string[];
   cardValue?: CardValue;
+  chaosKind?: ChaosEffectKind;
+  phase?: PendingChaosPhase;
   color?: Color;
   amount?: number;
   level?: number;
@@ -379,6 +427,7 @@ export interface GameSnapshot {
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
   pendingBatchPlay?: PendingBatchPlay;
+  pendingChaos?: PendingChaosState;
   pendingDraw?: PendingDrawState;
   flipSide?: FlipSide;
   pendingFlip?: PendingFlip;
@@ -492,6 +541,14 @@ export const playBatchSchema = z.object({
     message: "Card ids must be unique."
   }),
   declaredColor: z.enum(COLORS).optional()
+});
+
+export const chooseChaosTargetSchema = z.object({
+  targetId: z.string().min(1)
+});
+
+export const chooseChaosCardSchema = z.object({
+  cardId: z.string().min(1)
 });
 
 export const dealCardSchema = z.object({

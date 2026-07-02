@@ -8,6 +8,8 @@ import {
   addPlayer,
   callOne,
   catchOne,
+  chooseChaosCard,
+  chooseChaosTarget,
   chooseColorDraw,
   createGame,
   drawCard,
@@ -18,6 +20,7 @@ import {
   playCard,
   resolveAutomatedTurns,
   resolveChallenge,
+  resolvePendingChaos,
   resolvePendingBatchPlay,
   resolvePendingFlip,
   resolvePendingDraw,
@@ -357,14 +360,16 @@ function finishAutomaticDeal(state: GameStateInternal): void {
 }
 
 describe("chaos mode", () => {
-  it("builds a playable chaos deck with reduced penalties and meme cards", () => {
+  it("builds a playable chaos deck with selected meme cards only", () => {
     const deck = chaosMode.buildDeck(4);
 
-    expect(deck).toHaveLength(130);
+    expect(deck).toHaveLength(122);
     expect(deck.filter((item) => item.value === "draw1")).toHaveLength(8);
     expect(deck.filter((item) => item.value === "wild2")).toHaveLength(4);
     expect(deck.filter((item) => item.value === "throwup")).toHaveLength(8);
     expect(deck.filter((item) => item.value === "flashbang")).toHaveLength(1);
+    expect(deck.filter((item) => item.value === "vote")).toHaveLength(0);
+    expect(deck.filter((item) => item.value === "mirror")).toHaveLength(0);
   });
 
   it("uses +1 colored draw penalties", () => {
@@ -407,6 +412,86 @@ describe("chaos mode", () => {
     state.players[0]!.hand = [card("flash-a", null, "flashbang"), card("flash-b", null, "flashbang")];
 
     expect(() => playBatch(state, "p1", ["flash-a", "flash-b"])).toThrow("Chaos special cards cannot be batched.");
+  });
+
+  it("allows any color after a rainbow special card", () => {
+    const state = controlledChaosGame();
+    state.discardPile = [card("flashbang-top", null, "flashbang")];
+    state.activeColor = "red";
+    state.players[0]!.hand = [card("blue-7", "blue", 7)];
+
+    playCard(state, "p1", "blue-7");
+
+    expect(state.discardPile.at(-1)).toMatchObject({ id: "blue-7", color: "blue", value: 7 });
+  });
+
+  it("resolves Steal by target and card choice", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("steal", null, "steal"), card("red-9", "red", 9)];
+    state.players[1]!.hand = [card("blue-7", "blue", 7)];
+
+    playCard(state, "p1", "steal");
+    expect(state.pendingChaos).toMatchObject({ kind: "steal", phase: "chooseTarget", chooserId: "p1" });
+
+    chooseChaosTarget(state, "p1", "p2");
+    expect(snapshotFor(state, "p1").pendingChaos?.selectableCards).toEqual([
+      expect.objectContaining({ id: "blue-7", color: "blue", value: 7 })
+    ]);
+
+    chooseChaosCard(state, "p1", "blue-7");
+    expect(state.pendingChaos).toBeUndefined();
+    expect(state.players[0]!.hand.some((item) => item.id === "blue-7")).toBe(true);
+    expect(state.players[1]!.hand).toHaveLength(0);
+  });
+
+  it("resolves Favor with the target choosing the card", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("favor", null, "favor"), card("red-9", "red", 9)];
+    state.players[1]!.hand = [card("blue-7", "blue", 7)];
+
+    playCard(state, "p1", "favor");
+    chooseChaosTarget(state, "p1", "p2");
+
+    expect(state.pendingChaos).toMatchObject({ kind: "favor", phase: "chooseCard", chooserId: "p2" });
+    expect(snapshotFor(state, "p2").pendingChaos?.selectableCards?.[0]).toMatchObject({ id: "blue-7" });
+
+    chooseChaosCard(state, "p2", "blue-7");
+    expect(state.players[0]!.hand.some((item) => item.id === "blue-7")).toBe(true);
+  });
+
+  it("reveals every hand during Peek and clears after the reveal window", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("peek", null, "peek"), card("red-9", "red", 9)];
+    state.players[1]!.hand = [card("blue-7", "blue", 7)];
+
+    playCard(state, "p1", "peek");
+
+    expect(snapshotFor(state, "p1").pendingChaos?.revealedHands?.p2?.[0]).toMatchObject({ color: "blue", value: 7 });
+    expect(snapshotFor(state, "p2").pendingChaos?.revealedHands?.p1?.some((item) => item.value === 9)).toBe(true);
+
+    state.pendingChaos!.resolvesAt = 0;
+    expect(resolvePendingChaos(state)).toBe(true);
+    expect(state.pendingChaos).toBeUndefined();
+  });
+
+  it("blocks wild and chaos cards during Nuke countdown and punishes the active player", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("nuke", null, "nuke"), card("red-9", "red", 9), card("blue-8", "blue", 8)];
+    state.players[1]!.hand = [card("red-1", "red", 1), card("wild", null, "wild")];
+
+    playCard(state, "p1", "nuke");
+    expect(state.pendingChaos).toMatchObject({ kind: "nuke", phase: "countdown" });
+    expect(snapshotFor(state).currentPlayerId).toBe("p2");
+    expect(() => playCard(state, "p2", "wild", "blue")).toThrow("blocked during the Nuke countdown");
+
+    playCard(state, "p2", "red-1");
+    expect(snapshotFor(state).currentPlayerId).toBe("p1");
+    state.pendingChaos!.countdownEndsAt = 0;
+    expect(resolvePendingChaos(state)).toBe(true);
+    expect(state.pendingChaos).toMatchObject({ phase: "detonating", punishedPlayerId: "p1" });
+    state.pendingChaos!.detonationEndsAt = 0;
+    expect(resolvePendingChaos(state)).toBe(true);
+    expect(state.players[0]!.hand.some((item) => item.id === "red-1")).toBe(true);
   });
 
   it("eliminates players who draw past 25 cards", () => {

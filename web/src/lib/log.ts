@@ -66,6 +66,18 @@ const PATTERNS: Pattern[] = [
   { re: /^(.+) must choose: challenge, stack, or accept (\d+) cards\.$/, key: "mustChallengeStack", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   { re: /^Game paused until at least two active players return\.$/, key: "gamePaused", values: () => ({}) },
   { re: /^Game resumed\.$/, key: "gameResumed", values: () => ({}) },
+  { re: /^(.+) chose (.+) for (steal|favor)\.$/, key: "chaosChoseTarget", values: (match, t) => ({ name: match[1], target: match[2], value: cardName(undefined, match[3], t) }) },
+  { re: /^(.+) received a card from (.+)\.$/, key: "chaosReceivedCard", values: (match) => ({ name: match[1], target: match[2] }) },
+  { re: /^(.+) threw up (\d+) cards?\.$/, key: "chaosThrowup", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
+  { re: /^Flashbang shuffled every active hand\.$/, key: "chaosFlashbang", values: () => ({}) },
+  { re: /^(.+)'s Time Skip returned the turn\.$/, key: "chaosTimeskipReturned" },
+  { re: /^(.+) auto-drew during Time Skip\.$/, key: "chaosTimeskipDrew" },
+  {
+    re: new RegExp(`^(.+) auto-played (?:(red|yellow|green|blue|orange|cyan|purple|pink) )?(${CARD_VALUE_PATTERN}) during Time Skip\\.$`),
+    key: "chaosTimeskipPlayed",
+    values: (match, t) => ({ name: match[1], card: cardName(match[2], match[3], t) })
+  },
+  { re: /^(.+) took (\d+) Nuke countdown cards?\.$/, key: "chaosNukePenalty", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   {
     re: new RegExp(`^(.+) played a batch of (\\d+) (${CARD_VALUE_PATTERN}) cards\\.$`),
     key: "playedBatch",
