@@ -84,7 +84,13 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const tableMinH = selfColorDraw
     ? "min-h-[min(280px,34dvh)]"
     : "min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]";
-  const now = useNow(100);
+  const nukeCountdown = snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown"
+    ? snapshot.pendingChaos
+    : undefined;
+  // The clock only gates the One window and the Nuke countdown; without this
+  // the whole table (all seats + chips) re-renders ten times a second for two
+  // features that are rarely on screen.
+  const now = useNow(100, Boolean(snapshot.oneWindow) || Boolean(nukeCountdown));
   const [hoveredOpponentId, setHoveredOpponentId] = useState<string>();
   const [pinnedOpponentId, setPinnedOpponentId] = useState<string>();
   const hoverCloseTimer = useRef<number | undefined>(undefined);
@@ -122,9 +128,6 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
         ? t("board.takeColorStack", { count: stackToTake.totalDraw, color: t(`colors.${stackToTake.targetColor}`) })
         : t("board.takeStack", { count: stackToTake.totalDraw })
       : t("board.draw");
-  const nukeCountdown = snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown"
-    ? snapshot.pendingChaos
-    : undefined;
   const nukeRemaining = nukeCountdown?.countdownEndsAt
     ? Math.max(0, Math.ceil((nukeCountdown.countdownEndsAt - now) / 1000))
     : null;
@@ -394,7 +397,7 @@ function StackPenaltyChip({ stack }: { stack: PendingStack }) {
 
 function TurnChip({ player, isMyTurn, deadline }: { player?: PublicPlayer; isMyTurn: boolean; deadline?: number }) {
   const t = useTranslations();
-  const now = useNow(250);
+  const now = useNow(250, Boolean(deadline));
   const seconds = deadline ? Math.max(0, Math.ceil((deadline - now) / 1000)) : null;
 
   return (

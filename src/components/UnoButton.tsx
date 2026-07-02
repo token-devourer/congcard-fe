@@ -48,7 +48,8 @@ function randomPosition(): string {
 
 export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCatch }: UnoButtonProps) {
   const t = useTranslations();
-  const now = useNow(100);
+  // Only tick while a One/Catch window is actually live.
+  const now = useNow(100, Boolean(callWindow) || Boolean(catchTarget));
   const callPending = Boolean(callWindow?.callPending);
   const callVisibleUntil = Math.max(callWindow?.deadline ?? 0, callWindow?.callResolvesAt ?? 0);
   const catchVisibleUntil = Math.max(catchTarget?.deadline ?? 0, catchTarget?.callResolvesAt ?? 0);

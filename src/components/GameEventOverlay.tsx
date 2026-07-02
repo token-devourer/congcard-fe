@@ -44,8 +44,9 @@ const BURST_POINTS = [
 export function GameEventOverlay() {
   const events = useRoomStore((state) => state.events);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
-  const clockOffset = useRoomStore((state) => state.clockOffset);
-  const now = useNow(50) + clockOffset;
+  // useNow already returns the server-synced clock — adding clockOffset on
+  // top shifted every toast gate by the offset. Only tick while toasts exist.
+  const now = useNow(50, events.length > 0);
   const { preset } = useGraphicsPreset();
   const toastEvents = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
   const visibleToasts = toastEvents.filter((event) => !(event.type === "chaos" && event.kind === "nuke" && event.phase === "countdown"));

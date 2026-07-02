@@ -75,7 +75,12 @@ export function RoomClient({ code }: RoomClientProps) {
   const connectingRef = useRef(false);
   const pingIntervalRef = useRef<number | null>(null);
   const pingSamplesRef = useRef<number[]>([]);
-  const { snapshot, setSnapshot, setError, reset } = useRoomStore();
+  // Subscribe by selector: the bare hook re-renders this root (and the whole
+  // page tree under it) on every store change, including toast-event churn.
+  const snapshot = useRoomStore((state) => state.snapshot);
+  const setSnapshot = useRoomStore((state) => state.setSnapshot);
+  const setError = useRoomStore((state) => state.setError);
+  const reset = useRoomStore((state) => state.reset);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   // nickname is only set once confirmed (saved profile or submitted form);
   // draftNickname holds form input so typing does not auto-join the room.
@@ -883,7 +888,9 @@ export function Board({
   const [batchShortcutCommand, setBatchShortcutCommand] = useState<BatchShortcutCommand | null>(null);
   const [utilityPanel, setUtilityPanel] = useState<"log" | "scores" | "viewers" | null>(null);
   const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
-  const now = useNow(100);
+  // The clock only gates the action lock (≤700ms bursts) and One/Catch
+  // shortcut windows; keep the whole board from re-rendering 10×/s otherwise.
+  const now = useNow(100, Boolean(snapshot.oneWindow) || eventLockUntil > Date.now());
   const selfRole = snapshot.self?.role ?? "spectator";
   const isPlayer = selfRole === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
@@ -1289,8 +1296,10 @@ function ChaosChoicePanel({ snapshot, send }: { snapshot: GameSnapshot; send: (t
 
 function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
   const t = useTranslations();
-  const localNow = useNow(50);
-  const clockOffset = useRoomStore((state) => state.clockOffset);
+  // useNow already returns the server-synced clock — adding clockOffset on
+  // top shifted the reveal gate by the full offset on skewed machines. Only
+  // tick while a reveal is actually in flight.
+  const now = useNow(50, Boolean(snapshot.pendingDraw?.reveal));
   const pending = snapshot.pendingDraw;
   if (!pending) return null;
   const recipient = snapshot.players.find((player) => player.id === pending.playerId);
@@ -1306,7 +1315,7 @@ function DrawProgress({ snapshot }: { snapshot: GameSnapshot }) {
           color: pending.targetColor ? t(`colors.${pending.targetColor}`) : ""
         })
       : t("board.drawProgress", { count: pending.drawnCount });
-  const revealVisible = Boolean(pending.reveal && localNow + clockOffset >= pending.reveal.revealsAt);
+  const revealVisible = Boolean(pending.reveal && now >= pending.reveal.revealsAt);
   const completedFaces = pending.revealedCards ?? [];
   const completedCards = Array.from({ length: pending.drawnCount }, (_, index) => completedFaces[index]);
   const visibleCardCount = completedCards.length + (pending.reveal ? 1 : 0);
