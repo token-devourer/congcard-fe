@@ -591,9 +591,12 @@ export const createRoomRequestSchema = z.object({
 export function mergeRoomSettings(input?: RoomSettingsInput): RoomSettings {
   const parsed = roomSettingsUpdateSchema.parse(input ?? {});
   const scoreTarget = parsed.scoreTarget ?? DEFAULT_ROOM_SETTINGS.scoreTarget;
+  const modeId = parsed.modeId ?? DEFAULT_ROOM_SETTINGS.modeId;
+  const defaultCallEnabled = scoreTarget === "lastStand" || modeId === "chaos" ? false : DEFAULT_ROOM_SETTINGS.callEnabled;
+  const defaultDeckBoxes = modeId === "chaos" ? 2 : DEFAULT_ROOM_SETTINGS.deckBoxes;
 
   return {
-    modeId: parsed.modeId ?? DEFAULT_ROOM_SETTINGS.modeId,
+    modeId,
     maxPlayers: parsed.maxPlayers ?? DEFAULT_ROOM_SETTINGS.maxPlayers,
     turnTimeoutSec: parsed.turnTimeoutSec ?? DEFAULT_ROOM_SETTINGS.turnTimeoutSec,
     scoreTarget,
@@ -601,12 +604,12 @@ export function mergeRoomSettings(input?: RoomSettingsInput): RoomSettings {
     jumpInEnabled: parsed.jumpInEnabled ?? DEFAULT_ROOM_SETTINGS.jumpInEnabled,
     stackingEnabled: parsed.stackingEnabled ?? DEFAULT_ROOM_SETTINGS.stackingEnabled,
     challengeEnabled: parsed.challengeEnabled ?? DEFAULT_ROOM_SETTINGS.challengeEnabled,
-    callEnabled: parsed.callEnabled ?? (scoreTarget === "lastStand" ? false : DEFAULT_ROOM_SETTINGS.callEnabled),
+    callEnabled: parsed.callEnabled ?? defaultCallEnabled,
     batchEnabled: parsed.batchEnabled ?? DEFAULT_ROOM_SETTINGS.batchEnabled,
     keyboardShortcutsEnabled: parsed.keyboardShortcutsEnabled ?? DEFAULT_ROOM_SETTINGS.keyboardShortcutsEnabled,
     absentPlayerAction: parsed.absentPlayerAction ?? DEFAULT_ROOM_SETTINGS.absentPlayerAction,
     autoPlayCallOne: parsed.autoPlayCallOne ?? DEFAULT_ROOM_SETTINGS.autoPlayCallOne,
-    deckBoxes: parsed.deckBoxes ?? DEFAULT_ROOM_SETTINGS.deckBoxes,
+    deckBoxes: parsed.deckBoxes ?? defaultDeckBoxes,
     modeOptions: parsed.modeOptions ?? DEFAULT_ROOM_SETTINGS.modeOptions
   };
 }

@@ -119,13 +119,20 @@ describe("Lobby settings", () => {
     expect(stacking).toBeEnabled();
   });
 
-  it("switches One and Catch defaults when Last Stand is selected", () => {
+  it("switches One and Catch defaults for Last Stand and Chaos", () => {
     render(<LobbyHarness />);
 
+    expect(mergeRoomSettings({ modeId: "chaos" }).callEnabled).toBe(false);
+    expect(mergeRoomSettings({ modeId: "chaos" }).deckBoxes).toBe(2);
+
+    const gameMode = screen.getByText("Game mode").closest("label")?.querySelector("select") as HTMLSelectElement | null;
     const scoreTarget = screen.getByText("Score target").closest("label")?.querySelector("select") as HTMLSelectElement | null;
+    const deckBoxes = screen.getByText("Card boxes").closest("label")?.querySelector("select") as HTMLSelectElement | null;
     const call = screen.getByText("Enable One and Catch").closest("label")?.querySelector("input") as HTMLInputElement | null;
 
+    expect(gameMode).not.toBeNull();
     expect(scoreTarget).not.toBeNull();
+    expect(deckBoxes).not.toBeNull();
     expect(call).not.toBeNull();
     expect(call).toBeChecked();
 
@@ -133,6 +140,14 @@ describe("Lobby settings", () => {
     expect(call).not.toBeChecked();
 
     fireEvent.change(scoreTarget!, { target: { value: "0" } });
+    expect(call).toBeChecked();
+
+    fireEvent.change(gameMode!, { target: { value: "chaos" } });
+    expect(call).not.toBeChecked();
+    expect(deckBoxes).toHaveValue("2");
+    expect(deckBoxes?.querySelector('option[value="1"]')).toBeDisabled();
+
+    fireEvent.change(gameMode!, { target: { value: "standard" } });
     expect(call).toBeChecked();
   });
 

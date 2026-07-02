@@ -130,6 +130,29 @@ describe("client rules", () => {
     expect(canPlayCard(state, state.self!.hand[1]!)).toBe(false);
   });
 
+  it("allows Chaos special Jump In but not as a stack response", () => {
+    const jump = snapshot({
+      currentPlayerId: "other",
+      settings: { ...snapshot().settings, modeId: "chaos", jumpInEnabled: true },
+      self: { id: "me", role: "player", hand: [card("flashbang-jump", null, "flashbang")] },
+      discardTop: card("top-flashbang", null, "flashbang")
+    });
+
+    expect(canPlayCard(jump, jump.self!.hand[0]!)).toBe(true);
+    expect(jumpInCardInHand(jump)?.id).toBe("flashbang-jump");
+
+    const stack = snapshot({
+      currentPlayerId: "other",
+      settings: { ...snapshot().settings, modeId: "chaos", jumpInEnabled: true, stackingEnabled: true },
+      pendingStack: { kind: "wild2", targetPlayerId: "other", totalDraw: 2 },
+      self: { id: "me", role: "player", hand: [card("flashbang-stack", null, "flashbang")] },
+      discardTop: card("top-flashbang", null, "flashbang")
+    });
+
+    expect(canPlayCard(stack, stack.self!.hand[0]!)).toBe(false);
+    expect(jumpInCardInHand(stack)).toBeNull();
+  });
+
   it("blocks player actions while the game is paused", () => {
     const state = snapshot({ pauseReason: "notEnoughAvailablePlayers" });
 
