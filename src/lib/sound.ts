@@ -49,12 +49,8 @@ export type SoundName =
   | "memeNuke"
   | "memeMime"
   | "memeStealExecute"
-  | "memeFavorOpen"
   | "memeFavorExecute"
-  | "memeFlashbangSfx"
-  | "memeFlashbangCat"
-  | "memeNukeCountdown"
-  | "memeNukeExecute";
+  | "memeNukeCountdown";
 
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
@@ -63,17 +59,13 @@ const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
   memeThrowup: "/audio/gag-cat.mp3",
   memeSteal: "/audio/muehehehe-cat-initiate.mp3",
   memeStealExecute: "/audio/muehehehe-cat-execute.mp3",
-  memeFlashbang: "/audio/flashbang-cat.mp3",
-  memeFlashbangSfx: "/audio/flashbang-sfx.mp3",
-  memeFlashbangCat: "/audio/flashbang-cat.mp3",
-  memeFavor: "/audio/awowo-cat-initiate.mp3",
-  memeFavorOpen: "/audio/awowo-cat-open.mp3",
+  memeFlashbang: "/audio/flashbang-cat-sfx-merged.mp3",
+  memeFavor: "/audio/awowo-cat-open.mp3",
   memeFavorExecute: "/audio/awowo-cat-execute.mp3",
   memePeek: "/audio/acumalaka-frog.mp3",
   memeTimeskip: "/audio/timeskip-cat.mp3",
   memeNuke: "/audio/nuke-cat-initiate.mp3",
-  memeNukeCountdown: "/audio/nuke-cat-countdown.mp3",
-  memeNukeExecute: "/audio/nuke-cat-execute.mp3"
+  memeNukeCountdown: "/audio/nuke-cat-merged-countdown-execute.mp3"
 };
 
 let spriteInitPromise: Promise<void> | null = null;
@@ -213,7 +205,7 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
   }
 
   if (event.phase === "sequence" && (event.kind === "steal" || event.kind === "favor")) {
-    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorOpen");
+    at(event.kind === "steal" ? "memeStealExecute" : "memeFavor");
     return;
   }
 
@@ -237,8 +229,7 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
       at("memeFavor", 650);
       break;
     case "flashbang":
-      at("memeFlashbangSfx", 650);
-      at("memeFlashbangCat", 850);
+      at("memeFlashbang", 650);
       break;
     case "peek":
       at("memePeek", 650);
@@ -248,13 +239,7 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
       break;
     case "nuke":
       at("memeNuke", 650);
-      at("memeNukeCountdown", 1_000);
-      {
-        const executeStartsAt = (event.countdownEndsAt ?? event.resolvesAt ?? ((event.startsAt ?? serverNow) + 40_000)) - 3_000;
-        const executeDelayMs = Math.max(0, executeStartsAt - serverNow);
-        playSoundAt("memeNukeExecute", executeDelayMs);
-        duckMusic(executeDelayMs, 3_200);
-      }
+      playSoundAt("memeNukeCountdown", Math.max(0, (event.startsAt ?? serverNow) - serverNow));
       break;
     default:
       break;
