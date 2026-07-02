@@ -52,6 +52,7 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
     snapshot.phase !== "playing" ||
     snapshot.pauseReason ||
     snapshot.pendingBatchPlay ||
+    (snapshot.pendingChaos && !(snapshot.pendingChaos.kind === "nuke" && snapshot.pendingChaos.phase === "countdown")) ||
     snapshot.oneWindow ||
     snapshot.currentPlayerId !== snapshot.self.id
   ) {
@@ -66,6 +67,9 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
 
   const grouped = new Map<CardValue, Card[]>();
   for (const card of snapshot.self.hand) {
+    if (!isBatchableValue(card.value)) {
+      continue;
+    }
     const cards = grouped.get(card.value) ?? [];
     cards.push(card);
     grouped.set(card.value, cards);
@@ -82,6 +86,25 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
     .filter((group) => group.cards.length >= 2 && group.playableStarterIds.size > 0);
 }
 
+function isBatchableValue(value: CardValue): boolean {
+  return value !== "throwup" && ![
+    "flashbang",
+    "steal",
+    "favor",
+    "peek",
+    "vote",
+    "chaosCard",
+    "timeskip",
+    "mirror",
+    "pandemic",
+    "magnet",
+    "jackpot",
+    "roulette",
+    "nuke",
+    "mime"
+  ].includes(String(value));
+}
+
 export function batchValueText(value: CardValue): string {
   if (typeof value === "number") {
     return String(value);
@@ -90,13 +113,30 @@ export function batchValueText(value: CardValue): string {
   const labels: Record<Exclude<CardValue, number>, string> = {
     skip: "Skip",
     reverse: "Reverse",
+    draw1: "+1",
     draw2: "+2",
     draw5: "+5",
     flip: "Flip",
     wild: "Wild",
+    wild2: "Wild +2",
     wild3: "Wild +3",
     wild4: "Wild +4",
-    wildColor: "Wild Color"
+    wildColor: "Wild Color",
+    flashbang: "Flashbang",
+    throwup: "Throw Up",
+    steal: "Steal",
+    favor: "Favor",
+    peek: "Peek",
+    vote: "Vote",
+    chaosCard: "Chaos",
+    timeskip: "Time Skip",
+    mirror: "Mirror",
+    pandemic: "Pandemic",
+    magnet: "Magnet",
+    jackpot: "Jackpot",
+    roulette: "Roulette",
+    nuke: "Nuke",
+    mime: "Mime"
   };
   return labels[value];
 }

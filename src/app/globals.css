@@ -1673,9 +1673,18 @@ button.card-face.playable:active {
 
 .card-yellow {
   background:
-    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.82), transparent 42%),
-    radial-gradient(90% 76% at 82% 82%, rgba(255, 216, 54, 0.4), transparent 58%),
-    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #c89900 100%);
+    radial-gradient(120% 82% at 42% 12%, rgba(255, 245, 147, 0.12), transparent 42%),
+    radial-gradient(90% 76% at 82% 82%, rgba(255, 235, 120, 0.3), transparent 58%),
+    linear-gradient(145deg, #fff068 0%, #ffd739 50%, #d4a020 100%);
+}
+
+.card-yellow .card-corner-icon,
+.card-yellow .card-draw-label.corner {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.15));
+}
+
+.card-yellow .card-action-glyph.corner {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.55)) drop-shadow(0 0 6px rgba(0,0,0,0.15)) !important;
 }
 
 .card-orange {
@@ -1698,6 +1707,131 @@ button.card-face.playable:active {
   font-size: calc(var(--card-width) * 0.1);
   font-weight: 900;
   letter-spacing: 0.08em;
+}
+
+/* ---------- Special (meme) cards — Chaos mode ---------- */
+
+@keyframes rainbow-glow {
+  0%   { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(255,0,0,0.35), 0 0 16px rgba(255,0,0,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  17%  { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(255,165,0,0.35), 0 0 16px rgba(255,165,0,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  33%  { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(255,255,0,0.35), 0 0 16px rgba(255,255,0,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  50%  { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(0,220,100,0.4), 0 0 16px rgba(0,220,100,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  67%  { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(0,150,255,0.4), 0 0 16px rgba(0,150,255,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  83%  { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(180,0,255,0.4), 0 0 16px rgba(180,0,255,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+  100% { box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 -2px 6px rgba(0,0,0,0.08) inset, 0 0 0 1px rgba(255,0,0,0.35), 0 0 16px rgba(255,0,0,0.3), 0 14px 28px rgba(0,0,0,0.35); }
+}
+
+@keyframes rainbow-overlay {
+  0%   { opacity: 0.6; filter: hue-rotate(0deg); }
+  25%  { opacity: 0.8; filter: hue-rotate(90deg); }
+  50%  { opacity: 0.6; filter: hue-rotate(180deg); }
+  75%  { opacity: 0.8; filter: hue-rotate(270deg); }
+  100% { opacity: 0.6; filter: hue-rotate(360deg); }
+}
+
+.card-special {
+  background: linear-gradient(145deg, #faf8f4 0%, #f0ece4 45%, #e4ddd0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #1a1a2e;
+  animation: rainbow-glow 3s ease-in-out infinite;
+}
+
+.card-special::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(150deg,
+      rgba(255,0,0,0.3) 0%,
+      rgba(255,255,0,0.3) 25%,
+      rgba(0,255,0,0.3) 50%,
+      rgba(0,150,255,0.3) 75%,
+      rgba(255,0,255,0.3) 100%
+    ),
+    linear-gradient(150deg, rgba(255,255,255,0.35), transparent 34%);
+  animation: rainbow-overlay 4s linear infinite;
+}
+
+@keyframes golden-pulse {
+  0%   { box-shadow: inset 0 0 0 1px rgba(180, 130, 30, 0.35), inset 0 0 16px rgba(180, 130, 30, 0.08); }
+  50%  { box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.55), inset 0 0 30px rgba(242, 193, 78, 0.2); }
+  100% { box-shadow: inset 0 0 0 1px rgba(180, 130, 30, 0.35), inset 0 0 16px rgba(180, 130, 30, 0.08); }
+}
+
+.card-special::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 12px;
+  pointer-events: none;
+  animation: golden-pulse 2.5s ease-in-out infinite;
+}
+
+.card-special .card-corner-number,
+.card-special .card-corner-icon {
+  color: #b300b3;
+}
+
+.card-special-icon {
+  width: calc(var(--card-width) * 0.46);
+  height: auto;
+  color: #2a1a3e;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+}
+
+.card-meme-badge,
+.card-meme-art {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+
+.card-meme-image {
+  display: block;
+  object-position: center;
+}
+
+.card-meme-badge.with-cutout .card-meme-image {
+  max-width: 108%;
+  max-height: 108%;
+  filter:
+    drop-shadow(0 0 1px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 1px 2px rgba(35, 20, 26, 0.28));
+}
+
+.card-meme-badge.with-frame .card-meme-art {
+  overflow: hidden;
+  border-radius: calc(var(--card-width) * 0.1);
+}
+
+.card-meme-badge.with-frame .card-meme-image {
+  width: 100%;
+  height: 100%;
+}
+
+.card-special .card-center-number {
+  font-size: calc(var(--card-width) * 0.16);
+  color: #2a1a3e;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4), 0 0 12px rgba(200,0,255,0.12);
+}
+
+/* Colored meme cards (throwup) — special glow on colored background */
+.card-meme-color {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.55) inset,
+    0 -2px 6px rgba(0,0,0,0.08) inset,
+    0 0 0 1px rgba(242,193,78,0.25),
+    0 0 14px rgba(242,193,78,0.15),
+    0 14px 28px rgba(0,0,0,0.35);
+}
+
+.card-meme-color::after {
+  box-shadow:
+    inset 0 0 0 1px rgba(242,193,78,0.25),
+    inset 0 0 20px rgba(242,193,78,0.08);
 }
 
 .flip-transition-layer {
@@ -2481,3 +2615,50 @@ body.flip-dark .card-back {
 .low-graphics @keyframes synchronized-card-flip { }
 .low-graphics @keyframes shuffle-card-riffle { }
 .low-graphics @keyframes draw-face-reveal { }
+
+/* ---------- CardsModal preview wrapper & tooltip ---------- */
+
+.card-preview-wrapper {
+  position: relative;
+  overflow: visible;
+}
+
+.card-tooltip {
+  position: fixed;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.card-preview-toast {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  z-index: 20;
+  translate: -50% 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, var(--gold-strong), var(--gold) 58%, var(--gold-deep));
+  color: #221a07;
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: card-toast-pop 0.5s ease-out forwards;
+}
+
+@keyframes card-toast-pop {
+  0% { opacity: 0; transform: translateY(6px) scale(0.85); }
+  25% { opacity: 1; transform: translateY(-2px) scale(1.08); }
+  60% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+.low-graphics @keyframes card-toast-pop { }

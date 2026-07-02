@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { CardValue, Color, FlipSide } from "@congcard/shared";
-import { LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES, LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
 import { CardView } from "./CardView";
+import { playSound, type SoundName } from "@/lib/sound";
 import { shouldIgnoreShortcut } from "@/lib/shortcuts";
 
 interface CardsModalProps {
@@ -21,6 +23,101 @@ const STANDARD_NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as CardValue[];
 const STANDARD_ACTIONS = ["skip", "reverse", "draw2"] as CardValue[];
 const FLIP_ACTIONS = ["skip", "reverse", "draw2", "flip"] as CardValue[];
 const FLIP_DARK_ACTIONS = ["skip", "reverse", "draw5", "flip"] as CardValue[];
+
+const MEME_TO_SOUND: Record<string, SoundName> = {
+  flashbang: "memeFlashbang",
+  throwup: "memeThrowup",
+  steal: "memeSteal",
+  favor: "memeFavor",
+  peek: "memePeek",
+  vote: "memeVote",
+  chaosCard: "memeChaos",
+  timeskip: "memeTimeskip",
+  mirror: "memeMirror",
+  pandemic: "memePandemic",
+  magnet: "memeMagnet",
+  jackpot: "memeJackpot",
+  roulette: "memeRoulette",
+  nuke: "memeNuke",
+  mime: "memeMime"
+};
+
+function soundForCardFace(face: CardFace): SoundName {
+  const memeSound = MEME_TO_SOUND[String(face.value)];
+  if (memeSound) return memeSound;
+  switch (face.value) {
+    case "skip": return "skip";
+    case "reverse": return "reverse";
+    case "draw1":
+    case "draw2":
+    case "draw5": return "penalty";
+    case "flip": return face.side === "dark" ? "flipDark" : "flipLight";
+    case "wild":
+    case "wild2":
+    case "wild3":
+    case "wild4":
+    case "wildColor": return "wild";
+    default: return "uiClick";
+  }
+}
+
+const CARD_TOOLTIP_KEYS: Partial<Record<CardValue, string>> = {
+  skip: "tooltip.skip",
+  reverse: "tooltip.reverse",
+  draw1: "tooltip.draw1",
+  draw2: "tooltip.draw2",
+  draw5: "tooltip.draw5",
+  flip: "tooltip.flip",
+  wild: "tooltip.wild",
+  wild2: "tooltip.wild2",
+  wild3: "tooltip.wild3",
+  wild4: "tooltip.wild4",
+  wildColor: "tooltip.wildColor",
+  flashbang: "tooltip.flashbang",
+  throwup: "tooltip.throwup",
+  steal: "tooltip.steal",
+  favor: "tooltip.favor",
+  peek: "tooltip.peek",
+  vote: "tooltip.vote",
+  chaosCard: "tooltip.chaosCard",
+  timeskip: "tooltip.timeskip",
+  mirror: "tooltip.mirror",
+  pandemic: "tooltip.pandemic",
+  magnet: "tooltip.magnet",
+  jackpot: "tooltip.jackpot",
+  roulette: "tooltip.roulette",
+  nuke: "tooltip.nuke",
+  mime: "tooltip.mime"
+};
+
+const CARD_TOAST_LABELS: Partial<Record<CardValue, string>> = {
+  skip: "SKIP",
+  reverse: "REVERSE",
+  draw1: "+1",
+  draw2: "+2",
+  draw5: "+5",
+  flip: "FLIP",
+  wild: "WILD",
+  wild2: "+2",
+  wild3: "+3",
+  wild4: "+4",
+  wildColor: "COLOR",
+  flashbang: "FLASH",
+  throwup: "THROW",
+  steal: "STEAL",
+  favor: "FAVOR",
+  peek: "PEEK",
+  vote: "VOTE",
+  chaosCard: "CHAOS",
+  timeskip: "SKIP↑",
+  mirror: "MIRROR",
+  pandemic: "COVID",
+  magnet: "MAGNET",
+  jackpot: "JACKPOT",
+  roulette: "ROULETTE",
+  nuke: "NUKE",
+  mime: "MIME"
+};
 
 function generateStandard(): CardGroup[] {
   const groups: CardGroup[] = [];
@@ -74,8 +171,35 @@ function generateFlip(): CardGroup[] {
   return groups;
 }
 
+const CHAOS_ACTIONS = ["skip", "reverse", "draw1", "throwup"] as CardValue[];
+const CHAOS_SPECIALS = [...ACTIVE_CHAOS_SPECIAL_VALUES] as CardValue[];
+
+function generateChaos(): CardGroup[] {
+  const groups: CardGroup[] = [];
+  for (const color of LIGHT_COLORS) {
+    const cards: CardFace[] = [
+      ...STANDARD_NUMBERS.map((value) => ({ color, value })),
+      ...CHAOS_ACTIONS.map((value) => ({ color, value }))
+    ];
+    groups.push({ label: `color-${color}`, cards });
+  }
+  groups.push({
+    label: "wild",
+    cards: [
+      { color: null, value: "wild" },
+      { color: null, value: "wild2" }
+    ]
+  });
+  groups.push({
+    label: "special",
+    cards: CHAOS_SPECIALS.map((value) => ({ color: null, value }))
+  });
+  return groups;
+}
+
 function generateCards(modeId: string): CardGroup[] {
   if (modeId === "flip") return generateFlip();
+  if (modeId === "chaos") return generateChaos();
   return generateStandard();
 }
 
@@ -93,11 +217,15 @@ function groupLabel(label: string, t: (key: string) => string): string {
   if (label.startsWith("color-")) {
     return t(`color.${label.replace("color-", "")}`);
   }
+  if (label === "special") return t("special");
   return t(label);
 }
 
 export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
   const t = useTranslations("cardsModal");
+  const [previewedKey, setPreviewedKey] = useState<string | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [hoveredCard, setHoveredCard] = useState<{ rect: DOMRect; text: string } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -110,9 +238,17 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  const handleCardClick = useCallback((face: CardFace, key: string) => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setPreviewedKey(key);
+    playSound(soundForCardFace(face));
+    previewTimer.current = setTimeout(() => setPreviewedKey(null), 600);
+  }, []);
+
   const groups = generateCards(modeId);
 
   return (
+    <>
     <AnimatePresence>
       {open ? (
         <motion.div
@@ -150,14 +286,34 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
                   <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-[var(--muted)]">
                     {groupLabel(group.label, t)}
                   </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {group.cards.map((face, index) => (
-                      <CardView
-                        key={`${group.label}-${face.color ?? "wild"}-${String(face.value)}-${index}`}
-                        card={face}
-                        small
-                      />
-                    ))}
+                  <div className="flex flex-wrap gap-2 pb-16 px-2">
+                    {group.cards.map((face, index) => {
+                      const key = `${group.label}-${face.color ?? "wild"}-${String(face.value)}-${index}`;
+                      const isPreview = previewedKey === key;
+                      const tooltipKey = CARD_TOOLTIP_KEYS[face.value];
+                      return (
+                        <div
+                          key={key}
+                          className="card-preview-wrapper"
+                          onMouseEnter={(e) => {
+                            if (!tooltipKey) return;
+                            setHoveredCard({ rect: e.currentTarget.getBoundingClientRect(), text: t(tooltipKey) });
+                          }}
+                          onMouseLeave={() => setHoveredCard(null)}
+                        >
+                          <CardView
+                            card={face}
+                            small
+                            onClick={() => handleCardClick(face, key)}
+                          />
+                          {isPreview ? (
+                            <span className="card-preview-toast">
+                              {CARD_TOAST_LABELS[face.value] ?? String(face.value)}
+                            </span>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 </section>
               ))}
@@ -166,5 +322,20 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
         </motion.div>
       ) : null}
     </AnimatePresence>
-  );
+    {hoveredCard ? createPortal(
+      <span
+        className="card-tooltip"
+        style={{
+          position: "fixed",
+          top: hoveredCard.rect.bottom + 6,
+          left: hoveredCard.rect.left + hoveredCard.rect.width / 2,
+          transform: "translateX(-50%)",
+          zIndex: 100
+        }}
+      >
+        {hoveredCard.text}
+      </span>,
+      document.body
+    ) : null}
+  </>);
 }

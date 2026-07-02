@@ -42,16 +42,53 @@ export const CARD_VALUES = [
   9,
   "skip",
   "reverse",
+  "draw1",
   "draw2",
   "draw5",
   "flip",
   "wild",
+  "wild2",
   "wild3",
   "wild4",
-  "wildColor"
+  "wildColor",
+  "flashbang",
+  "throwup",
+  "steal",
+  "favor",
+  "peek",
+  "vote",
+  "chaosCard",
+  "timeskip",
+  "mirror",
+  "pandemic",
+  "magnet",
+  "jackpot",
+  "roulette",
+  "nuke",
+  "mime"
 ] as const;
 
 export type CardValue = (typeof CARD_VALUES)[number];
+export const ACTIVE_CHAOS_SPECIAL_VALUES = [
+  "flashbang",
+  "steal",
+  "favor",
+  "peek",
+  "timeskip",
+  "nuke"
+] as const satisfies readonly CardValue[];
+
+export type ActiveChaosSpecialValue = (typeof ACTIVE_CHAOS_SPECIAL_VALUES)[number];
+export type ChaosEffectKind = ActiveChaosSpecialValue | "throwup";
+export type PendingChaosPhase =
+  | "opening"
+  | "chooseTarget"
+  | "chooseCard"
+  | "reveal"
+  | "sequence"
+  | "autoplay"
+  | "countdown"
+  | "detonating";
 export type GamePhase = "lobby" | "dealing" | "playing" | "roundEnd" | "gameEnd";
 export type Direction = 1 | -1;
 export type ScoreTarget = 0 | 500 | "lastStand";
@@ -84,8 +121,13 @@ export interface OpponentCardFace extends VisibleCardFace {
   trackingId: string;
 }
 
+export interface ChaosSelectableCard extends VisibleCardFace {
+  id: string;
+  trackingId: string;
+}
+
 export interface RoomSettings {
-  modeId: "standard" | "flip";
+  modeId: "standard" | "flip" | "chaos";
   maxPlayers: number;
   turnTimeoutSec: number;
   scoreTarget: ScoreTarget;
@@ -173,7 +215,7 @@ export interface OneWindow {
 }
 
 export interface PendingStack {
-  kind: "draw2" | "draw5" | "wild3" | "wild4" | "wildColor";
+  kind: "draw1" | "draw2" | "draw5" | "wild2" | "wild3" | "wild4" | "wildColor";
   targetPlayerId: string;
   totalDraw: number;
   targetColor?: Color;
@@ -192,6 +234,26 @@ export interface PendingBatchPlay {
   startsAt: number;
   cardIntervalMs: number;
   resolvesAt: number;
+}
+
+export interface PendingChaosState {
+  id: number;
+  kind: ChaosEffectKind;
+  phase: PendingChaosPhase;
+  actorId: string;
+  targetId?: string;
+  chooserId?: string;
+  eligibleTargetIds?: string[];
+  selectableCards?: ChaosSelectableCard[];
+  revealedHands?: Record<string, ChaosSelectableCard[]>;
+  affectedCards?: Card[];
+  collectedCards?: Card[];
+  autoTargetIds?: string[];
+  countdownEndsAt?: number;
+  detonationEndsAt?: number;
+  punishedPlayerId?: string;
+  startsAt: number;
+  resolvesAt?: number;
 }
 
 export interface PendingFlip {
@@ -309,6 +371,7 @@ export type PresentationEventKind =
   | "deal"
   | "shuffle"
   | "flip"
+  | "chaos"
   | "pause"
   | "resume"
   | "roundEnd";
@@ -320,6 +383,8 @@ export interface PresentationEvent {
   actorId?: string;
   targetIds?: string[];
   cardValue?: CardValue;
+  chaosKind?: ChaosEffectKind;
+  phase?: PendingChaosPhase;
   color?: Color;
   amount?: number;
   level?: number;
@@ -362,6 +427,7 @@ export interface GameSnapshot {
   pendingChallenge?: PendingChallenge;
   pendingStack?: PendingStack;
   pendingBatchPlay?: PendingBatchPlay;
+  pendingChaos?: PendingChaosState;
   pendingDraw?: PendingDrawState;
   flipSide?: FlipSide;
   pendingFlip?: PendingFlip;
@@ -394,7 +460,7 @@ export interface TurnContext {
 }
 
 export interface GameMode {
-  id: "standard" | "flip";
+  id: "standard" | "flip" | "chaos";
   initialHandSize: number;
   buildDeck(playerCount: number, deckBoxes?: number): Card[];
   isPlayable(card: Card, ctx: TurnContext): boolean;
@@ -421,7 +487,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
 };
 
 export const roomSettingsSchema = z.object({
-  modeId: z.enum(["standard", "flip"]).default("standard"),
+  modeId: z.enum(["standard", "flip", "chaos"]).default("standard"),
   maxPlayers: z.number().int().min(2).max(10).default(10),
   turnTimeoutSec: z.number().int().min(15).max(60).default(30),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).default(0),
@@ -439,7 +505,7 @@ export const roomSettingsSchema = z.object({
 });
 
 export const roomSettingsUpdateSchema = z.object({
-  modeId: z.enum(["standard", "flip"]).optional(),
+  modeId: z.enum(["standard", "flip", "chaos"]).optional(),
   maxPlayers: z.number().int().min(2).max(10).optional(),
   turnTimeoutSec: z.number().int().min(15).max(60).optional(),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).optional(),
@@ -475,6 +541,14 @@ export const playBatchSchema = z.object({
     message: "Card ids must be unique."
   }),
   declaredColor: z.enum(COLORS).optional()
+});
+
+export const chooseChaosTargetSchema = z.object({
+  targetId: z.string().min(1)
+});
+
+export const chooseChaosCardSchema = z.object({
+  cardId: z.string().min(1)
 });
 
 export const dealCardSchema = z.object({

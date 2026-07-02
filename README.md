@@ -49,4 +49,4 @@ The same checks run in GitHub Actions for every pull request and push to `main`.
 
 Deploy this directory as the Vercel project root. Configure the backend HTTP and WebSocket URLs from `.env.example`. Rooms are intentionally private and require a six-character room code.
 
-Current limitations: rooms are stored in memory, and the 0-7, Explode 25, and Flip modes remain unavailable placeholders.
+Current limitations: rooms are stored in memory, and the 0-7, Chaos, and Flip modes remain unavailable placeholders.

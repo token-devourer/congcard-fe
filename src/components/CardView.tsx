@@ -1,5 +1,5 @@
 import type { Card, CardValue, Color, FlipSide, VisibleCardFace } from "@congcard/shared";
-import { cardText } from "@/lib/rules";
+import { cardText, isMemeValue, isSpecialValue } from "@/lib/rules";
 
 interface CardViewProps {
   card?: Card | VisibleCardFace;
@@ -29,19 +29,21 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
     );
   }
 
+  const isWild = !card.color;
+  const isSpecial = isWild && isSpecialValue(card.value);
+  const isMeme = isMemeValue(card.value);
+
   const className = [
     "card-face",
     sizeClass,
     playable ? "playable" : "",
     dimmed ? "dimmed" : "",
     card.side ? `card-side-${card.side}` : "card-side-light",
-    card.color ? `card-${card.color}` : "card-wild",
-    !card.color && card.side === "dark" ? "card-wild-dark-ink" : ""
+    card.color ? (isMeme ? `card-${card.color} card-meme-color` : `card-${card.color}`) : isSpecial ? "card-special" : "card-wild",
+    !card.color && card.side === "dark" && !isSpecial ? "card-wild-dark-ink" : ""
   ]
     .filter(Boolean)
     .join(" ");
-
-  const isWild = !card.color;
 
   const content = (
     <>
@@ -50,10 +52,12 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
 
       <div className="absolute inset-0 z-[5] grid place-items-center">
         <div className={`cartouche ${compact ? "cartouche-sm" : ""}`}>
-          {isWild ? (
+          {isSpecial || (isMeme && card.color) ? (
+            <SpecialBadge value={card.value} small={compact} />
+          ) : isWild ? (
             <WildBadge small={compact} value={card.value} dark={card.side === "dark"} />
-          ) : card.value === "draw2" || card.value === "draw5" ? (
-            <DrawActionGlyph small={compact} amount={card.value === "draw2" ? "+2" : "+5"} />
+          ) : card.value === "draw1" || card.value === "draw2" || card.value === "draw5" ? (
+            <DrawActionGlyph small={compact} value={card.value} amount={drawAmount(card.value) ?? "+1"} />
           ) : isActionValue(card.value) ? (
             <ActionGlyph value={card.value} small={compact} />
           ) : (
@@ -95,7 +99,9 @@ function CornerIndex({ card, small, position }: { card: DisplayCard; small?: boo
   const amount = drawAmount(card.value);
   return (
     <div className={`card-corner absolute z-10 flex flex-col gap-0.5 ${place}`}>
-      {amount ? (
+      {isMemeValue(card.value) ? (
+        <span className="card-corner-icon text-white drop-shadow-[0_0_6px_rgba(200,0,255,0.4)_0_1px_2px_rgba(0,0,0,0.3)]">✦</span>
+      ) : amount ? (
         <DrawAmountLabel amount={amount} small={small} corner />
       ) : isActionValue(card.value) ? (
         <ActionGlyph value={card.value} small corner />
@@ -114,9 +120,11 @@ function isActionValue(value: CardValue): value is Extract<CardValue, string> {
   return typeof value === "string";
 }
 
-function drawAmount(value: CardValue): "+2" | "+3" | "+4" | "+5" | null {
+function drawAmount(value: CardValue): "+1" | "+2" | "+3" | "+4" | "+5" | null {
+  if (value === "draw1") return "+1";
   if (value === "draw2") return "+2";
   if (value === "draw5") return "+5";
+  if (value === "wild2") return "+2";
   if (value === "wild3") return "+3";
   if (value === "wild4") return "+4";
   return null;
@@ -135,7 +143,7 @@ function WildBadge({ small, value, dark = false }: { small?: boolean; value: Car
   );
 }
 
-function DrawAmountLabel({ amount, small, corner }: { amount: "+2" | "+3" | "+4" | "+5"; small?: boolean; corner?: boolean }) {
+function DrawAmountLabel({ amount, small, corner }: { amount: "+1" | "+2" | "+3" | "+4" | "+5"; small?: boolean; corner?: boolean }) {
   return (
     <span
       className={[
@@ -148,11 +156,11 @@ function DrawAmountLabel({ amount, small, corner }: { amount: "+2" | "+3" | "+4"
   );
 }
 
-function DrawActionGlyph({ small, amount }: { small?: boolean; amount: "+2" | "+5" }) {
+function DrawActionGlyph({ small, value, amount }: { small?: boolean; value: Extract<CardValue, string>; amount: "+1" | "+2" | "+3" | "+4" | "+5" }) {
   return (
     <div className="card-draw-glyph relative w-full text-center">
       <span className="absolute left-1/2 top-0 -translate-x-1/2">
-        <ActionGlyph value={amount === "+2" ? "draw2" : "draw5"} small={small} />
+        <ActionGlyph value={value === "draw5" ? "draw5" : "draw2"} small={small} />
       </span>
       <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
         <DrawAmountLabel amount={amount} small={small} />
@@ -181,6 +189,116 @@ function iconForValue(value: Extract<CardValue, string>): string {
     case "flip": return "icon-flip";
     default: return "icon-star";
   }
+}
+
+function SpecialBadge({ value, small }: { value: CardValue; small?: boolean }) {
+  const iconId = iconForSpecialValue(value);
+  const art = memeArtForValue(value);
+
+  if (!art) {
+    return (
+      <div className="grid place-items-center gap-1 text-center">
+        <svg className="card-special-icon" viewBox="0 0 64 64" aria-hidden="true">
+          <use href={`/sprites/card-icons.svg#${iconId}`} />
+        </svg>
+      </div>
+    );
+  }
+
+  const className = ["card-meme-badge", small ? "compact" : "", `with-${art.mode}`]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div className={className}>
+      <div className="card-meme-art">
+        <img
+          className="card-meme-image"
+          src={art.src}
+          alt=""
+          style={{ objectFit: art.fit, objectPosition: art.position }}
+        />
+      </div>
+    </div>
+  );
+}
+
+type MemeArt = {
+  fit: "contain" | "cover";
+  mode: "cutout" | "frame";
+  src: string;
+  position: string;
+};
+
+const MEME_ART: Record<string, MemeArt> = {
+  throwup: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/gag-cat.png",
+    position: "50% 50%"
+  },
+  steal: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/muhehehe-cat.png",
+    position: "50% 50%"
+  },
+  flashbang: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/flashbang-cat.png",
+    position: "50% 50%"
+  },
+  favor: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/awowo-cat.png",
+    position: "50% 50%"
+  },
+  peek: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/acumalaka-frog.png",
+    position: "50% 50%"
+  },
+  timeskip: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/timeskip-cat.png",
+    position: "50% 50%"
+  },
+  nuke: {
+    fit: "contain",
+    mode: "cutout",
+    src: "/memes/nuke-cat.png",
+    position: "50% 50%"
+  }
+};
+
+const SPECIAL_ICONS: Record<string, string> = {
+  flashbang: "icon-meme-flashbang",
+  throwup: "icon-meme-throwup",
+  steal: "icon-meme-steal",
+  favor: "icon-meme-favor",
+  peek: "icon-meme-peek",
+  vote: "icon-meme-vote",
+  chaosCard: "icon-meme-chaos",
+  timeskip: "icon-meme-timeskip",
+  mirror: "icon-meme-mirror",
+  pandemic: "icon-meme-pandemic",
+  magnet: "icon-meme-magnet",
+  jackpot: "icon-meme-jackpot",
+  roulette: "icon-meme-roulette",
+  nuke: "icon-meme-nuke",
+  mime: "icon-meme-mime"
+};
+
+function iconForSpecialValue(value: CardValue): string {
+  return SPECIAL_ICONS[String(value)] ?? "icon-star";
+}
+
+function memeArtForValue(value: CardValue): MemeArt | null {
+  return MEME_ART[String(value)] ?? null;
 }
 
 function ColorSymbol({ color }: { color: Color | null }) {

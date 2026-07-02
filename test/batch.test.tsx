@@ -76,6 +76,28 @@ describe("Batch Cards", () => {
     expect(batchCardGroups(snapshot({ currentPlayerId: "other" }))).toEqual([]);
   });
 
+  it("does not offer throwup or chaos special batches", () => {
+    const groups = batchCardGroups(
+      snapshot({
+        settings: { ...snapshot().settings, modeId: "chaos" },
+        self: {
+          id: "me",
+          role: "player",
+          hand: [
+            card("throw-a", "red", "throwup"),
+            card("throw-b", "red", "throwup"),
+            card("flash-a", null, "flashbang"),
+            card("flash-b", null, "flashbang"),
+            card("red-5", "red", 5),
+            card("blue-5", "blue", 5)
+          ]
+        }
+      })
+    );
+
+    expect(groups.map((group) => group.value)).toEqual([5]);
+  });
+
   it("selects cards in order and submits the ordered batch", () => {
     const onPlayBatch = vi.fn();
     render(

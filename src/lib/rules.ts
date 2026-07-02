@@ -1,4 +1,5 @@
-import type { Card, GameSnapshot, PendingStack } from "@congcard/shared";
+import type { Card, CardValue, GameSnapshot, PendingStack } from "@congcard/shared";
+import { ACTIVE_CHAOS_SPECIAL_VALUES } from "@congcard/shared";
 
 /**
  * True while the local player is the one hunting for a Wild Draw Color. The
@@ -30,6 +31,9 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
 
   const handCard = snapshot.self.hand.find((item) => item.id === card.id);
   if (!handCard) {
+    return false;
+  }
+  if (snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown" && isNukeBlockedCard(handCard)) {
     return false;
   }
 
@@ -71,6 +75,10 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
   }
 
   if (handCard.color === null) {
+    return handCard.value === "wild" || handCard.value === "wild2" || isSpecialValue(handCard.value);
+  }
+
+  if (snapshot.discardTop.color === null && isSpecialValue(snapshot.discardTop.value)) {
     return true;
   }
 
@@ -82,8 +90,10 @@ function canStackCard(card: Card, kind: PendingStack["kind"]): boolean {
 }
 
 function stackDrawAmount(card: Card): number | null {
+  if (card.value === "draw1") return 1;
   if (card.value === "draw2") return 2;
   if (card.value === "draw5") return 5;
+  if (card.value === "wild2") return 2;
   if (card.value === "wild3") return 3;
   if (card.value === "wild4") return 4;
   if (card.value === "wildColor") return 1;
@@ -126,6 +136,9 @@ export function jumpInCardInHand(snapshot: GameSnapshot | null): Card | null {
   }
 
   return snapshot.self.hand.find((card) => {
+    if (snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown" && isNukeBlockedCard(card)) {
+      return false;
+    }
     if (!isJumpInMatch(card, snapshot.discardTop!)) {
       return false;
     }
@@ -134,8 +147,28 @@ export function jumpInCardInHand(snapshot: GameSnapshot | null): Card | null {
   }) ?? null;
 }
 
+const SPECIAL_VALUES = new Set<CardValue>(ACTIVE_CHAOS_SPECIAL_VALUES);
+const MEME_VALUES = new Set<CardValue>(["throwup", ...ACTIVE_CHAOS_SPECIAL_VALUES]);
+const ALL_CHAOS_SPECIAL_VALUES = new Set<CardValue>([
+  "flashbang", "steal", "favor", "peek",
+  "vote", "chaosCard", "timeskip", "mirror",
+  "pandemic", "magnet", "jackpot", "roulette", "nuke", "mime"
+]);
+
+export function isSpecialValue(value: CardValue): boolean {
+  return typeof value === "string" && SPECIAL_VALUES.has(value);
+}
+
+export function isMemeValue(value: CardValue): boolean {
+  return typeof value === "string" && MEME_VALUES.has(value);
+}
+
+export function isNukeBlockedCard(card: Card): boolean {
+  return card.color === null || card.value === "throwup" || (typeof card.value === "string" && ALL_CHAOS_SPECIAL_VALUES.has(card.value));
+}
+
 export function needsColor(card: Card): boolean {
-  return card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
+  return card.value === "wild" || card.value === "wild2" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
 }
 
 export function cardText(card: Pick<Card, "value">): string {
@@ -146,13 +179,30 @@ export function cardText(card: Pick<Card, "value">): string {
   const labels: Record<string, string> = {
     skip: "Skip",
     reverse: "Reverse",
+    draw1: "+1",
     draw2: "+2",
     draw5: "+5",
     flip: "Flip",
     wild: "Wild",
+    wild2: "+2",
     wild3: "+3",
     wild4: "+4",
-    wildColor: "Wild Color"
+    wildColor: "Wild Color",
+    flashbang: "FLASH",
+    throwup: "THROW",
+    steal: "STEAL",
+    favor: "FAVOR",
+    peek: "PEEK",
+    vote: "VOTE",
+    chaosCard: "CHAOS",
+    timeskip: "SKIP↑",
+    mirror: "MIRROR",
+    pandemic: "COVID",
+    magnet: "MAGNET",
+    jackpot: "JACKPOT",
+    roulette: "ROULETTE",
+    nuke: "NUKE",
+    mime: "MIME"
   };
 
   return labels[String(card.value)] ?? String(card.value);

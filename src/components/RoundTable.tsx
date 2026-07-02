@@ -353,8 +353,10 @@ function OpponentFaceTray({
 function StackPenaltyChip({ stack }: { stack: PendingStack }) {
   const t = useTranslations();
   const labels: Record<PendingStack["kind"], string> = {
+    draw1: "+1",
     draw2: "+2",
     draw5: "+5",
+    wild2: "+2",
     wild3: "+3",
     wild4: "+4",
     wildColor: stack.targetColor ? t(`colors.${stack.targetColor}`) : "Wild"
