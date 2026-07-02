@@ -511,7 +511,8 @@ export function Lobby({
   const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
   const isHost = Boolean(me?.isHost);
-  const deckBoxMinimum = Math.max(1, Math.ceil(snapshot.players.length / 4));
+  const visibleModeId = (localModeId || snapshot.settings.modeId) as RoomSettings["modeId"];
+  const deckBoxMinimum = Math.max(visibleModeId === "chaos" ? 2 : 1, Math.ceil(snapshot.players.length / 4));
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const { tier, setTier, autoDetected } = useGraphicsPreset();
 
@@ -607,9 +608,13 @@ export function Lobby({
         <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.gameMode")}</span>
           <select className="field" disabled={!isHost} value={localModeId || snapshot.settings.modeId} onChange={(event) => {
-            const val = event.target.value;
+            const val = event.target.value as RoomSettings["modeId"];
             setLocalModeId(val === snapshot.settings.modeId ? null : val);
-            updateSetting({ modeId: val as RoomSettings["modeId"] });
+            updateSetting({
+              modeId: val,
+              callEnabled: val !== "chaos" && snapshot.settings.scoreTarget !== "lastStand",
+              deckBoxes: Math.max(snapshot.settings.deckBoxes, val === "chaos" ? 2 : deckBoxMinimum)
+            });
           }}>
             <option value="standard">{t("lobby.modeStandard")}</option>
             <option value="zero-seven" disabled>{t("lobby.modeZeroSeven")}</option>
