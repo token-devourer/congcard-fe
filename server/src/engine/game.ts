@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type {
   Card,
+  CardValue,
   Color,
   DrawMode,
   DrawReason,
@@ -30,6 +31,7 @@ import type {
 import { LIGHT_COLORS, mergeRoomSettings, type FlipSide } from "@congcard/shared";
 import { standardMode, shuffleCards, buildSingleDeck } from "./modes/standard.js";
 import { applyFlipSide, buildFlipDeckBox, flipColors, flipMode, oppositeCardFace, publicCard, visibleCardFace } from "./modes/flip.js";
+import { buildChaosDeckBox, chaosMode, isChaosSpecialValue } from "./modes/chaos.js";
 
 // Network-delay buffer so the One/Catch window opens AFTER every player has had
 // a fair chance to receive the snapshot. The delay is calculated dynamically from
@@ -188,7 +190,9 @@ export function createGame(code: string, settings?: RoomSettingsInput): GameStat
 }
 
 export function getMode(settings: RoomSettings): GameMode {
-  return settings.modeId === "flip" ? flipMode : standardMode;
+  if (settings.modeId === "flip") return flipMode;
+  if (settings.modeId === "chaos") return chaosMode;
+  return standardMode;
 }
 
 export function addPlayer(
@@ -861,8 +865,11 @@ export function playBatch(
   if (orderedCards.some((card) => card.value !== value)) {
     throw new GameError("invalid_batch", "Every card in a batch must have the same value.");
   }
+  if (!isBatchableValue(value)) {
+    throw new GameError("invalid_batch", "Chaos special cards cannot be batched.");
+  }
 
-  const needsColor = value === "wild" || value === "wild3" || value === "wild4" || value === "wildColor";
+  const needsColor = value === "wild" || value === "wild2" || value === "wild3" || value === "wild4" || value === "wildColor";
   if (needsColor && !declaredColor) {
     throw new GameError("color_required", "Choose a color for this Wild batch.");
   }
@@ -1579,9 +1586,9 @@ function applyOpeningCard(state: GameStateInternal, card: Card): void {
     if (activePlayers(state).length === 2) {
       state.currentSeat = seatAfter(state, state.currentSeat);
     }
-  } else if (card.value === "draw2" || card.value === "draw5") {
+  } else if (card.value === "draw1" || card.value === "draw2" || card.value === "draw5") {
     const target = findPlayerBySeat(state, state.currentSeat);
-    const amount = card.value === "draw2" ? 2 : 5;
+    const amount = drawPenaltyAmount(card.value);
     state.currentSeat = seatAfter(state, target.seat);
     queueFixedDraw(state, target, amount, "opening", { type: "setDeadline" });
   } else if (card.value === "flip") {
@@ -1631,8 +1638,8 @@ function applyBatchCards(
     return;
   }
 
-  if (value === "draw2" || value === "draw5") {
-    const amount = value === "draw2" ? 2 : 5;
+  if (value === "draw1" || value === "draw2" || value === "draw5") {
+    const amount = drawPenaltyAmount(value);
     const totalDraw = count * amount;
     if (existingStack) {
       applyStackedBatch(state, player, totalDraw);
@@ -1657,15 +1664,15 @@ function applyBatchCards(
     return;
   }
 
-  if (value === "wild4" || value === "wild3") {
-    const amount = value === "wild4" ? 4 : 3;
+  if (value === "wild2" || value === "wild4" || value === "wild3") {
+    const amount = wildPenaltyAmount(value);
     const totalDraw = count * amount;
     if (existingStack) {
       applyStackedBatch(state, player, totalDraw);
       return;
     }
 
-    const guilty = handBefore.some((item) => !cards.some((batchCard) => batchCard.id === item.id) && item.color === activeColorBefore);
+    const guilty = value !== "wild2" && handBefore.some((item) => !cards.some((batchCard) => batchCard.id === item.id) && item.color === activeColorBefore);
     const certainlyLegalFinalPlay = player.hand.length === 0 && !guilty;
     if (state.settings.stackingEnabled) {
       startStack(
@@ -1673,7 +1680,7 @@ function applyBatchCards(
         player,
         value,
         totalDraw,
-        state.settings.challengeEnabled && !certainlyLegalFinalPlay
+        value !== "wild2" && state.settings.challengeEnabled && !certainlyLegalFinalPlay
           ? { declaredColor: state.activeColor ?? "red", guilty }
           : undefined
       );
@@ -1681,7 +1688,7 @@ function applyBatchCards(
     }
 
     const target = findPlayerBySeat(state, seatAfter(state, player.seat));
-    if (!state.settings.challengeEnabled || certainlyLegalFinalPlay) {
+    if (value === "wild2" || !state.settings.challengeEnabled || certainlyLegalFinalPlay) {
       state.currentSeat = seatAfter(state, target.seat);
       pushLog(state, "challenge", `${target.nickname} took ${totalDraw} cards.`);
       queueFixedDraw(state, target, totalDraw, "penalty", { type: "setDeadline", offenderId: player.id });
@@ -1812,8 +1819,8 @@ function applyPlayedCard(
     return;
   }
 
-  if (card.value === "draw2" || card.value === "draw5") {
-    const amount = card.value === "draw2" ? 2 : 5;
+  if (card.value === "draw1" || card.value === "draw2" || card.value === "draw5") {
+    const amount = drawPenaltyAmount(card.value);
     if (state.settings.stackingEnabled) {
       startStack(state, player, card.value, amount);
       return;
@@ -1832,10 +1839,10 @@ function applyPlayedCard(
     return;
   }
 
-  if (card.value === "wild4" || card.value === "wild3") {
-    const amount = card.value === "wild4" ? 4 : 3;
+  if (card.value === "wild2" || card.value === "wild4" || card.value === "wild3") {
+    const amount = wildPenaltyAmount(card.value);
     const previousColor = options.prevColor;
-    const guilty = previousColor ? handBefore.some((item) => item.color === previousColor) : false;
+    const guilty = card.value !== "wild2" && previousColor ? handBefore.some((item) => item.color === previousColor) : false;
     const certainlyLegalFinalPlay = player.hand.length === 0 && !guilty;
     if (state.settings.stackingEnabled) {
       startStack(
@@ -1843,7 +1850,7 @@ function applyPlayedCard(
         player,
         card.value,
         amount,
-        state.settings.challengeEnabled && !options.resetStackFromJumpIn && !certainlyLegalFinalPlay
+        card.value !== "wild2" && state.settings.challengeEnabled && !options.resetStackFromJumpIn && !certainlyLegalFinalPlay
           ? {
               declaredColor: state.activeColor ?? "red",
               guilty
@@ -1854,7 +1861,7 @@ function applyPlayedCard(
     }
 
     const target = findPlayerBySeat(state, seatAfter(state, player.seat));
-    if (!state.settings.challengeEnabled || certainlyLegalFinalPlay) {
+    if (card.value === "wild2" || !state.settings.challengeEnabled || certainlyLegalFinalPlay) {
       state.currentSeat = seatAfter(state, target.seat);
       pushLog(state, "challenge", `${target.nickname} took ${amount} cards.`);
       queueFixedDraw(state, target, amount, "penalty", { type: "setDeadline", offenderId: player.id });
@@ -1902,7 +1909,213 @@ function applyPlayedCard(
     });
   }
 
+  if (state.settings.modeId === "chaos" && isChaosCardValue(card.value)) {
+    applyChaosCard(state, player, card);
+    return;
+  }
+
   advanceTurn(state);
+}
+
+function isChaosCardValue(value: CardValue): boolean {
+  return value === "throwup" || isChaosSpecialValue(value);
+}
+
+function applyChaosCard(state: GameStateInternal, player: PlayerState, card: Card): void {
+  switch (card.value) {
+    case "throwup":
+      discardMatchingColorFromHand(state, player, card.color ?? state.activeColor);
+      break;
+    case "flashbang":
+      shuffleActiveHands(state);
+      break;
+    case "steal":
+    case "favor":
+      moveRandomCardFromNextOpponent(state, player);
+      break;
+    case "vote":
+      drawPenaltyForNextOpponent(state, player, 2);
+      return;
+    case "chaosCard":
+      discardRandomThenDrawForEveryone(state);
+      break;
+    case "timeskip":
+      state.currentSeat = player.seat;
+      setTurnDeadline(state);
+      pushLog(state, "skip", `${player.nickname} skipped everyone else.`, false);
+      return;
+    case "mirror":
+      copyPreviousDiscardToHand(state, player);
+      break;
+    case "pandemic":
+      passRandomCards(state);
+      break;
+    case "magnet":
+      pullWildCardsToPlayer(state, player);
+      break;
+    case "jackpot":
+      resolveJackpot(state, player);
+      break;
+    case "roulette":
+      resolveRoulette(state, player);
+      break;
+    case "nuke":
+      discardHalfOfEveryHand(state);
+      break;
+    case "mime":
+      takePreviousDiscard(state, player);
+      break;
+    case "peek":
+    default:
+      break;
+  }
+
+  if (finishChaosCard(state, player)) {
+    return;
+  }
+  advanceTurn(state);
+}
+
+function finishChaosCard(state: GameStateInternal, player: PlayerState): boolean {
+  syncAllPlayerHands(state);
+  if (checkChaosEliminations(state)) {
+    return true;
+  }
+  if (player.hand.length === 0 && !player.finishedRank) {
+    finishPlayerOrCompleteRound(state, player.id);
+    return true;
+  }
+  updateOneWindowAfterPlay(state, player);
+  return state.phase !== "playing";
+}
+
+function discardMatchingColorFromHand(state: GameStateInternal, player: PlayerState, color?: Color): void {
+  if (!color) return;
+  const discarded = player.hand.filter((item) => item.color === color);
+  player.hand = player.hand.filter((item) => item.color !== color);
+  state.discardPile.push(...discarded);
+  if (discarded.length > 0) {
+    pushLog(state, "play", `${player.nickname} threw up ${discarded.length} ${color} card${discarded.length === 1 ? "" : "s"}.`, false);
+  }
+}
+
+function shuffleActiveHands(state: GameStateInternal): void {
+  const players = activePlayers(state);
+  if (players.length < 2) return;
+  const hands = shuffleCards(players.map((player) => [...player.hand]));
+  players.forEach((player, index) => {
+    player.hand = hands[index] ?? [];
+  });
+  pushLog(state, "play", "Chaos shuffled every hand.", false);
+}
+
+function moveRandomCardFromNextOpponent(state: GameStateInternal, player: PlayerState): void {
+  const target = nextOpponentWithCards(state, player);
+  if (!target) return;
+  const card = takeRandomHandCard(target);
+  if (!card) return;
+  player.hand.push(card);
+  pushLog(state, "play", `${player.nickname} took a card from ${target.nickname}.`, false);
+}
+
+function drawPenaltyForNextOpponent(state: GameStateInternal, player: PlayerState, amount: number): void {
+  const target = findPlayerBySeat(state, seatAfter(state, player.seat));
+  state.currentSeat = seatAfter(state, target.seat);
+  pushLog(state, "draw", `${target.nickname} drew ${amount} chaos cards.`);
+  queueFixedDraw(state, target, amount, "penalty", { type: "setDeadline", offenderId: player.id });
+}
+
+function discardRandomThenDrawForEveryone(state: GameStateInternal): void {
+  for (const player of activePlayers(state)) {
+    const discarded = takeRandomHandCard(player);
+    if (discarded) state.discardPile.push(discarded);
+    const drawn = takeCard(state);
+    if (drawn) player.hand.push(drawn);
+  }
+  pushLog(state, "play", "Chaos made everyone discard and draw.", false);
+}
+
+function copyPreviousDiscardToHand(state: GameStateInternal, player: PlayerState): void {
+  const source = state.discardPile.at(-2);
+  if (!source) return;
+  player.hand.push({
+    ...source,
+    id: `mirror-${randomBytes(12).toString("base64url")}`
+  });
+}
+
+function passRandomCards(state: GameStateInternal): void {
+  const players = activePlayers(state);
+  const passing = players
+    .map((player) => ({ from: player, card: takeRandomHandCard(player) }))
+    .filter((item): item is { from: PlayerState; card: Card } => Boolean(item.card));
+  for (const item of passing) {
+    findPlayerBySeat(state, seatAfter(state, item.from.seat)).hand.push(item.card);
+  }
+  if (passing.length > 0) {
+    pushLog(state, "play", "Pandemic passed random cards around the table.", false);
+  }
+}
+
+function pullWildCardsToPlayer(state: GameStateInternal, player: PlayerState): void {
+  for (const target of activePlayers(state)) {
+    if (target.id === player.id) continue;
+    const wilds = target.hand.filter((card) => card.color === null);
+    target.hand = target.hand.filter((card) => card.color !== null);
+    player.hand.push(...wilds);
+  }
+}
+
+function resolveJackpot(state: GameStateInternal, player: PlayerState): void {
+  const drawn = [takeCard(state), takeCard(state), takeCard(state)].filter((card): card is Card => Boolean(card));
+  const values = new Set(drawn.map((card) => card.value));
+  if (values.size === drawn.length) {
+    player.hand.push(...drawn);
+  } else {
+    state.discardPile.push(...drawn);
+  }
+}
+
+function resolveRoulette(state: GameStateInternal, player: PlayerState): void {
+  const target = nextOpponentWithCards(state, player);
+  const unlucky = Math.random() < 0.5 || !target;
+  discardRandomCards(state, unlucky ? player : target, unlucky ? 2 : 3);
+}
+
+function discardHalfOfEveryHand(state: GameStateInternal): void {
+  for (const player of activePlayers(state)) {
+    discardRandomCards(state, player, Math.floor(player.hand.length / 2));
+  }
+}
+
+function takePreviousDiscard(state: GameStateInternal, player: PlayerState): void {
+  if (state.discardPile.length <= 1) return;
+  const mime = state.discardPile.splice(state.discardPile.length - 2, 1)[0];
+  if (mime) player.hand.push(mime);
+}
+
+function nextOpponentWithCards(state: GameStateInternal, player: PlayerState): PlayerState | undefined {
+  let seat = player.seat;
+  for (let index = 0; index < activePlayers(state).length - 1; index += 1) {
+    seat = seatAfter(state, seat);
+    const target = findPlayerBySeat(state, seat);
+    if (target.id !== player.id && target.hand.length > 0) return target;
+  }
+  return undefined;
+}
+
+function takeRandomHandCard(player: PlayerState): Card | undefined {
+  if (player.hand.length === 0) return undefined;
+  const index = Math.floor(Math.random() * player.hand.length);
+  return player.hand.splice(index, 1)[0];
+}
+
+function discardRandomCards(state: GameStateInternal, player: PlayerState, count: number): void {
+  for (let index = 0; index < count; index += 1) {
+    const card = takeRandomHandCard(player);
+    if (!card) return;
+    state.discardPile.push(card);
+  }
 }
 
 function startStack(
@@ -2040,12 +2253,30 @@ function settlePendingStackIfUnstackable(state: GameStateInternal): boolean {
 }
 
 function stackDrawAmount(card: Card): number | null {
+  if (card.value === "draw1") return 1;
   if (card.value === "draw2") return 2;
   if (card.value === "draw5") return 5;
+  if (card.value === "wild2") return 2;
   if (card.value === "wild3") return 3;
   if (card.value === "wild4") return 4;
   if (card.value === "wildColor") return 1;
   return null;
+}
+
+function drawPenaltyAmount(value: CardValue): number {
+  if (value === "draw1") return 1;
+  if (value === "draw5") return 5;
+  return 2;
+}
+
+function wildPenaltyAmount(value: CardValue): number {
+  if (value === "wild2") return 2;
+  if (value === "wild3") return 3;
+  return 4;
+}
+
+function isBatchableValue(value: CardValue): boolean {
+  return value !== "throwup" && !isChaosSpecialValue(value);
 }
 
 function canJumpIn(state: GameStateInternal, player: PlayerState, cardId: string): boolean {
@@ -2182,6 +2413,9 @@ function maybeCompleteLastStandRound(state: GameStateInternal): boolean {
   delete state.turnDeadline;
   delete state.pendingChallenge;
   delete state.pendingStack;
+  delete state.pendingBatchPlay;
+  delete state.pendingDraw;
+  delete state.pendingFlip;
   delete state.oneWindow;
   delete state.pendingOneCall;
   delete state.pauseReason;
@@ -2196,7 +2430,7 @@ function scoreHandBreakdown(hand: Card[]): { numberPoints: number; actionPoints:
   for (const card of hand) {
     if (typeof card.value === "number") {
       numberPoints += card.value;
-    } else if (card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor") {
+    } else if (card.value === "wild" || card.value === "wild2" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor") {
       wildPoints += 50;
     } else {
       actionPoints += 20;
@@ -2306,6 +2540,69 @@ function syncPlayerHandChange(state: GameStateInternal, player: PlayerState): vo
     player.calledOne = false;
     closeOneWindowForPlayer(state, player.id);
   }
+
+  checkChaosEliminations(state);
+}
+
+function syncAllPlayerHands(state: GameStateInternal): void {
+  for (const player of state.players) {
+    player.cardCount = player.hand.length;
+    if (player.hand.length !== 1) {
+      player.calledOne = false;
+      closeOneWindowForPlayer(state, player.id);
+    }
+  }
+}
+
+function checkChaosEliminations(state: GameStateInternal): boolean {
+  if (state.settings.modeId !== "chaos" || state.phase !== "playing") {
+    return false;
+  }
+
+  let changed = false;
+  for (const player of state.players) {
+    if (player.finishedRank || player.hand.length <= 25) {
+      continue;
+    }
+
+    state.discardPile.push(...player.hand);
+    player.hand = [];
+    player.cardCount = 0;
+    player.calledOne = false;
+    player.finishedRank = (state.lastStandPlacements?.length ?? 0) + 1;
+    closeOneWindowForPlayer(state, player.id);
+    state.lastStandPlacements = [
+      ...(state.lastStandPlacements ?? []),
+      { playerId: player.id, rank: player.finishedRank, finishedAt: Date.now(), isLoser: true }
+    ];
+    pushLog(state, "round", `${player.nickname} busted out with more than 25 cards.`);
+    changed = true;
+  }
+
+  if (!changed) {
+    return false;
+  }
+
+  const remaining = state.players.filter((player) => !player.finishedRank);
+  if (remaining.length === 1) {
+    completeRound(state, remaining[0]!.id);
+    return true;
+  }
+
+  if (remaining.length === 0) {
+    const winner = state.players
+      .filter((player) => player.finishedRank)
+      .sort((left, right) => (right.finishedRank ?? 0) - (left.finishedRank ?? 0))[0];
+    if (winner) {
+      completeRound(state, winner.id);
+      return true;
+    }
+  }
+
+  if (state.currentSeat !== undefined && findPlayerBySeat(state, state.currentSeat).finishedRank) {
+    state.currentSeat = seatAfter(state, state.currentSeat);
+  }
+  return false;
 }
 
 function drawSyncLead(state: GameStateInternal): number {
@@ -2598,7 +2895,12 @@ function addFreshDeck(state: GameStateInternal): void {
   ];
   const nextDeckIndex = inPlay.reduce((max, item) => Math.max(max, item.deckIndex), -1) + 1;
 
-  const fresh = state.settings.modeId === "flip" ? buildFlipDeckBox(nextDeckIndex) : buildSingleDeck(nextDeckIndex);
+  const fresh =
+    state.settings.modeId === "flip"
+      ? buildFlipDeckBox(nextDeckIndex)
+      : state.settings.modeId === "chaos"
+        ? buildChaosDeckBox(nextDeckIndex)
+        : buildSingleDeck(nextDeckIndex);
   if (state.settings.modeId === "flip") {
     for (const card of fresh) applyFlipSide(card, state.flipSide ?? "light");
   }
@@ -2740,7 +3042,7 @@ function scheduleDealSequence(state: GameStateInternal, targetPlayerIds: string[
 function scheduleOpeningCard(state: GameStateInternal): void {
   const deal = ensureDealing(state);
   let opener = drawOne(state);
-  while (opener.value === "wild4" || opener.value === "wild3" || opener.value === "wildColor") {
+  while (isUnsafeOpeningCard(opener)) {
     state.drawPile.unshift(opener);
     state.drawPile = shuffleCards(state.drawPile);
     opener = drawOne(state);
@@ -2763,6 +3065,10 @@ function scheduleOpeningCard(state: GameStateInternal): void {
     startsAt,
     resolvesAt: deal.event.resolvesAt
   });
+}
+
+function isUnsafeOpeningCard(card: Card): boolean {
+  return card.color === null || card.value === "throwup";
 }
 
 function syncDealProgress(state: GameStateInternal): void {
@@ -2820,11 +3126,15 @@ function sortedPlayers(state: GameStateInternal): PlayerState[] {
 
 function activePlayers(state: GameStateInternal): PlayerState[] {
   const players = sortedPlayers(state);
-  if (!isLastStand(state) || state.phase !== "playing") {
+  if (state.phase !== "playing") {
     return players;
   }
 
-  return players.filter((player) => !player.finishedRank);
+  if (isLastStand(state) || state.settings.modeId === "chaos") {
+    return players.filter((player) => !player.finishedRank);
+  }
+
+  return players;
 }
 
 function isLastStand(state: GameStateInternal): boolean {
@@ -3213,7 +3523,7 @@ function autoStackCardId(player: PlayerState, stack: PendingStack): string | und
 }
 
 function needsDeclaredColor(card: Card): boolean {
-  return card.value === "wild" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
+  return card.value === "wild" || card.value === "wild2" || card.value === "wild3" || card.value === "wild4" || card.value === "wildColor";
 }
 
 function chooseAutoColor(state: GameStateInternal, player: PlayerState, excludeCardId?: string): Color {

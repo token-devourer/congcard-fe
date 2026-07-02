@@ -105,7 +105,7 @@ export function BatchSelector({ snapshot, actionLocked, shortcutCommand, onSelec
       return;
     }
 
-    if (value === "wild" || value === "wild3" || value === "wild4" || value === "wildColor") {
+    if (value === "wild" || value === "wild2" || value === "wild3" || value === "wild4" || value === "wildColor") {
       setChoosingColor(true);
       return;
     }

@@ -596,7 +596,7 @@ export function Lobby({
           <select className="field" disabled={!isHost} value={snapshot.settings.modeId} onChange={(event) => updateSetting({ modeId: event.target.value as RoomSettings["modeId"] })}>
             <option value="standard">{t("lobby.modeStandard")}</option>
             <option value="zero-seven" disabled>{t("lobby.modeZeroSeven")}</option>
-            <option value="explode-25" disabled>{t("lobby.modeExplode")}</option>
+            <option value="chaos" disabled>{t("lobby.modeChaos")}</option>
             <option value="flip">{t("lobby.modeFlip")}</option>
           </select>
         </label>

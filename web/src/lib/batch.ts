@@ -66,6 +66,9 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
 
   const grouped = new Map<CardValue, Card[]>();
   for (const card of snapshot.self.hand) {
+    if (!isBatchableValue(card.value)) {
+      continue;
+    }
     const cards = grouped.get(card.value) ?? [];
     cards.push(card);
     grouped.set(card.value, cards);
@@ -80,6 +83,25 @@ export function batchCardGroups(snapshot: GameSnapshot, actionLocked = false): B
         : new Set(cards.filter((card) => canPlayCard(snapshot, card)).map((card) => card.id))
     }))
     .filter((group) => group.cards.length >= 2 && group.playableStarterIds.size > 0);
+}
+
+function isBatchableValue(value: CardValue): boolean {
+  return value !== "throwup" && ![
+    "flashbang",
+    "steal",
+    "favor",
+    "peek",
+    "vote",
+    "chaosCard",
+    "timeskip",
+    "mirror",
+    "pandemic",
+    "magnet",
+    "jackpot",
+    "roulette",
+    "nuke",
+    "mime"
+  ].includes(String(value));
 }
 
 export function batchValueText(value: CardValue): string {

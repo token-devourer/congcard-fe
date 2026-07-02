@@ -146,7 +146,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
 
   if (
     topChanged &&
-    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild3" || next.discardTop?.value === "wild4" || next.discardTop?.value === "wildColor") &&
+    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild2" || next.discardTop?.value === "wild3" || next.discardTop?.value === "wild4" || next.discardTop?.value === "wildColor") &&
     next.activeColor
   ) {
     events.push({ id: eventId(), type: "colorChange", color: next.activeColor, ...(matchLevel > 1 ? { level: matchLevel } : {}) });
@@ -344,7 +344,7 @@ function sameValueRunFromLog(snapshot: GameSnapshot, value: CardValue): number {
 }
 
 function playedCardValue(message?: string): CardValue | undefined {
-  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw2|draw5|flip|wild3|wild4|wildColor|wild)\.$/)?.[1];
+  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue|orange|cyan|purple|pink) )?(\d|skip|reverse|draw1|draw2|draw5|flip|wild2|wild3|wild4|wildColor|wild|flashbang|throwup|steal|favor|peek|vote|chaosCard|timeskip|mirror|pandemic|magnet|jackpot|roulette|nuke|mime)\.$/)?.[1];
   if (!raw) {
     return undefined;
   }

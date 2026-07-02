@@ -601,7 +601,7 @@ export function Lobby({
           <select className="field" disabled={!isHost} value={localModeId || snapshot.settings.modeId} onChange={(event) => {
             const val = event.target.value;
             setLocalModeId(val === snapshot.settings.modeId ? null : val);
-            if (val !== "chaos") updateSetting({ modeId: val as RoomSettings["modeId"] });
+            updateSetting({ modeId: val as RoomSettings["modeId"] });
           }}>
             <option value="standard">{t("lobby.modeStandard")}</option>
             <option value="zero-seven" disabled>{t("lobby.modeZeroSeven")}</option>
@@ -821,8 +821,8 @@ export function Lobby({
         </label>
         </SettingsSection>
         {isHost ? (
-          <button className="button" disabled={snapshot.players.length < 2 || (localModeId || snapshot.settings.modeId) === "chaos"} onClick={() => send("game.start")}>
-            {(localModeId || snapshot.settings.modeId) === "chaos" ? t("lobby.modeComingSoon") : snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
+          <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
+            {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
           </button>
         ) : (
           <p className="lobby-waiting-host">

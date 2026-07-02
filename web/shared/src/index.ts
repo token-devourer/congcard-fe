@@ -190,7 +190,7 @@ export interface OneWindow {
 }
 
 export interface PendingStack {
-  kind: "draw2" | "draw5" | "wild3" | "wild4" | "wildColor";
+  kind: "draw1" | "draw2" | "draw5" | "wild2" | "wild3" | "wild4" | "wildColor";
   targetPlayerId: string;
   totalDraw: number;
   targetColor?: Color;

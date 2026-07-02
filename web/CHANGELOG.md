@@ -16,4 +16,4 @@ First production LTS release of the CongCard frontend.
 ### Release Notes
 
 - Rooms remain in memory and do not survive a backend restart.
-- 0-7, Explode 25, and Flip are visible as coming-soon modes but cannot be selected.
+- 0-7, Chaos, and Flip are visible as coming-soon modes but cannot be selected.

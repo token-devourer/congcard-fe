@@ -57,7 +57,7 @@ export function CardView({ card, hidden, small, micro, playable, dimmed, disable
           ) : isWild ? (
             <WildBadge small={compact} value={card.value} dark={card.side === "dark"} />
           ) : card.value === "draw1" || card.value === "draw2" || card.value === "draw5" ? (
-            <DrawActionGlyph small={compact} amount={drawAmount(card.value) ?? "+1"} />
+            <DrawActionGlyph small={compact} value={card.value} amount={drawAmount(card.value) ?? "+1"} />
           ) : isActionValue(card.value) ? (
             <ActionGlyph value={card.value} small={compact} />
           ) : (
@@ -156,11 +156,11 @@ function DrawAmountLabel({ amount, small, corner }: { amount: "+1" | "+2" | "+3"
   );
 }
 
-function DrawActionGlyph({ small, amount }: { small?: boolean; amount: "+1" | "+2" | "+3" | "+4" | "+5" }) {
+function DrawActionGlyph({ small, value, amount }: { small?: boolean; value: Extract<CardValue, string>; amount: "+1" | "+2" | "+3" | "+4" | "+5" }) {
   return (
     <div className="card-draw-glyph relative w-full text-center">
       <span className="absolute left-1/2 top-0 -translate-x-1/2">
-        <ActionGlyph value={amount === "+2" ? "draw2" : "draw5"} small={small} />
+        <ActionGlyph value={value === "draw5" ? "draw5" : "draw2"} small={small} />
       </span>
       <span className="absolute bottom-0 left-1/2 -translate-x-1/2">
         <DrawAmountLabel amount={amount} small={small} />

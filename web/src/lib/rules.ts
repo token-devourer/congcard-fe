@@ -82,8 +82,10 @@ function canStackCard(card: Card, kind: PendingStack["kind"]): boolean {
 }
 
 function stackDrawAmount(card: Card): number | null {
+  if (card.value === "draw1") return 1;
   if (card.value === "draw2") return 2;
   if (card.value === "draw5") return 5;
+  if (card.value === "wild2") return 2;
   if (card.value === "wild3") return 3;
   if (card.value === "wild4") return 4;
   if (card.value === "wildColor") return 1;

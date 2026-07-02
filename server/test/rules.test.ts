@@ -3,6 +3,7 @@ import type { Card } from "@congcard/shared";
 import { config } from "../src/config.js";
 import { standardMode } from "../src/engine/modes/standard.js";
 import { applyFlipSide, flipMode } from "../src/engine/modes/flip.js";
+import { chaosMode } from "../src/engine/modes/chaos.js";
 import {
   addPlayer,
   callOne,
@@ -329,6 +330,21 @@ function controlledGame3(): GameStateInternal {
   return state;
 }
 
+function controlledChaosGame(): GameStateInternal {
+  const state = createGame("CHAOS1", { modeId: "chaos", turnTimeoutSec: 30 });
+  addPlayer(state, "p1", "Ava", "sun");
+  addPlayer(state, "p2", "Ben", "moon");
+  state.phase = "playing";
+  state.activeColor = "red";
+  state.discardPile = [card("discard-red-5", "red", 5)];
+  state.drawPile = drawPile();
+  state.currentSeat = 0;
+  state.direction = 1;
+  state.players[0]!.hand = [];
+  state.players[1]!.hand = [];
+  return state;
+}
+
 function finishAutomaticDeal(state: GameStateInternal): void {
   for (let index = 0; index < 4 && state.phase === "dealing"; index += 1) {
     const event = state.roundDeal?.event;
@@ -339,6 +355,75 @@ function finishAutomaticDeal(state: GameStateInternal): void {
     resolveRoundDeal(state);
   }
 }
+
+describe("chaos mode", () => {
+  it("builds a playable chaos deck with reduced penalties and meme cards", () => {
+    const deck = chaosMode.buildDeck(4);
+
+    expect(deck).toHaveLength(130);
+    expect(deck.filter((item) => item.value === "draw1")).toHaveLength(8);
+    expect(deck.filter((item) => item.value === "wild2")).toHaveLength(4);
+    expect(deck.filter((item) => item.value === "throwup")).toHaveLength(8);
+    expect(deck.filter((item) => item.value === "flashbang")).toHaveLength(1);
+  });
+
+  it("uses +1 colored draw penalties", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("red-draw1", "red", "draw1"), card("red-9", "red", 9)];
+
+    playCard(state, "p1", "red-draw1");
+
+    expect(state.pendingDraw).toMatchObject({ playerId: "p2", totalCount: 1 });
+    settlePendingDraw(state);
+    expect(state.players[1]!.hand).toHaveLength(1);
+    expect(state.phase).toBe("playing");
+  });
+
+  it("uses wild +2 without challenge", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("wild2", null, "wild2"), card("red-9", "red", 9)];
+
+    playCard(state, "p1", "wild2", "blue");
+
+    expect(state.activeColor).toBe("blue");
+    expect(state.pendingChallenge).toBeUndefined();
+    expect(state.pendingDraw).toMatchObject({ playerId: "p2", totalCount: 2 });
+  });
+
+  it("does not allow throwup or chaos specials in batches", () => {
+    const state = createGame("CHAOS2", { modeId: "chaos", batchEnabled: true, turnTimeoutSec: 30 });
+    addPlayer(state, "p1", "Ava", "sun");
+    addPlayer(state, "p2", "Ben", "moon");
+    state.phase = "playing";
+    state.activeColor = "red";
+    state.discardPile = [card("discard-red-5", "red", 5)];
+    state.drawPile = drawPile();
+    state.currentSeat = 0;
+    state.direction = 1;
+    state.players[0]!.hand = [card("throw-a", "red", "throwup"), card("throw-b", "red", "throwup")];
+
+    expect(() => playBatch(state, "p1", ["throw-a", "throw-b"])).toThrow("Chaos special cards cannot be batched.");
+
+    state.players[0]!.hand = [card("flash-a", null, "flashbang"), card("flash-b", null, "flashbang")];
+
+    expect(() => playBatch(state, "p1", ["flash-a", "flash-b"])).toThrow("Chaos special cards cannot be batched.");
+  });
+
+  it("eliminates players who draw past 25 cards", () => {
+    const state = controlledChaosGame();
+    state.players[0]!.hand = [card("red-draw1", "red", "draw1"), card("red-9", "red", 9)];
+    state.players[1]!.hand = Array.from({ length: 25 }, (_, index) => card(`p2-${index}`, "blue", (index % 10) as Card["value"]));
+    state.players[1]!.cardCount = state.players[1]!.hand.length;
+
+    playCard(state, "p1", "red-draw1");
+    settlePendingDraw(state);
+
+    expect(state.phase).toBe("roundEnd");
+    expect(state.roundWinnerId).toBe("p1");
+    expect(state.players[1]!.finishedRank).toBe(1);
+    expect(state.players[1]!.hand).toHaveLength(0);
+  });
+});
 
 describe("standard mode", () => {
   it("reveals a staged normal draw only to its recipient", () => {

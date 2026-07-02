@@ -42,13 +42,30 @@ export const CARD_VALUES = [
   9,
   "skip",
   "reverse",
+  "draw1",
   "draw2",
   "draw5",
   "flip",
   "wild",
+  "wild2",
   "wild3",
   "wild4",
-  "wildColor"
+  "wildColor",
+  "flashbang",
+  "throwup",
+  "steal",
+  "favor",
+  "peek",
+  "vote",
+  "chaosCard",
+  "timeskip",
+  "mirror",
+  "pandemic",
+  "magnet",
+  "jackpot",
+  "roulette",
+  "nuke",
+  "mime"
 ] as const;
 
 export type CardValue = (typeof CARD_VALUES)[number];
@@ -85,7 +102,7 @@ export interface OpponentCardFace extends VisibleCardFace {
 }
 
 export interface RoomSettings {
-  modeId: "standard" | "flip";
+  modeId: "standard" | "flip" | "chaos";
   maxPlayers: number;
   turnTimeoutSec: number;
   scoreTarget: ScoreTarget;
@@ -173,7 +190,7 @@ export interface OneWindow {
 }
 
 export interface PendingStack {
-  kind: "draw2" | "draw5" | "wild3" | "wild4" | "wildColor";
+  kind: "draw1" | "draw2" | "draw5" | "wild2" | "wild3" | "wild4" | "wildColor";
   targetPlayerId: string;
   totalDraw: number;
   targetColor?: Color;
@@ -394,7 +411,7 @@ export interface TurnContext {
 }
 
 export interface GameMode {
-  id: "standard" | "flip";
+  id: "standard" | "flip" | "chaos";
   initialHandSize: number;
   buildDeck(playerCount: number, deckBoxes?: number): Card[];
   isPlayable(card: Card, ctx: TurnContext): boolean;
@@ -421,7 +438,7 @@ export const DEFAULT_ROOM_SETTINGS: RoomSettings = {
 };
 
 export const roomSettingsSchema = z.object({
-  modeId: z.enum(["standard", "flip"]).default("standard"),
+  modeId: z.enum(["standard", "flip", "chaos"]).default("standard"),
   maxPlayers: z.number().int().min(2).max(10).default(10),
   turnTimeoutSec: z.number().int().min(15).max(60).default(30),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).default(0),
@@ -439,7 +456,7 @@ export const roomSettingsSchema = z.object({
 });
 
 export const roomSettingsUpdateSchema = z.object({
-  modeId: z.enum(["standard", "flip"]).optional(),
+  modeId: z.enum(["standard", "flip", "chaos"]).optional(),
   maxPlayers: z.number().int().min(2).max(10).optional(),
   turnTimeoutSec: z.number().int().min(15).max(60).optional(),
   scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).optional(),

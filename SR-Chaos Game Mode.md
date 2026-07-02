@@ -1,10 +1,10 @@
-# System Requirement: Mode "Meledak 25" + Meme Cards
+# System Requirement: Mode "Chaos" + Meme Cards
 
 ## Ringkasan
 
 Game mode baru untuk CongCard (UNO-like multiplayer) dimana:
-- Player meledak jika memiliki >25 kartu
-- 2 win condition: kartu habis duluan ATAU semua player lain meledak
+- player bust jika memiliki >25 kartu
+- 2 win condition: kartu habis duluan ATAU semua player lain bust
 - Draw penalty: +1 (bukan +2), Wild: +2 (bukan +4)
 - Fitur utama: **Meme Cards** — kartu spesial dengan efek unik, desain putih + rainbow
 
@@ -12,7 +12,7 @@ Game mode baru untuk CongCard (UNO-like multiplayer) dimana:
 
 ## Daftar Isi
 
-1. [Game Mode: Meledak 25](#1-game-mode-meledak-25)
+1. [Game Mode: Chaos](#1-game-mode-chaos)
 2. [Meme Cards — Core Set](#2-meme-cards--core-set)
 3. [Meme Cards — Tambahan (10 ide)](#3-meme-cards--tambahan)
 4. [Arsitektur Implementasi](#4-arsitektur-implementasi)
@@ -25,32 +25,32 @@ Game mode baru untuk CongCard (UNO-like multiplayer) dimana:
 
 ---
 
-## 1. Game Mode: Meledak 25
+## 1. Game Mode: Chaos
 
 ### Aturan Dasar
 
 | Aturan | Value |
 |--------|-------|
-| Mode ID | `"explode-25"` |
+| Mode ID | `"chaos"` |
 | Initial hand size | 7 |
 | Draw penalty | `draw2` → **draw1** (nilai +1) |
 | Wild penalty | `wild4` → **wild2** (nilai +2) |
-| Batas meledak | Hand > 25 kartu → eliminated |
+| Batas bust | Hand > 25 kartu → eliminated |
 | Win 1 | Kartu habis (seperti UNO biasa) |
-| Win 2 | Semua player lain sudah meledak |
+| Win 2 | Semua player lain sudah bust |
 | Scoring | Standard (angka=value, action=20, wild=50) |
 
-### Meledak Logic
+### Chaos Bust Logic
 
 ```
 Setelah setiap playCard() dan setiap draw selesai:
   for each player:
     if player.hand.length > 25 && !player.finishedRank:
-      player meledak
+      player bust
       - Semua hand masuk discard pile
       - player.finishedRank = rank berikutnya
       - player.cardCount = 0
-      - Emit presentationEvent { kind: "explode" }
+      - Emit presentationEvent { kind: "chaosBust" }
 
 Jika hanya 1 player tersisa (sisanya finishedRank):
   completeRound(state, lastPlayerId)
@@ -66,7 +66,7 @@ Jika hanya 1 player tersisa (sisanya finishedRank):
 
 ### Perubahan dari Standard UNO
 
-| Card Value | Standard | Meledak 25 |
+| Card Value | Standard | Chaos |
 |-----------|----------|------------|
 | draw2 | Draw 2 | Draw 1 |
 | draw5 | Draw 5 | Draw 1 (dari flip mode) |
@@ -78,6 +78,23 @@ Jika hanya 1 player tersisa (sisanya finishedRank):
 
 ## 2. Meme Cards — Core Set
 
+### Common Sequence (Semua Chaos Cards)
+
+Setiap chaos card memiliki sequence yang sama saat dimainkan:
+
+```
+1. [Action disable] — semua action terkunci selama sequence
+2. [Glow] — kartu chaos glow di tengah meja (1s)
+3. [SFX] — bass pitch (naik/turun tergantung kartu) + aset suara khas
+4. [Efek] — efek kartu terjadi (swap, discard, dll.)
+5. [Action enable] — action kembali aktif
+6. [advanceTurn] — giliran ke next player
+```
+
+**Reduced motion:** skip entire glow & SFX sequence. Langsung ke efek + toast.
+
+---
+
 ### 2.1 Flashbang
 
 | Atribut | Detail |
@@ -85,28 +102,32 @@ Jika hanya 1 player tersisa (sisanya finishedRank):
 | **Icon** | Flashbang Cat |
 | **Type** | Special (color: null) |
 | **Card Value** | `"flashbang"` |
-| **Sound Cue** | Flashbang explosion + cat scream |
-| **Efek** | Kumpulin semua kartu dari semua player → shuffle → deal random ke semua player |
+| **Sound Cue** | Bass pitch rise → flashbang explosion → cat scream |
+| **Efek** | Swap semua hand secara acak (permutasi). Tiap player dapat hand milik player lain — boleh dapat sendiri (filosofi chaos) |
 
 **Flow:**
 ```
 1. Player mainkan Flashbang
-2. Server collect: allHands = [...player1.hand, ...player2.hand, ...]
-3. Server shuffle(allHands)
-4. Server deal kembali: count = floor(allHands.length / playerCount)
-   - Sisa kartu (jika ganjil) masuk discard pile
-5. Semua player dapat kartu baru secara acak
-6. Emit flashbang event
+2. Server collect: hands[] = semua player hand
+3. randomPermutation(hands.length) → mapping tiap index ke index acak
+4. Setiap player.hand = hands[permutation[i]]
+   - Boleh dapat hand sendiri (bukan strict derangement)
+5. Emit flashbang event + disable action sampai sequence selesai
+6. advanceTurn ke next player
 ```
 
-**VFX:**
-- Flash putih penuh layar (opacity spike 0→1→0 dalam 0.5s)
-- Kartu-kartu terbang ke tengah lalu tersebar ke semua seat
-- Particle effect mirip shatter
+**VFX — Normal:**
+1. Kartu Flashbang glow di tengah meja (1s)
+2. Bass pitch naik (audio)
+3. Flashbang asset SFX → white screen fade in/out bersamaan (0.5s)
+4. Cat scream asset SFX (ref: https://youtu.be/qfxDEZX9K0o?si=DbHusUTuQ2cdOmKu @0:13)
+5. Toast "🔄 Hands Swapped!" muncul
+6. Action disable sampai seluruh sequence selesai
 
-**SFX:**
-- White noise burst (0.4s) via ctx.createBufferSource + random samples
-- Cat scream: cat scream.mp3+reverb fade out + flashbang SFX
+**VFX — Reduced Motion:**
+- Skip glow, white flash, cat scream entirely
+- Hanya toast subtle "🔄 Hands Swapped!" fade in/out (500ms)
+- SFX: bunyi swap pendek
 
 ---
 
@@ -117,26 +138,33 @@ Jika hanya 1 player tersisa (sisanya finishedRank):
 | **Icon** | Throw Up Cat |
 | **Type** | Color card (punya warna spesifik) |
 | **Card Value** | `"throwup"` |
-| **Sound Cue** | Throw up cat sound |
-| **Efek** | Buang semua kartu di hand yang warnanya SAMA dengan warna kartu Throw Up |
+| **Sound Cue** | Bass pitch down → cat vomit |
+| **Efek** | Buang semua kartu di hand yang warnanya SAMA dengan warna kartu Throw Up. Hand kosong setelah discard = **menang** |
 
 **Flow:**
 ```
 1. Player mainkan Throw Up (punya warna, misal: green)
 2. Server filter: player.hand.filter(c => c.color === "green")
-3. Semua kartu hijau masuk discard pile
-4. advanceTurn
+3. Semua kartu hijau masuk discard pile (bisa 0)
+4. Jika hand.length === 0 → player menang (completeRound)
+5. advanceTurn ke next player
 ```
 
 **Perbedaan dengan kartu lain:** Throw Up adalah color card (bukan special), jadi warnanya match dengan active color. Ini yang membedakan dari special cards lain yang putih.
 
-**VFX:**
-- Particle kartu hijau/ungu meluncur ke discard pile
-- Efek "splash" dengan warna sesuai kartu
+**VFX — Normal:**
+1. Kartu glow di tengah meja (common sequence)
+2. Kartu discard satu per satu ke discard pile (reuse Batch discard animation)
+3. Toast "Throw Up! +N card discarded"
+
+**VFX — Reduced Motion:**
+- Skip glow. Kartu langsung discard berturut-turut (tanpa jeda)
+- Toast saja
 
 **SFX:**
-- Low LFO square wave + gain wobble descend
-- Filtered noise dengan pitch bend turun
+- Bass pitch down
+- Cat vomit (audio aset — ref: https://youtu.be/aHXx15ahNtw?si=OwyFEApX33WwvY6W)
+- Untuk setiap discard: reuse sound kartu biasa dengan pitch up
 
 ---
 
@@ -147,20 +175,24 @@ Jika hanya 1 player tersisa (sisanya finishedRank):
 | **Icon** | Evil Cat |
 | **Type** | Special (color: null) |
 | **Card Value** | `"steal"` |
-| **Sound Cue** | Mueheheheh cat (evil laugh) |
-| **Efek** | Pilih 1 player target → lihat hand mereka → pilih kartu spesifik untuk diambil |
+| **Sound Cue** | Bass pitch up (glow) → evil cat laugh setelah pilih target |
+| **Efek** | Pilih 1 player target (bukan diri sendiri) → lihat sebagian hand mereka → pilih 1 kartu untuk diambil. Jika hand target kosong setelah di-steal → target draw 2 sebagai kompensasi |
 
 **Flow:**
 ```
-1. Player mainkan Steal
+1. Player mainkan Steal → glow sequence (bass pitch up)
 2. Server set state: pendingSteal = { stealerId, targetCandidates: [...] }
-3. Client render ModalSteal → pilih target player
+3. Client render ModalSteal → pilih target player (hanya player lain)
 4. room.send("stealTarget", { targetId })
-5. Server kirim hand target (tanpa kartu random yang diobfuscate)
+5. Server kirim 5 kartu acak dari hand target (jika hand > 5), jika ≤ 5 kirim semua
 6. Client render ModalStealCard → pilih kartu spesifik
 7. room.send("stealChoice", { cardId })
 8. Kartu pindah dari target.hand ke stealer.hand
+9. Jika target.hand.length === 0 → target draw 2 dari draw pile
+10. advanceTurn
 ```
+
+**Cancel:** Cancel di step 3 (pilih target) atau step 6 (pilih kartu) → kartu hangus, kehilangan turn.
 
 **State baru di GameStateInternal:**
 ```typescript
@@ -172,13 +204,13 @@ pendingSteal?: {
 ```
 
 **VFX:**
-- Kartu meluncur dari target seat ke player seat (animasi flight)
-- Efek "evil grin" di sekitar kartu
-- Bisa reuse FlightLayer.tsx yang sudah ada
+- Glow sequence (common)
+- Evil grin particle di sekitar kartu setelah milih target
+- Kartu meluncur dari target seat ke player seat (FlightLayer)
 
 **SFX:**
-- Ascending arpeggio cepat (triplet) square wave + distortion
-- Alternatif: descending staccato notes jika evil laugh susah disintesis
+- Glow: bass pitch up
+- Evil cat laugh (audio aset — ref: https://youtu.be/a2csXtfHIn4)
 
 **Feasibility Note:** Butuh modal interaktif multi-step — pattern seperti ChallengeModal tapi 2 tahap.
 
@@ -191,33 +223,40 @@ pendingSteal?: {
 | **Icon** | Awoowo Cat |
 | **Type** | Special (color: null) |
 | **Card Value** | `"favor"` |
-| **Sound Cue** | Awoowo cat sound |
-| **Efek** | Pilih 1 player target → minta mereka ngasih 1 kartu pilihan mereka |
+| **Sound Cue** | Bass pitch down (glow) → awoo cat sound saat pilih target |
+| **Efek** | Pilih 1 player target (bukan diri sendiri) → minta mereka ngasih 1 kartu pilihan mereka. Mutual — tidak ada kompensasi |
 
 **Flow:**
 ```
-1. Player mainkan Favor
-2. Server set state: pendingFavor = { askerId, giverId }
-3. Client (si giver) render ModalFavor → pilih kartu dari hand mereka
-4. room.send("favorChoice", { cardId })
-5. Kartu pindah dari giver.hand ke asker.hand
+1. Player mainkan Favor → glow sequence (bass pitch down)
+2. Client render ModalFavorTarget → pilih target player
+3. room.send("favorTarget", { targetId })
+4. Server set state: pendingFavor = { askerId, giverId }
+5. Client (si giver) render ModalFavor → pilih kartu dari hand mereka
+6. room.send("favorChoice", { cardId })
+7. Kartu pindah dari giver.hand ke asker.hand
+8. advanceTurn
 ```
+
+**Cancel:** Cancel di step 2 (pilih target) atau step 5 (pilih kartu) → kartu hangus, kehilangan turn.
 
 **State baru:**
 ```typescript
 pendingFavor?: {
   askerId: string;
-  giverId: string;
+  targetIds: string[];
+  targetId?: string; // setelah dipilih
 }
 ```
 
 **VFX:**
-- Sama seperti Steal tapi arahnya kebalik (dari giver ke asker)
+- Glow sequence (common)
 - Efek "heart" atau "thanks" particle
+- Kartu meluncur dari giver seat ke asker seat (FlightLayer, arah kebalik dari Steal)
 
 **SFX:**
-- Sine wave dengan vibrato naik-turun (400Hz → 600Hz → 300Hz)
-- Contour membentuk "awoowo"
+- Glow: bass pitch down
+- Awoo cat sound (audio aset — ref: https://youtube.com/shorts/zJCnAPptIQo?si=iEwSOg7DvFe0o8my) diputar saat memilih target
 
 ---
 
@@ -228,18 +267,33 @@ pendingFavor?: {
 | **Icon** | Flipping Frog |
 | **Type** | Special (color: null) |
 | **Card Value** | `"peek"` |
-| **Sound Cue** | Frog laugh |
-| **Efek** | Reveal semua kartu di hand semua player (termasuk dirimu sendiri) selama durasi tertentu |
+| **Sound Cue** | Bass pitch down (glow) → frog laugh |
+| **Efek** | Reveal semua kartu di hand semua player (termasuk dirimu sendiri). Action disable selama reveal. Auto close setelah timer |
 
 **Flow:**
 ```
-1. Player mainkan Peek
-2. Server set: state.revealedHands = true
-3. state.revealedUntil = Date.now() + 8000 (8 detik)
-4. Di snapshotFor(): kirim semua hand (hanya selama revealed)
-5. Client render ModalPeek — grid semua player + kartu
-6. Setelah 8 detik, revealedHands dihapus
+1. Player mainkan Peek → glow sequence (bass pitch down)
+2. Frog laugh SFX
+3. Server set: state.revealedHands = true, action disable
+4. state.revealedUntil = Date.now() + 8000 (8 detik)
+5. Di snapshotFor(): kirim semua hand (hanya selama revealed)
+6. Client render ModalPeek — grid semua player + kartu + countdown timer
+7. Setelah 8 detik → auto close, revealedHands dihapus, action enable
+8. advanceTurn
 ```
+
+**VFX — Normal:**
+- Overlay modal dengan grid player collapsible
+- Countdown timer visible
+- Kartu flip animasi (progressive reveal)
+- Lingkaran mata terbuka di tengah transisi
+
+**VFX — Reduced Motion:**
+- Skip flip animasi, kartu langsung muncul semua
+
+**SFX:**
+- Glow: bass pitch down
+- Frog laugh (audio aset — ref: https://youtu.be/_OMFqXy3j1g?si=HoHbzIji9myHLBXS)
 
 **State baru:**
 ```typescript
@@ -419,13 +473,13 @@ revealedHands?: Record<string, Card[]>;
 "flashbang" | "throwup" | "steal" | "favor" | "peek"
 
 // Tambah ke RoomSettings.modeId
-"standard" | "flip" | "explode-25"
+"standard" | "flip" | "chaos"
 
 // Tambah ke GameMode.id
-"standard" | "flip" | "explode-25"
+"standard" | "flip" | "chaos"
 
 // Tambah ke PresentationEventKind
-"flashbang" | "throwup" | "steal" | "favor" | "peek" | "explode"
+"flashbang" | "throwup" | "steal" | "favor" | "peek" | "chaosBust"
 
 // Field baru di GameSnapshot
 revealedHands?: Record<string, Card[]>;
@@ -433,11 +487,11 @@ pendingSteal?: PendingSteal;
 pendingFavor?: PendingFavor;
 ```
 
-### Server Mode (`server/src/engine/modes/meledak.ts`)
+### Server Mode (`server/src/engine/modes/chaos.ts`)
 
 ```typescript
-export const meledakMode: GameMode = {
-  id: "explode-25",
+export const chaosMode: GameMode = {
+  id: "chaos",
   initialHandSize: 7,
   buildDeck(playerCount, deckBoxes?) {
     // 1. Standard deck (dengan draw1 & wild2)
@@ -461,7 +515,7 @@ export const meledakMode: GameMode = {
 ### Server Engine (`server/src/engine/game.ts`)
 
 ```
-getMode() → tambah "explode-25" → meledakMode
+getMode() → tambah "chaos" → chaosMode
 
 applyPlayedCard() → tambah case:
   - "flashbang" → doFlashbang(state, player)
@@ -471,8 +525,8 @@ applyPlayedCard() → tambah case:
   - "peek" → startPeek(state, player)
 
 Fungsi baru:
-  - checkExplode(state) → cek >25 cards setiap selesai draw
-  - doFlashbang(state, player) → collect + shuffle + redeal
+  - checkChaosBust(state) → cek >25 cards setiap selesai draw
+   - doFlashbang(state, player) → random permutation of all hands
   - doThrowUp(state, player) → filter warna + discard
   - startSteal → set pendingSteal
   - resolveSteal(state, targetId, cardId)
@@ -490,14 +544,14 @@ Fungsi baru:
 | { type: "steal"; targetName: string; self: boolean }
 | { type: "favor"; targetName: string; self: boolean }
 | { type: "peek" }
-| { type: "explode"; playerName: string; self: boolean }
+| { type: "chaosBust"; playerName: string; self: boolean }
 ```
 
 ### Frontend Sound (`web/src/lib/sound.ts`)
 
 ```typescript
 // SoundName baru
-| "memeFlashbang" | "memeThrowup" | "memeSteal" | "memeFavor" | "memePeek" | "explode"
+| "memeFlashbang" | "memeThrowup" | "memeSteal" | "memeFavor" | "memePeek" | "chaosBust"
 
 // soundForEvent() mapping:
 // flashbang → "memeFlashbang"
@@ -513,12 +567,12 @@ Fungsi baru:
 
 | Efek | Feasibility | Caranya |
 |------|-------------|---------|
-| **Flashbang** | ✅ **Mudah** | `eventWash` radial-gradient putih + motion.div opacity spike. Particle reuse dari BURST_POINTS |
-| **Throw Up** | ✅ **Mudah** | Toast "+N" diikuti particle warna sesuai kartu. Mirip penalty |
+| **Flashbang** | ✅ **Mudah** | Kartu glow di tengah → white screen fade in/out → toast swap. For reduced motion: skip VFX, hanya toast. Reuse `eventWash` + white overlay |
+| **Throw Up** | ✅ **Mudah** | Kartu glow di tengah → discard satu per satu reuse Batch animation → toast. Reduced motion: skip glow |
 | **Steal** | ✅ **Bisa** | Reuse FlightLayer.tsx yang sudah ada untuk deal cards. Plus modal interaktif |
-| **Favor** | ✅ **Bisa** | Sama framework dengan Steal, arah kebalik |
+| **Favor** | ⚠️ **Tinggi + Audio aset** | Modal 2-step (pilih target → giver pilih kartu). State machine. FlightLayer arah balik. Heart particle |
 | **Peek** | ✅ **Bisa** | Modal overlay grid player+kartu. Collapsible per player untuk banyak kartu. Progressive flip animation |
-| **Meledak** | ✅ **Mudah** | Particle + kartu terbang ke discard. Reuse penalty VFX |
+| **bust** | ✅ **Mudah** | Particle + kartu terbang ke discard. Reuse penalty VFX |
 | **Vote** | ⚠️ **Modal** | Modal countdown + avatar vote. Particle hasil |
 | **Time Skip** | ✅ **Sangat Mudah** | Lingkaran jam + particle skip di tiap seat |
 | **Nuke** | ✅ **Mudah** | Lingkaran ekspansi + shockwave. Reuse penalty VFX |
@@ -527,13 +581,13 @@ Fungsi baru:
 
 | Sound | Feasibility | Teknik Synthesis |
 |-------|-------------|-----------------|
-| **Flashbang** | ✅ **Bisa** | White noise burst (0.4s) + high-freq sawtooth dengan pitch descend |
-| **Throw Up** | ✅ **Bisa** | Low LFO square wave + gain wobble + filtered noise descend |
+| **Flashbang** | ⚠️ **Audio aset** | Bass pitch rise (procedural) + flashbang explosion (aset .mp3) + cat scream (aset .mp3). Untuk reduced motion: ganti dengan bunyi swap pendek procedural |
+| **Throw Up** | ⚠️ **Audio aset** | Bass pitch down procedural + cat vomit (aset). Suara discard per kartu: reuse sound kartu biasa + pitch up |
 | **Steal (evil laugh)** | ⚠️ **Cukup** | Ascending arpeggio triplet square wave + distortion. Alternatif: descending staccato |
-| **Favor (awoowo)** | ⚠️ **Cukup** | Sine wave vibrato (400→600→300Hz). Tidak sama persis kucing tapi recognizable |
-| **Peek (frog)** | ✅ **Bisa** | Square wave croak + fast AM + delay/reverb |
-| **Meledak** | ✅ **Bisa** | Low rumble (sine 40Hz) + noise burst + glass ting |
-| **Nuke** | ✅ **Bisa** | Sama dengan meledak tapi lebih besar |
+| **Favor (awoowo)** | ⚠️ **Audio aset** | Awoo cat audio aset (ref: throw up video). Bass pitch down glow. Cancel = fizzle |
+| **Peek (frog)** | ⚠️ **Audio aset** | Frog laugh audio aset. Bass pitch down glow. Action disable selama reveal |
+| **bust** | ✅ **Bisa** | Low rumble (sine 40Hz) + noise burst + glass ting |
+| **Nuke** | ✅ **Bisa** | Sama dengan bust tapi lebih besar |
 
 Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `render()`. Bisa juga pakai audio sprite (.ogg) untuk quality lebih baik.
 
@@ -541,12 +595,12 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
 
 | Efek | Complexity | Notes |
 |------|-----------|-------|
-| **Throw Up** | ✅ Rendah | Filter hand → discard. Fungsi 10 baris |
-| **Flashbang** | ✅ Rendah | Collect → shuffle → deal. Fungsi 20 baris |
+| **Throw Up** | ✅ Rendah | Filter hand → discard. + completeRank check jika hand kosong. Fungsi 15 baris |
+| **Flashbang** | ✅ Rendah | Random permutation of all hands. Fungsi 15 baris |
 | **Peek** | ✅ Sedang | Flag reveal + kirim hand via snapshot. Perlu filter di snapshotFor() |
-| **Steal** | ⚠️ Tinggi | State machine 2-step + modal interaktif |
-| **Favor** | ⚠️ Tinggi | Sama dengan Steal |
-| **Meledak >25** | ✅ Rendah | Cek di syncPlayerHandChange() + completeDraw() |
+| **Steal** | ⚠️ Tinggi | State machine 2-step + modal interaktif. Obfuscate hand > 5. Kompensasi draw 2 |
+| **Favor** | ⚠️ Tinggi | Modal 2-step (pilih target → giver pilih kartu). State machine. Cancel = fizzle. Tidak ada kompensasi |
+| **bust >25** | ✅ Rendah | Cek di syncPlayerHandChange() + completeDraw() |
 | **Vote** | ❓ Sulit | Multi-player input queue + timeout + tracking vote |
 
 ---
@@ -560,7 +614,7 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
 | Mode ID + shared types | 15 menit |
 | Server mode file (deck, rules) | 1 jam |
 | Engine: draw1/wild2 | 30 menit |
-| Engine: meledak check >25 | 1 jam |
+| Engine: bust check >25 | 1 jam |
 | Frontend: enable option | 15 menit |
 | **Total** | **~3 jam** |
 
@@ -613,26 +667,26 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
 
 - [ ] `web/shared/src/index.ts`
   - [ ] `CARD_VALUES`: tambah `"flashbang"`, `"throwup"`, `"steal"`, `"favor"`, `"peek"`
-  - [ ] `RoomSettings["modeId"]`: tambah `"explode-25"`
-  - [ ] `GameMode["id"]`: tambah `"explode-25"`
-  - [ ] `PresentationEventKind`: tambah `"flashbang"`, `"throwup"`, `"steal"`, `"favor"`, `"peek"`, `"explode"`
+  - [ ] `RoomSettings["modeId"]`: tambah `"chaos"`
+  - [ ] `GameMode["id"]`: tambah `"chaos"`
+  - [ ] `PresentationEventKind`: tambah `"flashbang"`, `"throwup"`, `"steal"`, `"favor"`, `"peek"`, `"chaosBust"`
   - [ ] `GameSnapshot`: tambah `revealedHands`, `pendingSteal`, `pendingFavor`
-  - [ ] `roomSettingsSchema`: tambah `"explode-25"` di enum
-  - [ ] `roomSettingsUpdateSchema`: tambah `"explode-25"` di enum
+  - [ ] `roomSettingsSchema`: tambah `"chaos"` di enum
+  - [ ] `roomSettingsUpdateSchema`: tambah `"chaos"` di enum
 - [ ] `server/shared/src/index.ts` — mirror dari atas
 
 ### Server
 
-- [ ] `server/src/engine/modes/meledak.ts` — file baru
+- [ ] `server/src/engine/modes/chaos.ts` — file baru
   - [ ] `buildDeck()` — standard deck + meme cards
   - [ ] `isPlayable()` — meme card rules
   - [ ] `scoreHand()` — standard scoring
-  - [ ] Export `meledakMode`
+  - [ ] Export `chaosMode`
 - [ ] `server/src/engine/game.ts`
-  - [ ] Import `meledakMode`
-  - [ ] `getMode()` — tambah case `"explode-25"`
+  - [ ] Import `chaosMode`
+  - [ ] `getMode()` — tambah case `"chaos"`
   - [ ] `applyPlayedCard()` — 5 case baru untuk meme cards
-  - [ ] Fungsi `checkExplode()` — dipanggil setelah draw selesai
+  - [ ] Fungsi `checkChaosBust()` — dipanggil setelah draw selesai
   - [ ] Fungsi `doFlashbang()` — collect + shuffle + redeal
   - [ ] Fungsi `doThrowUp()` — filter color → discard
   - [ ] Fungsi `startSteal()` / `resolveSteal()`
@@ -640,7 +694,7 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
   - [ ] Fungsi `startPeek()` — set revealed state + timeout
   - [ ] `GameStateInternal` — tambah `revealedHands`, `revealedUntil`, `pendingSteal`, `pendingFavor`
   - [ ] `snapshotFor()` — kirim `revealedHands` jika aktif
-  - [ ] `syncPlayerHandChange()` — panggil `checkExplode()`
+  - [ ] `syncPlayerHandChange()` — panggil `checkChaosBust()`
 
 ### Frontend — Components
 
@@ -654,13 +708,13 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
   - [ ] `EventVfx` — Steal (kartu terbang)
   - [ ] `EventVfx` — Favor (kartu terbang balik)
   - [ ] `EventVfx` — Peek (mata terbuka)
-  - [ ] `EventVfx` — Explode (ledakan merah + particle)
+  - [ ] `EventVfx` — Chaos Bust (particle merah)
   - [ ] `eventWash()` — wash untuk tiap meme event
   - [ ] `toastContent()` — label/sublabel untuk tiap meme event
   - [ ] `eventPriority()` — priority baru
   - [ ] `eventToastDurationMs()` — duration baru
 - [ ] `web/src/components/RoomClient.tsx`
-  - [ ] Enable `"explode-25"` di dropdown lobby
+  - [ ] Enable `"chaos"` di dropdown lobby
   - [ ] Import & render: `MemeStealModal`, `MemeFavorModal`, `MemePeekModal`
   - [ ] Handler: `stealTarget`, `stealChoice`, `favorChoice`
 - [ ] `web/src/components/MemePeekModal.tsx` — file baru
@@ -712,12 +766,12 @@ Procedural synthesis = Web Audio API oscillators/noise/filters di sound.ts `rend
 ### Frontend — i18n
 
 - [ ] `web/messages/en.json`
-  - [ ] `lobby.modeMeledak`: "Explode 25"
+  - [ ] `lobby.modeChaos`: "Chaos"
   - [ ] `events.*` untuk meme events
   - [ ] `card.*` untuk meme card names
   - [ ] `rules.*` untuk mode description
 - [ ] `web/messages/id.json`
-  - [ ] `lobby.modeMeledak`: "Meledak 25"
+  - [ ] `lobby.modeChaos`: "Chaos"
   - [ ] `events.*` untuk meme events (Indo)
   - [ ] `card.*` untuk meme card names (Indo)
   - [ ] `rules.*` untuk mode description (Indo)
