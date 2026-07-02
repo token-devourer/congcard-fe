@@ -359,6 +359,40 @@ button:disabled {
   contain: layout paint style;
 }
 
+.nuke-countdown-chip {
+  display: grid;
+  flex: 0 0 54px;
+  width: 54px;
+  aspect-ratio: 1;
+  place-items: center;
+  align-content: center;
+  border: 2px solid rgba(255, 238, 178, 0.76);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 239, 166, 0.62), transparent 34%),
+    linear-gradient(180deg, #ffcb7a, #ff3e28 58%, #631009);
+  color: white;
+  box-shadow:
+    0 0 0 2px rgba(99, 16, 9, 0.52),
+    0 0 24px rgba(255, 62, 40, 0.64),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  line-height: 1;
+}
+
+.nuke-countdown-chip span {
+  font-family: var(--font-display, "Fredoka"), sans-serif;
+  font-size: 22px;
+  font-weight: 950;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.56);
+}
+
+.nuke-countdown-chip small {
+  margin-top: -2px;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
 .tableseat {
   width: 104px;
   padding: 6px 4px 7px;

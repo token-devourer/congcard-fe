@@ -183,8 +183,9 @@ export function soundForEvent(event: UiEvent): SoundName | null {
 export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   for (const event of events) {
     if (event.type === "chaos") {
-      const startsInMs = event.startsAt ? Math.max(0, event.startsAt - (Date.now() + clockOffset)) : 0;
-      playChaosEventSounds(event, startsInMs);
+      const serverNow = Date.now() + clockOffset;
+      const startsInMs = event.startsAt ? Math.max(0, event.startsAt - serverNow) : 0;
+      playChaosEventSounds(event, startsInMs, serverNow);
       duckMusic(startsInMs, event.kind === "nuke" ? 2_200 : 1_200);
       continue;
     }
@@ -204,11 +205,10 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   }
 }
 
-function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number): void {
+function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number, serverNow: number): void {
   const at = (sound: SoundName, offsetMs = 0, level = 1) => playSoundAt(sound, startsInMs + offsetMs, level);
 
   if (event.phase === "detonating" && event.kind === "nuke") {
-    at("memeNukeExecute");
     return;
   }
 
@@ -249,6 +249,12 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
     case "nuke":
       at("memeNuke", 650);
       at("memeNukeCountdown", 1_000);
+      {
+        const executeStartsAt = (event.countdownEndsAt ?? event.resolvesAt ?? ((event.startsAt ?? serverNow) + 40_000)) - 3_000;
+        const executeDelayMs = Math.max(0, executeStartsAt - serverNow);
+        playSoundAt("memeNukeExecute", executeDelayMs);
+        duckMusic(executeDelayMs, 3_200);
+      }
       break;
     default:
       break;
