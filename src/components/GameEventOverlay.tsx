@@ -47,16 +47,17 @@ export function GameEventOverlay() {
   const clockOffset = useRoomStore((state) => state.clockOffset);
   const now = useNow(50) + clockOffset;
   const { preset } = useGraphicsPreset();
-  const toasts = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
-  const active = toasts
+  const toastEvents = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
+  const visibleToasts = toastEvents.filter((event) => !(event.type === "chaos" && event.kind === "nuke" && event.phase === "countdown"));
+  const active = visibleToasts
     .filter((event) => (!event.startsAt || event.startsAt <= now) && (!event.resolvesAt || event.resolvesAt + 500 > now))
     .sort((a, b) => eventPriority(b) - eventPriority(a) || (a.startsAt ?? 0) - (b.startsAt ?? 0))[0];
 
   useEffect(() => {
-    for (const event of toasts) {
+    for (const event of toastEvents) {
       if (event.resolvesAt && event.resolvesAt + 500 <= now) dismissEvent(event.id);
     }
-  }, [dismissEvent, now, toasts]);
+  }, [dismissEvent, now, toastEvents]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center overflow-hidden">

@@ -122,6 +122,12 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
         ? t("board.takeColorStack", { count: stackToTake.totalDraw, color: t(`colors.${stackToTake.targetColor}`) })
         : t("board.takeStack", { count: stackToTake.totalDraw })
       : t("board.draw");
+  const nukeCountdown = snapshot.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown"
+    ? snapshot.pendingChaos
+    : undefined;
+  const nukeRemaining = nukeCountdown?.countdownEndsAt
+    ? Math.max(0, Math.ceil((nukeCountdown.countdownEndsAt - now) / 1000))
+    : null;
 
   const centerPile = (
     <div className="grid justify-items-center gap-2.5">
@@ -129,6 +135,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
       {snapshot.pendingStack ? <StackPenaltyChip stack={snapshot.pendingStack} /> : null}
 
       <div className="flex items-center justify-center gap-4">
+        {nukeRemaining !== null ? <NukeCountdownChip remaining={nukeRemaining} label={t("events.nukeCountdown")} /> : null}
         <motion.button
           ref={anchorRef("draw")}
           className={`grid justify-items-center gap-1 text-center ${canDraw ? "pulse-gold rounded-xl" : ""}`}
@@ -349,6 +356,15 @@ function OpponentFaceTray({
   );
 }
 
+
+function NukeCountdownChip({ remaining, label }: { remaining: number; label: string }) {
+  return (
+    <div className="nuke-countdown-chip" aria-label={label}>
+      <span>{remaining}</span>
+      <small>NUKE</small>
+    </div>
+  );
+}
 
 function StackPenaltyChip({ stack }: { stack: PendingStack }) {
   const t = useTranslations();
