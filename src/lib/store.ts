@@ -25,8 +25,28 @@ interface RoomStore {
 }
 
 const MAX_VISIBLE_EVENTS = 4;
+const CLOCK_OFFSET_WINDOW = 40;
 
 let nextErrorId = 0;
+let clockOffsetSamples: number[] = [];
+
+// serverNow is stamped when the snapshot is sent, so every sample reads
+// trueOffset minus that packet's delivery delay. Rebasing on each snapshot
+// makes the client's "server clock" jump by the network jitter, and scheduled
+// sounds (fixed at receipt) drift apart from animations (compared against the
+// live clock). The least-delayed packet in the window — the max — is the
+// closest to the true offset, and it keeps the clock steady between spikes.
+function stableClockOffset(serverNow: unknown, previous: number): number {
+  if (typeof serverNow !== "number") {
+    return previous;
+  }
+
+  clockOffsetSamples.push(serverNow - Date.now());
+  if (clockOffsetSamples.length > CLOCK_OFFSET_WINDOW) {
+    clockOffsetSamples.shift();
+  }
+  return Math.max(...clockOffsetSamples);
+}
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
   snapshot: null,
@@ -43,7 +63,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     const fresh = diffSnapshots(get().snapshot, snapshot);
     const visibleEvents = fresh.filter(isVisibleUiEvent);
     const eventLockMs = eventActionLockMs(fresh);
-    const nextClockOffset = typeof snapshot.serverNow === "number" ? snapshot.serverNow - Date.now() : get().clockOffset;
+    const nextClockOffset = stableClockOffset(snapshot.serverNow, get().clockOffset);
     playUiEventSounds(fresh, nextClockOffset);
     set((state) => ({
       snapshot,
@@ -62,5 +82,8 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     nextErrorId += 1;
     set({ error: { id: nextErrorId, message, ...(code ? { code } : {}) } });
   },
-  reset: () => set({ snapshot: null, events: [], error: null, clockOffset: 0, eventLockUntil: 0 })
+  reset: () => {
+    clockOffsetSamples = [];
+    set({ snapshot: null, events: [], error: null, clockOffset: 0, eventLockUntil: 0 });
+  }
 }));

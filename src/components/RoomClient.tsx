@@ -74,6 +74,7 @@ export function RoomClient({ code }: RoomClientProps) {
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
   const pingIntervalRef = useRef<number | null>(null);
+  const pingSamplesRef = useRef<number[]>([]);
   const { snapshot, setSnapshot, setError, reset } = useRoomStore();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   // nickname is only set once confirmed (saved profile or submitted form);
@@ -191,11 +192,23 @@ export function RoomClient({ code }: RoomClientProps) {
         setError(payload.message ?? t("common.actionFailed"), payload.code);
       });
 
+      // Report the median of the last few probes: a probe that queues behind a
+      // snapshot burst reads hundreds of ms on a healthy link, and the server
+      // schedules everyone's animations from these reports.
+      pingSamplesRef.current = [];
       const pingInterval = window.setInterval(() => {
         if (!roomRef.current) {
           return;
         }
-        room.ping((ms: number) => room.send("room.ping", { ping: ms }));
+        room.ping((ms: number) => {
+          const samples = pingSamplesRef.current;
+          samples.push(ms);
+          if (samples.length > 3) {
+            samples.shift();
+          }
+          const median = [...samples].sort((a, b) => a - b)[Math.floor(samples.length / 2)]!;
+          room.send("room.ping", { ping: median });
+        });
       }, 1000);
       pingIntervalRef.current = pingInterval;
 
