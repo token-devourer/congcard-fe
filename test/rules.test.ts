@@ -153,6 +153,17 @@ describe("client rules", () => {
     expect(jumpInCardInHand(stack)).toBeNull();
   });
 
+  it("allows any color after a Chaos rainbow special without active color", () => {
+    const state = snapshot({
+      activeColor: undefined,
+      settings: { ...snapshot().settings, modeId: "chaos" },
+      self: { id: "me", role: "player", hand: [card("blue-7", "blue", 7)] },
+      discardTop: card("top-peek", null, "peek")
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+  });
+
   it("blocks player actions while the game is paused", () => {
     const state = snapshot({ pauseReason: "notEnoughAvailablePlayers" });
 

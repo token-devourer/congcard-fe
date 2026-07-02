@@ -49,6 +49,7 @@ export type SoundName =
   | "memeNuke"
   | "memeMime"
   | "memeStealExecute"
+  | "memeFavorOpen"
   | "memeFavorExecute"
   | "memeFlashbangSfx"
   | "memeFlashbangCat"
@@ -66,6 +67,7 @@ const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
   memeFlashbangSfx: "/audio/flashbang-sfx.mp3",
   memeFlashbangCat: "/audio/flashbang-cat.mp3",
   memeFavor: "/audio/awowo-cat-initiate.mp3",
+  memeFavorOpen: "/audio/awowo-cat-open.mp3",
   memeFavorExecute: "/audio/awowo-cat-execute.mp3",
   memePeek: "/audio/acumalaka-frog.mp3",
   memeTimeskip: "/audio/timeskip-cat.mp3",
@@ -211,7 +213,7 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
   }
 
   if (event.phase === "sequence" && (event.kind === "steal" || event.kind === "favor")) {
-    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorExecute");
+    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorOpen");
     return;
   }
 

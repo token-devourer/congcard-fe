@@ -70,7 +70,7 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     return false;
   }
 
-  if (!snapshot.activeColor || !snapshot.discardTop) {
+  if (!snapshot.discardTop) {
     return false;
   }
 
@@ -80,6 +80,10 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
 
   if (snapshot.discardTop.color === null && isSpecialValue(snapshot.discardTop.value)) {
     return true;
+  }
+
+  if (!snapshot.activeColor) {
+    return false;
   }
 
   return handCard.color === snapshot.activeColor || handCard.value === snapshot.discardTop.value;
