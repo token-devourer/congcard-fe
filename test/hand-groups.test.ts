@@ -55,8 +55,24 @@ describe("groupHand", () => {
     ]);
 
     expect(groupHand(state).map((group) => group.id)).toEqual([
-      "red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "wild"
+      "red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "special", "wild"
     ]);
+  });
+
+  it("separates Chaos special cards from Wild cards", () => {
+    const state = snapshot(
+      [
+        card("wild", null, "wild"),
+        card("wild2", null, "wild2"),
+        card("nuke", null, "nuke"),
+        card("favor", null, "favor")
+      ],
+      { settings: { ...settings, modeId: "chaos" } }
+    );
+
+    const groups = groupHand(state);
+    expect(groups.find((group) => group.id === "wild")?.cards.map((item) => item.card.id)).toEqual(["wild", "wild2"]);
+    expect(groups.find((group) => group.id === "special")?.cards.map((item) => item.card.id)).toEqual(["favor", "nuke"]);
   });
 
   it("orders playable cards before non-playable cards inside each pile", () => {

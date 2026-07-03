@@ -24,6 +24,7 @@
     "cyan": "Cyan",
     "purple": "Purple",
     "pink": "Pink",
+    "special": "Special",
     "wild": "Wild"
   },
   "landing": {
@@ -413,8 +414,9 @@
     "earnedThisRound": "+{points} points this round",
     "fromOpponents": "From opponents' remaining cards",
     "cardsLeft": "{count} cards",
-    "scoringRule": "Number = face value · Skip/Reverse/+2 = 20 · Wild/Wild+4 = 50",
-    "scoringRuleFlip": "Number = face value; colored actions = 20; Wild actions = 50",
+    "scoringRule": "Number = face value; Skip/Reverse/+2 = 20; Wild/Wild+4 = 50",
+    "scoringRuleFlip": "Number = face value; colored actions = 20; Wild = 40; Wild +3 = 50; Wild Color = 60",
+    "scoringRuleChaos": "Number = face value; colored actions and ThrowUp = 20; Wild, Wild +2, and rainbow specials = 50",
     "scoringRuleNote": "The winner collects the total of everyone else's remaining cards.",
     "player": "Player",
     "score": "Score",

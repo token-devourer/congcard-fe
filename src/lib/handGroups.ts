@@ -1,7 +1,7 @@
 import type { Card, CardValue, Color, GameSnapshot } from "@congcard/shared";
-import { canPlayCard } from "./rules";
+import { canPlayCard, isSpecialValue } from "./rules";
 
-export type HandGroupId = Color | "wild";
+export type HandGroupId = Color | "special" | "wild";
 
 export interface GroupedHandCard {
   card: Card;
@@ -17,7 +17,7 @@ export interface HandGroup {
   drawnCount: number;
 }
 
-export const HAND_GROUP_ORDER: HandGroupId[] = ["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "wild"];
+export const HAND_GROUP_ORDER: HandGroupId[] = ["red", "yellow", "green", "blue", "orange", "cyan", "purple", "pink", "special", "wild"];
 
 const VALUE_ORDER = new Map<CardValue, number>([
   [0, 0],
@@ -32,13 +32,22 @@ const VALUE_ORDER = new Map<CardValue, number>([
   [9, 9],
   ["skip", 10],
   ["reverse", 11],
-  ["draw2", 12],
-  ["draw5", 13],
-  ["flip", 14],
-  ["wild", 15],
-  ["wild3", 16],
-  ["wild4", 17],
-  ["wildColor", 18]
+  ["draw1", 12],
+  ["draw2", 13],
+  ["draw5", 14],
+  ["throwup", 15],
+  ["flip", 16],
+  ["wild", 17],
+  ["wild2", 18],
+  ["wild3", 19],
+  ["wild4", 20],
+  ["wildColor", 21],
+  ["flashbang", 22],
+  ["steal", 23],
+  ["favor", 24],
+  ["peek", 25],
+  ["timeskip", 26],
+  ["nuke", 27]
 ]);
 
 export function shouldUseGroupedHand(cardCount: number, isNarrow: boolean): boolean {
@@ -55,7 +64,7 @@ export function groupHand(snapshot: GameSnapshot, actionLocked = false): HandGro
   }
 
   for (const card of hand) {
-    const id = card.color ?? "wild";
+    const id = groupIdForCard(card);
     groups.get(id)?.push({
       card,
       playable: !actionLocked && canPlayCard(snapshot, card),
@@ -73,6 +82,14 @@ export function groupHand(snapshot: GameSnapshot, actionLocked = false): HandGro
       drawnCount: cards.filter((item) => item.drawn).length
     };
   });
+}
+
+function groupIdForCard(card: Card): HandGroupId {
+  if (!card.color && isSpecialValue(card.value)) {
+    return "special";
+  }
+
+  return card.color ?? "wild";
 }
 
 function compareGroupedCards(left: GroupedHandCard, right: GroupedHandCard): number {

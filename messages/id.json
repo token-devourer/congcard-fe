@@ -24,6 +24,7 @@
     "cyan": "Cyan",
     "purple": "Ungu",
     "pink": "Pink",
+    "special": "Spesial",
     "wild": "Bebas"
   },
   "landing": {
@@ -413,8 +414,9 @@
     "earnedThisRound": "+{points} poin ronde ini",
     "fromOpponents": "Dari sisa kartu lawan",
     "cardsLeft": "{count} kartu",
-    "scoringRule": "Angka = nilai kartu · Skip/Reverse/+2 = 20 · Wild/Wild+4 = 50",
-    "scoringRuleFlip": "Angka = nilai kartu; aksi berwarna = 20; aksi Wild = 50",
+    "scoringRule": "Angka = nilai kartu; Skip/Reverse/+2 = 20; Wild/Wild+4 = 50",
+    "scoringRuleFlip": "Angka = nilai kartu; aksi berwarna = 20; Wild = 40; Wild +3 = 50; Wild Color = 60",
+    "scoringRuleChaos": "Angka = nilai kartu; aksi berwarna dan ThrowUp = 20; Wild, Wild +2, dan special pelangi = 50",
     "scoringRuleNote": "Pemenang mengumpulkan total sisa kartu semua lawan.",
     "player": "Pemain",
     "score": "Skor",

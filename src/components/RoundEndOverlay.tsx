@@ -29,6 +29,12 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
   const showLastStand = Boolean(lastStandRows?.length);
   const roundScore = snapshot.roundScore;
+  const scoringRuleKey =
+    snapshot.settings.modeId === "flip"
+      ? "roundEnd.scoringRuleFlip"
+      : snapshot.settings.modeId === "chaos"
+        ? "roundEnd.scoringRuleChaos"
+        : "roundEnd.scoringRule";
 
   return (
     <AnimatePresence>
@@ -161,7 +167,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                   })}
                 </div>
                 <p className="mt-2.5 text-center text-[11px] leading-relaxed text-[var(--muted)]">
-                  {t(snapshot.settings.modeId === "flip" ? "roundEnd.scoringRuleFlip" : "roundEnd.scoringRule")}
+                  {t(scoringRuleKey)}
                   <br />
                   {t("roundEnd.scoringRuleNote")}
                 </p>
