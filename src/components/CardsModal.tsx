@@ -303,7 +303,6 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
                         >
                           <CardView
                             card={face}
-                            small
                             onClick={() => handleCardClick(face, key)}
                           />
                           {isPreview ? (
