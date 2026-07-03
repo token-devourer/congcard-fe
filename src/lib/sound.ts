@@ -48,6 +48,7 @@ export type SoundName =
   | "memeJackpot"
   | "memeRoulette"
   | "memeNuke"
+  | "memeNukeDeath"
   | "memeMime"
   | "memeStealExecute"
   | "memeFavorExecute"
@@ -67,7 +68,7 @@ const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
   memePeek: "/audio/acumalaka-frog.mp3",
   memeTimeskip: "/audio/timeskip-cat.mp3",
   memeNuke: "/audio/nuke-cat-initiate.mp3",
-  memeNukeCountdown: "/audio/nuke-cat-merged-countdown-execute.mp3"
+  memeNukeCountdown: "/audio/nuke-cat-countdown.mp3"
 };
 
 let spriteInitPromise: Promise<void> | null = null;
@@ -242,6 +243,12 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
     case "nuke":
       at("memeNuke", 650);
       playSoundAt("memeNukeCountdown", Math.max(0, (event.startsAt ?? serverNow) - serverNow));
+      {
+        const deathStartsAt = event.countdownEndsAt ?? event.resolvesAt ?? ((event.startsAt ?? serverNow) + 40_000);
+        const deathDelayMs = Math.max(0, deathStartsAt - serverNow);
+        playSoundAt("memeNukeDeath", deathDelayMs);
+        duckMusic(deathDelayMs, 1_200);
+      }
       break;
     default:
       break;
@@ -791,6 +798,22 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       tone(ctx, t, { freq: 40, dur: 0.5, type: "sine", gain: 0.2, lp: 200 });
       tone(ctx, t + 0.1, { freq: 60, dur: 0.3, type: "sawtooth", gain: 0.08, lp: 500 });
       tone(ctx, t + 0.4, { freq: 2000, dur: 0.1, type: "sine", gain: 0.06, lp: 8000 });
+      break;
+    }
+    case "memeNukeDeath": {
+      const notes = [988, 740, 554, 415, 311, 233];
+      notes.forEach((freq, index) => {
+        tone(ctx, t + index * 0.075, {
+          freq,
+          dur: 0.12,
+          type: "square",
+          gain: 0.16 - index * 0.014,
+          lp: 2600,
+          attack: 0.002
+        });
+      });
+      noise(ctx, t + 0.34, { dur: 0.12, gain: 0.08, hp: 800, lp: 3200 });
+      tone(ctx, t + 0.42, { freq: 123, dur: 0.28, type: "square", gain: 0.12, sweepTo: 82, lp: 1400, attack: 0.003 });
       break;
     }
     case "memeMime": {
