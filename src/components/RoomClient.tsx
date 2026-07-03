@@ -531,6 +531,12 @@ export function Lobby({
   const isHost = Boolean(me?.isHost);
   const visibleModeId = (localModeId || snapshot.settings.modeId) as RoomSettings["modeId"];
   const deckBoxMinimum = Math.max(visibleModeId === "chaos" ? 2 : 1, Math.ceil(snapshot.players.length / 4));
+  const deckBoxesHintKey =
+    visibleModeId === "chaos"
+      ? "lobby.deckBoxesHintChaos"
+      : visibleModeId === "flip"
+        ? "lobby.deckBoxesHintFlip"
+        : "lobby.deckBoxesHint";
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const { tier, setTier, autoDetected } = useGraphicsPreset();
 
@@ -738,7 +744,7 @@ export function Lobby({
             ))}
           </select>
           <span className="text-xs leading-snug text-[var(--muted)]">
-            {t(snapshot.settings.modeId === "flip" ? "lobby.deckBoxesHintFlip" : "lobby.deckBoxesHint", { count: deckBoxMinimum })}
+            {t(deckBoxesHintKey, { count: deckBoxMinimum })}
           </span>
         </label>
         <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">

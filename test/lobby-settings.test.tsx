@@ -146,6 +146,7 @@ describe("Lobby settings", () => {
     expect(call).not.toBeChecked();
     expect(deckBoxes).toHaveValue("2");
     expect(deckBoxes?.querySelector('option[value="1"]')).toBeDisabled();
+    expect(screen.getByText("Minimum for this lobby: 2. One Chaos box contains 128 cards.")).toBeInTheDocument();
 
     fireEvent.change(gameMode!, { target: { value: "standard" } });
     expect(call).toBeChecked();

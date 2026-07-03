@@ -20,6 +20,8 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const deckBoxes = settings?.deckBoxes ?? 1;
   const lastStand = settings?.scoreTarget === "lastStand";
   const flipMode = settings?.modeId === "flip";
+  const chaosMode = settings?.modeId === "chaos";
+  const deckBoxesRuleKey = chaosMode ? "deckBoxesChaosRule" : flipMode ? "deckBoxesFlipRule" : "deckBoxesRule";
   const wild4RuleKey = settings?.stackingEnabled
     ? "actionWild4Stacking"
     : settings?.challengeEnabled ?? true
@@ -103,7 +105,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 {settings?.absentPlayerAction === "autoplay" ? (
                   <li>{settings.autoPlayCallOne ? t("autoPlayOneOn") : t("autoPlayOneOff")}</li>
                 ) : null}
-                <li>{t(flipMode ? "deckBoxesFlipRule" : "deckBoxesRule", { count: deckBoxes })}</li>
+                <li>{t(deckBoxesRuleKey, { count: deckBoxes })}</li>
               </ul>
             </section>
 
