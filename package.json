@@ -13,6 +13,8 @@
     "build:dev": "next build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "audio:audit": "node scripts/tune-audio.mjs audit",
+    "audio:tune": "node scripts/tune-audio.mjs tune",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -40,6 +42,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "ffmpeg-static": "^5.3.0",
     "jsdom": "^27.3.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.14"

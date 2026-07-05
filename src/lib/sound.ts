@@ -71,6 +71,11 @@ const SOUND_CLIPS: Partial<Record<SoundName, string>> = {
   memeNukeCountdown: "/audio/nuke-cat-countdown.mp3"
 };
 
+const CLIP_GAIN: Partial<Record<SoundName, number>> = {
+  memeSteal: 1.12,
+  memeNuke: 1.12
+};
+
 let spriteInitPromise: Promise<void> | null = null;
 
 export function initAudioSprite(): Promise<void> {
@@ -119,7 +124,8 @@ function playClip(name: SoundName, startsInMs: number, level: number): boolean {
   if (!src || typeof Audio === "undefined") return false;
 
   const audio = new Audio(src);
-  audio.volume = Math.min(1, 0.58 + (Math.max(1, level) - 1) * 0.06);
+  const clipGain = CLIP_GAIN[name] ?? 1;
+  audio.volume = Math.min(1, (0.58 + (Math.max(1, level) - 1) * 0.06) * clipGain);
   const play = () => {
     void audio.play().catch(() => undefined);
   };
