@@ -66,6 +66,10 @@ const BUST_CONFETTI = [
   [8, 116, 4]
 ] as const;
 
+const FLASHBANG_SFX_DELAY_MS = 650;
+const FLASHBANG_SFX_DURATION_MS = 4_730;
+const FLASHBANG_TOTAL_VFX_MS = FLASHBANG_SFX_DELAY_MS + FLASHBANG_SFX_DURATION_MS;
+
 export function GameEventOverlay() {
   const events = useRoomStore((state) => state.events);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
@@ -125,6 +129,9 @@ export function eventToastDurationMs(event: UiEvent): number {
     return 2_200;
   }
   if (event.type === "chaos") {
+    if (event.kind === "flashbang" && event.phase === "sequence") {
+      return FLASHBANG_TOTAL_VFX_MS + 250;
+    }
     if (event.kind === "nuke" && event.phase === "countdown" && event.startsAt && event.resolvesAt) {
       return Math.max(2_400, event.resolvesAt - event.startsAt);
     }
@@ -528,13 +535,21 @@ function ChaosBustVfx({
 
 function ChaosCardVfx({ event, preset }: { event: Extract<UiEvent, { type: "chaos" }>; preset: import("@/lib/animationPresets").AnimationPreset }) {
   if (event.kind === "flashbang") {
+    const flashDelay = FLASHBANG_SFX_DELAY_MS / 1000;
+    const flashDuration = FLASHBANG_SFX_DURATION_MS / 1000;
     return (
       <div className="absolute inset-0 z-[1] grid place-items-center">
         <motion.div
           className="absolute inset-0 bg-white"
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.96, 0.12, 0] }}
-          transition={{ duration: 0.58, times: [0, 0.16, 0.42, 1], ease: "easeOut" }}
+          animate={{ opacity: [0, 0.98, 0.84, 0.34, 0] }}
+          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.05, 0.24, 0.72, 1], ease: "easeOut" }}
+        />
+        <motion.div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.9),rgba(255,255,255,0.42)_30%,rgba(255,255,255,0)_68%)]"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: [0, 0.72, 0.36, 0], scale: [0.9, 1.02, 1.08, 1.12] }}
+          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.12, 0.55, 1], ease: "easeOut" }}
         />
         {Array.from({ length: Math.min(3, preset.particleCount) }, (_, index) => (
           <motion.div
@@ -542,7 +557,7 @@ function ChaosCardVfx({ event, preset }: { event: Extract<UiEvent, { type: "chao
             className="absolute rounded-full border-4 border-white/55"
             initial={{ width: 80, height: 80, opacity: 0 }}
             animate={{ width: 360 + index * 90, height: 360 + index * 90, opacity: [0, 0.65, 0] }}
-            transition={{ duration: 0.9, delay: index * 0.08, ease: "easeOut" }}
+            transition={{ duration: 1.2, delay: flashDelay + index * 0.08, ease: "easeOut" }}
           />
         ))}
       </div>
