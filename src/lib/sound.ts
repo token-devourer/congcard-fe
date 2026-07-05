@@ -1,5 +1,5 @@
 import type { UiEvent } from "./events";
-import { audioAvailable, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
+import { audioAvailable, getSfxVolume, onSfxVolumeChange, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
 import { duckMusic } from "./music";
 import { safeGet, safeSet } from "./storage";
 import { loadAudioSprite, spriteReady, getSpriteBuffer, getSpriteEntry } from "./audioSprite";
@@ -78,6 +78,25 @@ const CLIP_GAIN: Partial<Record<SoundName, number>> = {
 
 let spriteInitPromise: Promise<void> | null = null;
 
+type ActiveClip = {
+  audio: HTMLAudioElement;
+  baseVolume: number;
+};
+
+const activeClips = new Set<ActiveClip>();
+
+function effectiveClipVolume(baseVolume: number): number {
+  return isSoundMuted() ? 0 : Math.min(1, baseVolume * getSfxVolume());
+}
+
+function syncActiveClipVolumes(): void {
+  for (const clip of activeClips) {
+    clip.audio.volume = effectiveClipVolume(clip.baseVolume);
+  }
+}
+
+onSfxVolumeChange(syncActiveClipVolumes);
+
 export function initAudioSprite(): Promise<void> {
   if (spriteInitPromise) return spriteInitPromise;
   if (typeof window === "undefined" || !audioAvailable()) {
@@ -125,9 +144,17 @@ function playClip(name: SoundName, startsInMs: number, level: number): boolean {
 
   const audio = new Audio(src);
   const clipGain = CLIP_GAIN[name] ?? 1;
-  audio.volume = Math.min(1, (0.58 + (Math.max(1, level) - 1) * 0.06) * clipGain);
+  const clip: ActiveClip = {
+    audio,
+    baseVolume: Math.min(1, (0.58 + (Math.max(1, level) - 1) * 0.06) * clipGain)
+  };
+  audio.volume = effectiveClipVolume(clip.baseVolume);
+  activeClips.add(clip);
+  const cleanup = () => activeClips.delete(clip);
+  audio.addEventListener("ended", cleanup, { once: true });
+  audio.addEventListener("error", cleanup, { once: true });
   const play = () => {
-    void audio.play().catch(() => undefined);
+    void audio.play().catch(cleanup);
   };
 
   if (startsInMs > 0) {
@@ -146,6 +173,7 @@ export function isSoundMuted(): boolean {
 export function setSoundMuted(muted: boolean): void {
   if (typeof window === "undefined") return;
   safeSet(STORAGE_KEY, muted ? "1" : "0");
+  syncActiveClipVolumes();
 }
 
 export function unlockSound(): void {

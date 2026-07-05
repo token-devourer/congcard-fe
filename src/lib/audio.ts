@@ -6,6 +6,7 @@ const SFX_VOLUME_KEY = "congcard:sfx-volume";
 let audioContext: AudioContext | null = null;
 let sfxGain: GainNode | null = null;
 let sfxCompressor: DynamicsCompressorNode | null = null;
+const sfxVolumeListeners = new Set<(volume: number) => void>();
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
@@ -25,6 +26,16 @@ export function setSfxVolume(volume: number): void {
     // Short ramp avoids a click when the user drags the slider.
     sfxGain.gain.setTargetAtTime(SFX_MASTER * value, audioContext.currentTime, 0.02);
   }
+  for (const listener of sfxVolumeListeners) {
+    listener(value);
+  }
+}
+
+export function onSfxVolumeChange(listener: (volume: number) => void): () => void {
+  sfxVolumeListeners.add(listener);
+  return () => {
+    sfxVolumeListeners.delete(listener);
+  };
 }
 
 export function audioAvailable(): boolean {
