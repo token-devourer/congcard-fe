@@ -247,7 +247,9 @@
     "nukeCountdown": "COUNTDOWN NUKE",
     "nukeDetonating": "NUKE",
     "chaosChooseTarget": "PILIH TARGET",
-    "chaosChooseCard": "PILIH KARTU"
+    "chaosChooseCard": "PILIH KARTU",
+    "chaosBustSelf": "Kamu bust dengan {count} kartu",
+    "chaosBustOther": "{name} bust dengan {count} kartu"
   },
   "chaos": {
     "chooseTarget": "Pilih target",
@@ -338,6 +340,7 @@
     "chaosTimeskipDrew": "{name} otomatis mengambil kartu saat Time Skip.",
     "chaosTimeskipPlayed": "{name} otomatis memainkan {card} saat Time Skip.",
     "chaosNukePenalty": "{name} menerima {count} kartu countdown Nuke.",
+    "chaosBust": "{name} bust dengan {count} kartu.",
     "skipped": "{name} dilewati.",
     "reversed": "Arah putaran berbalik.",
     "activeColor": "Warna aktif: {color}.",

@@ -247,7 +247,9 @@
     "nukeCountdown": "NUKE COUNTDOWN",
     "nukeDetonating": "NUKE",
     "chaosChooseTarget": "CHOOSE TARGET",
-    "chaosChooseCard": "CHOOSE CARD"
+    "chaosChooseCard": "CHOOSE CARD",
+    "chaosBustSelf": "You busted with {count} cards",
+    "chaosBustOther": "{name} busted with {count} cards"
   },
   "chaos": {
     "chooseTarget": "Choose target",
@@ -338,6 +340,7 @@
     "chaosTimeskipDrew": "{name} auto-drew during Time Skip.",
     "chaosTimeskipPlayed": "{name} auto-played {card} during Time Skip.",
     "chaosNukePenalty": "{name} took {count} Nuke countdown card(s).",
+    "chaosBust": "{name} busted with {count} cards.",
     "skipped": "{name} was skipped.",
     "reversed": "Turn direction changed.",
     "activeColor": "Active color: {color}.",

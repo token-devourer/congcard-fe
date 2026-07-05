@@ -10,7 +10,8 @@ export type UiEvent = (
   | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
-  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; countdownEndsAt?: number; detonationEndsAt?: number }
+  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; amount?: number; countdownEndsAt?: number; detonationEndsAt?: number }
+  | { id: number; type: "chaosBust"; playerId: string; nickname: string; count: number; self: boolean }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
@@ -296,11 +297,22 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, p
             phase: event.phase,
             ...(event.actorId ? { actorId: event.actorId } : {}),
             ...(event.targetIds ? { targetIds: event.targetIds } : {}),
+            ...(event.amount !== undefined ? { amount: event.amount } : {}),
             ...(snapshot.pendingChaos?.countdownEndsAt ? { countdownEndsAt: snapshot.pendingChaos.countdownEndsAt } : {}),
             ...(snapshot.pendingChaos?.detonationEndsAt ? { detonationEndsAt: snapshot.pendingChaos.detonationEndsAt } : {}),
             ...timing
           }]
         : [];
+    case "chaosBust":
+      return target ? [{
+        id: idBase,
+        type: "chaosBust",
+        playerId: target.id,
+        nickname: target.nickname,
+        count: event.amount ?? target.cardCount,
+        self: target.id === selfId,
+        ...timing
+      }] : [];
     default:
       return [];
   }

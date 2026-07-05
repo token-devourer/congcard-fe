@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
+import { eventToastDurationMs } from "../src/components/GameEventOverlay";
 import { diffSnapshots } from "../src/lib/events";
 import { soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
 
@@ -86,6 +87,26 @@ describe("diffSnapshots", () => {
     const penalties = diffSnapshots(prev, next).filter((event) => event.type === "penalty");
     expect(penalties).toHaveLength(1);
     expect(penalties[0]).toMatchObject({ count: 6, playerId: "b", startsAt: 1_000, resolvesAt: 3_000 });
+  });
+
+  it("maps chaos bust presentation events with enough duration for VFX", () => {
+    const prev = snapshot({ presentationEvents: [] });
+    const next = snapshot({
+      players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1, cardCount: 0, finishedRank: 1 })],
+      presentationEvents: [{
+        id: 9,
+        seq: 9,
+        kind: "chaosBust",
+        targetIds: ["b"],
+        amount: 26,
+        startsAt: 2_000,
+        resolvesAt: 3_800
+      }]
+    });
+
+    const bust = diffSnapshots(prev, next).find((event) => event.type === "chaosBust");
+    expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 3_800 });
+    expect(eventToastDurationMs(bust!)).toBe(2_200);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {

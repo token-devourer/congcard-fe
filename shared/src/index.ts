@@ -372,6 +372,7 @@ export type PresentationEventKind =
   | "shuffle"
   | "flip"
   | "chaos"
+  | "chaosBust"
   | "pause"
   | "resume"
   | "roundEnd";

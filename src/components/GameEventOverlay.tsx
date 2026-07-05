@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { anchorRect } from "@/lib/anchors";
 import { useRoomStore } from "@/lib/store";
 import type { UiEvent } from "@/lib/events";
 import { useNow } from "@/lib/useNow";
@@ -41,6 +42,30 @@ const BURST_POINTS = [
   [0, 150, 0]
 ] as const;
 
+const CHAOS_SPARKS = [
+  [-156, -42, -18],
+  [-118, 108, 16],
+  [-52, -142, 8],
+  [38, 126, -10],
+  [112, -96, 22],
+  [152, 34, -16],
+  [-10, -170, 0],
+  [18, 168, 0],
+  [-190, 18, -28],
+  [190, -12, 28]
+] as const;
+
+const BUST_CONFETTI = [
+  [-92, -72, -32],
+  [-74, 54, 22],
+  [-28, -104, 9],
+  [40, 92, -18],
+  [84, -58, 34],
+  [112, 18, -12],
+  [-118, 4, 18],
+  [8, 116, 4]
+] as const;
+
 export function GameEventOverlay() {
   const events = useRoomStore((state) => state.events);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
@@ -48,8 +73,16 @@ export function GameEventOverlay() {
   // top shifted every toast gate by the offset. Only tick while toasts exist.
   const now = useNow(50, events.length > 0);
   const { preset } = useGraphicsPreset();
+  const reduceMotion = useReducedMotion() || preset.reduceMotion;
   const toastEvents = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
   const visibleToasts = toastEvents.filter((event) => !(event.type === "chaos" && event.kind === "nuke" && event.phase === "countdown"));
+  const nukeCountdownPulse = toastEvents.find((event): event is Extract<UiEvent, { type: "chaos" }> =>
+    event.type === "chaos" &&
+    event.kind === "nuke" &&
+    event.phase === "countdown" &&
+    (!event.startsAt || event.startsAt <= now) &&
+    (!event.resolvesAt || event.resolvesAt + 500 > now)
+  );
   const active = visibleToasts
     .filter((event) => (!event.startsAt || event.startsAt <= now) && (!event.resolvesAt || event.resolvesAt + 500 > now))
     .sort((a, b) => eventPriority(b) - eventPriority(a) || (a.startsAt ?? 0) - (b.startsAt ?? 0))[0];
@@ -62,6 +95,7 @@ export function GameEventOverlay() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center overflow-hidden">
+      {nukeCountdownPulse ? <NukeCountdownPulse event={nukeCountdownPulse} reduceMotion={Boolean(reduceMotion)} /> : null}
       <AnimatePresence>
         {active ? <EventToast key={active.id} event={active} onDone={() => dismissEvent(active.id)} preset={preset} /> : null}
       </AnimatePresence>
@@ -71,6 +105,7 @@ export function GameEventOverlay() {
 
 function eventPriority(event: UiEvent): number {
   switch (event.type) {
+    case "chaosBust": return 6;
     case "chaos": return event.kind === "nuke" ? 6 : 4;
     case "catchWindow": return 5;
     case "jumpIn": return 4;
@@ -86,6 +121,9 @@ function eventPriority(event: UiEvent): number {
 }
 
 export function eventToastDurationMs(event: UiEvent): number {
+  if (event.type === "chaosBust") {
+    return 2_200;
+  }
   if (event.type === "chaos") {
     if (event.kind === "nuke" && event.phase === "countdown" && event.startsAt && event.resolvesAt) {
       return Math.max(2_400, event.resolvesAt - event.startsAt);
@@ -162,7 +200,9 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
         animate={reduceMotion ? { opacity: 1 } : { scale: [0.72, 1.12, 1], opacity: 1, y: 0 }}
         exit={reduceMotion ? { opacity: 0 } : { scale: 0.84, opacity: 0, y: -22 }}
         transition={{ type: reduceMotion ? "tween" : "spring", stiffness: 420, damping: 22 }}
-        className={`relative z-10 grid justify-items-center gap-2 ${event.type === "penalty" && event.self ? "shake" : ""}`}
+        className={`relative z-10 grid justify-items-center gap-2 ${
+          (event.type === "penalty" && event.self) || (event.type === "chaosBust" && event.self) ? "shake" : ""
+        }`}
       >
         <div
           className="event-toast-label display relative overflow-hidden rounded-[28px] border-2 border-white/30 text-center font-black uppercase text-white shadow-[0_24px_64px_rgba(0,0,0,0.55)] backdrop-blur-md"
@@ -189,8 +229,16 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
 }
 
 function EventVfx({ event, reduceMotion, preset }: { event: UiEvent; reduceMotion: boolean; preset: import("@/lib/animationPresets").AnimationPreset }) {
+  if (event.type === "chaosBust") {
+    return <ChaosBustVfx event={event} reduceMotion={reduceMotion} preset={preset} />;
+  }
+
   if (reduceMotion) {
     return null;
+  }
+
+  if (event.type === "chaos") {
+    return <ChaosCardVfx event={event} preset={preset} />;
   }
 
   if (event.type === "reverse") {
@@ -342,8 +390,300 @@ function EventVfx({ event, reduceMotion, preset }: { event: UiEvent; reduceMotio
   return null;
 }
 
+function anchoredCenterStyle(anchorKey: string): CSSProperties {
+  const rect = anchorRect(anchorKey);
+  if (!rect) {
+    return { left: "50%", top: "50%", transform: "translate(-50%, -50%)" };
+  }
+  return {
+    left: rect.left + rect.width / 2,
+    top: rect.top + rect.height / 2,
+    transform: "translate(-50%, -50%)"
+  };
+}
+
+function NukeCountdownPulse({ event, reduceMotion }: { event: Extract<UiEvent, { type: "chaos" }>; reduceMotion: boolean }) {
+  const targetId = event.targetIds?.[0];
+  const style = anchoredCenterStyle(targetId ? `seat:${targetId}` : "draw");
+  if (reduceMotion) {
+    return (
+      <div className="absolute inset-0 z-[1]">
+        <div className="absolute h-0 w-0" style={style}>
+          <motion.div
+            className="absolute -left-12 -top-12 h-24 w-24 rounded-full border-2 border-red-300/30"
+            animate={{ opacity: [0.18, 0.34, 0.18] }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="absolute inset-0 z-[1]">
+      <div className="absolute h-0 w-0" style={style}>
+        <motion.div
+          className="absolute -left-20 -top-20 h-40 w-40 rounded-full border border-red-300/24"
+          animate={{ scale: [0.76, 1.25, 0.76], opacity: [0.12, 0.34, 0.12] }}
+          transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
+      <motion.div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,62,40,0.10),transparent_42%)]"
+        animate={{ opacity: [0.18, 0.34, 0.18] }}
+        transition={{ duration: 1.35, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
+function SeatPulse({ playerId, index, label = "ZIP" }: { playerId: string; index: number; label?: string }) {
+  return (
+    <div className="absolute h-0 w-0" style={anchoredCenterStyle(`seat:${playerId}`)}>
+      <motion.div
+        className="display absolute -left-8 -top-8 grid h-16 w-16 place-items-center rounded-full border-2 border-[var(--gold)]/55 bg-black/55 text-xs font-black text-[var(--gold-strong)] shadow-[0_0_28px_rgba(242,193,78,0.38)]"
+        initial={{ scale: 0.35, opacity: 0, rotate: -12 }}
+        animate={{ scale: [0.35, 1.12, 0.84], opacity: [0, 1, 0], rotate: [-12, 8, 0] }}
+        transition={{ duration: 1.1, delay: index * 0.12, ease: "easeOut" }}
+      >
+        {label}
+      </motion.div>
+      <motion.div
+        className="absolute -left-12 -top-12 h-24 w-24 rounded-full border border-white/25"
+        initial={{ scale: 0.3, opacity: 0 }}
+        animate={{ scale: [0.3, 1.35], opacity: [0.65, 0] }}
+        transition={{ duration: 1.05, delay: index * 0.12, ease: "easeOut" }}
+      />
+    </div>
+  );
+}
+
+function ChaosBustVfx({
+  event,
+  reduceMotion,
+  preset
+}: {
+  event: Extract<UiEvent, { type: "chaosBust" }>;
+  reduceMotion: boolean;
+  preset: import("@/lib/animationPresets").AnimationPreset;
+}) {
+  const style = anchoredCenterStyle(`seat:${event.playerId}`);
+  const particleCount = reduceMotion ? 0 : preset.particleCount;
+
+  return (
+    <div className="absolute inset-0 z-[2]">
+      <div className="absolute h-0 w-0" style={style}>
+        {!reduceMotion ? (
+          <>
+            <motion.div
+              className="absolute -left-28 -top-28 h-56 w-56 rounded-full border-4 border-yellow-200/65 bg-[radial-gradient(circle,rgba(255,241,142,0.58),rgba(255,90,48,0.24)_36%,transparent_68%)]"
+              initial={{ scale: 0.18, opacity: 0.95 }}
+              animate={{ scale: [0.18, 1.22, 1.65], opacity: [0.95, 0.7, 0] }}
+              transition={{ duration: 0.82, ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.88),rgba(255,210,88,0.62)_30%,rgba(255,64,44,0.16)_58%,transparent_70%)]"
+              initial={{ scale: 0.1, opacity: 0 }}
+              animate={{ scale: [0.1, 1.05, 0.78], opacity: [0, 1, 0] }}
+              transition={{ duration: 0.72, ease: "easeOut" }}
+            />
+            {BUST_CONFETTI.slice(0, particleCount).map(([x, y, rotate], index) => (
+              <motion.div
+                key={index}
+                className="absolute -left-4 -top-5 h-10 w-7 rounded-md border border-white/40 bg-gradient-to-b from-yellow-200 to-red-500 shadow-[0_0_18px_rgba(255,92,73,0.55)]"
+                initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.3 }}
+                animate={{ x, y, rotate, opacity: [0, 1, 0], scale: [0.4, 1.04, 0.7] }}
+                transition={{ duration: 1.05, delay: index * 0.035, ease: "easeOut" }}
+              />
+            ))}
+            {Array.from({ length: Math.min(4, particleCount) }, (_, index) => (
+              <motion.div
+                key={`smoke-${index}`}
+                className="absolute -left-7 -top-7 h-14 w-14 rounded-full bg-white/24 blur-[1px]"
+                initial={{ x: 0, y: 0, scale: 0.25, opacity: 0 }}
+                animate={{
+                  x: Math.cos(index * 1.7) * 70,
+                  y: Math.sin(index * 1.7) * 52,
+                  scale: [0.25, 1.2],
+                  opacity: [0, 0.42, 0]
+                }}
+                transition={{ duration: 1.25, delay: 0.1 + index * 0.06, ease: "easeOut" }}
+              />
+            ))}
+          </>
+        ) : null}
+        <motion.div
+          className="display absolute -left-16 -top-10 grid min-h-20 w-32 place-items-center rounded-[24px] border-4 border-white/45 bg-gradient-to-b from-yellow-200 via-red-500 to-red-800 px-4 text-center text-3xl font-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.48)]"
+          initial={reduceMotion ? { opacity: 0 } : { scale: 0.35, opacity: 0, rotate: -14 }}
+          animate={reduceMotion ? { opacity: 1 } : { scale: [0.35, 1.18, 0.94], opacity: [0, 1, 1], rotate: [-14, 10, -3] }}
+          transition={{ type: reduceMotion ? "tween" : "spring", stiffness: 520, damping: 18 }}
+        >
+          <span>BUST!</span>
+          <span className="text-base leading-none">&gt;25</span>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function ChaosCardVfx({ event, preset }: { event: Extract<UiEvent, { type: "chaos" }>; preset: import("@/lib/animationPresets").AnimationPreset }) {
+  if (event.kind === "flashbang") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        <motion.div
+          className="absolute inset-0 bg-white"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.96, 0.12, 0] }}
+          transition={{ duration: 0.58, times: [0, 0.16, 0.42, 1], ease: "easeOut" }}
+        />
+        {Array.from({ length: Math.min(3, preset.particleCount) }, (_, index) => (
+          <motion.div
+            key={index}
+            className="absolute rounded-full border-4 border-white/55"
+            initial={{ width: 80, height: 80, opacity: 0 }}
+            animate={{ width: 360 + index * 90, height: 360 + index * 90, opacity: [0, 0.65, 0] }}
+            transition={{ duration: 0.9, delay: index * 0.08, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (event.kind === "throwup") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        <motion.div
+          className="display absolute rounded-full border-4 border-lime-100/50 bg-green-400/38 px-8 py-4 text-4xl font-black text-lime-50 shadow-[0_0_48px_rgba(96,255,122,0.36)]"
+          initial={{ scale: 0.3, opacity: 0, rotate: -8 }}
+          animate={{ scale: [0.3, 1.16, 0.9], opacity: [0, 1, 0.76], rotate: [-8, 8, -2] }}
+          transition={{ duration: 1.05, ease: "easeOut" }}
+        >
+          BLEH
+        </motion.div>
+        {CHAOS_SPARKS.slice(0, preset.particleCount).map(([x, y, rotate], index) => (
+          <motion.div
+            key={index}
+            className="absolute h-10 w-10 rounded-full bg-lime-300/70 shadow-[0_0_18px_rgba(132,255,99,0.45)]"
+            initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.22 }}
+            animate={{ x, y, rotate, opacity: [0, 0.9, 0], scale: [0.22, 1, 0.55] }}
+            transition={{ duration: 1.1, delay: index * 0.035, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (event.kind === "steal") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        {event.targetIds?.slice(0, 2).map((playerId, index) => <SeatPulse key={playerId} playerId={playerId} index={index} label="YOINK" />)}
+        <motion.div
+          className="display absolute rounded-[28px] border-2 border-purple-100/45 bg-purple-950/70 px-8 py-4 text-4xl font-black text-purple-100 shadow-[0_0_44px_rgba(190,88,255,0.42)]"
+          initial={{ scale: 0.46, opacity: 0, y: 24 }}
+          animate={{ scale: [0.46, 1.12, 0.95], opacity: [0, 1, 0.82], y: [24, -8, 0] }}
+          transition={{ duration: 1.12, ease: "easeOut" }}
+        >
+          HEH
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (event.kind === "favor") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        {event.targetIds?.slice(0, 2).map((playerId, index) => <SeatPulse key={playerId} playerId={playerId} index={index} label="GIVE" />)}
+        {CHAOS_SPARKS.slice(0, preset.particleCount).map(([x, y, rotate], index) => (
+          <motion.div
+            key={index}
+            className="display absolute grid h-11 w-14 place-items-center rounded-full border border-pink-100/35 bg-pink-400/50 text-xs font-black text-white"
+            initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.35 }}
+            animate={{ x, y, rotate, opacity: [0, 1, 0], scale: [0.35, 1.06, 0.64] }}
+            transition={{ duration: 1.15, delay: index * 0.035, ease: "easeOut" }}
+          >
+            OK
+          </motion.div>
+        ))}
+      </div>
+    );
+  }
+
+  if (event.kind === "peek") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        <motion.div
+          className="absolute grid h-56 w-56 place-items-center rounded-full border-4 border-cyan-100/45 bg-black/35 shadow-[0_0_64px_rgba(80,220,255,0.38)]"
+          initial={{ scaleX: 0.1, scaleY: 0.02, opacity: 0 }}
+          animate={{ scaleX: [0.1, 1.2, 1], scaleY: [0.02, 0.72, 0.58], opacity: [0, 1, 0.74] }}
+          transition={{ duration: 1.12, ease: "easeOut" }}
+        >
+          <motion.div
+            className="h-20 w-20 rounded-full bg-cyan-100 shadow-[0_0_28px_rgba(165,255,255,0.75)]"
+            animate={{ scale: [0.7, 1.1, 0.9] }}
+            transition={{ duration: 1.1, ease: "easeOut" }}
+          />
+        </motion.div>
+        {Array.from({ length: Math.min(5, preset.particleCount) }, (_, index) => (
+          <motion.div
+            key={index}
+            className="absolute h-20 w-14 rounded-lg border border-cyan-100/30 bg-white/12"
+            initial={{ y: 70, rotateY: 90, opacity: 0 }}
+            animate={{ y: -70, rotateY: [90, 0], opacity: [0, 0.82, 0] }}
+            transition={{ duration: 1.1, delay: 0.1 + index * 0.09, ease: "easeOut" }}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  if (event.kind === "timeskip") {
+    const targets = event.targetIds?.length ? event.targetIds : event.actorId ? [event.actorId] : [];
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        {targets.slice(0, preset.particleCount).map((playerId, index) => <SeatPulse key={playerId} playerId={playerId} index={index} label="SKIP" />)}
+        <motion.div
+          className="display absolute grid h-56 w-56 place-items-center rounded-full border-[12px] border-yellow-100/45 bg-black/38 text-7xl font-black text-yellow-100"
+          initial={{ scale: 0.42, opacity: 0, rotate: -90 }}
+          animate={{ scale: [0.42, 1.04, 0.92], opacity: [0, 1, 0.76], rotate: [-90, 360] }}
+          transition={{ duration: 1.35, ease: "easeInOut" }}
+        >
+          12
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (event.kind === "nuke") {
+    return (
+      <div className="absolute inset-0 z-[1] grid place-items-center">
+        {event.targetIds?.slice(0, 1).map((playerId, index) => <SeatPulse key={playerId} playerId={playerId} index={index} label="HIT" />)}
+        <motion.div
+          className="absolute h-72 w-72 rounded-full border-4 border-orange-100/55 bg-[radial-gradient(circle,rgba(255,240,168,0.7),rgba(255,107,31,0.34)_42%,transparent_68%)]"
+          initial={{ scale: 0.15, opacity: 0 }}
+          animate={{ scale: [0.15, 1.1, 1.55], opacity: [0, 0.9, 0] }}
+          transition={{ duration: 1.15, ease: "easeOut" }}
+        />
+        <motion.div
+          className="display absolute rounded-[32px] border-4 border-white/35 bg-red-700/72 px-8 py-4 text-5xl font-black text-white shadow-[0_0_58px_rgba(255,80,40,0.55)]"
+          initial={{ scale: 0.4, opacity: 0, rotate: -8 }}
+          animate={{ scale: [0.4, 1.18, 0.92], opacity: [0, 1, 0.8], rotate: [-8, 8, 0] }}
+          transition={{ duration: 1.1, ease: "easeOut" }}
+        >
+          BOOM
+        </motion.div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function eventWash(event: UiEvent): string {
   switch (event.type) {
+    case "chaosBust":
+      return event.self
+        ? "radial-gradient(circle at center, rgba(255, 214, 88, 0.28), transparent 34%), radial-gradient(circle at center, rgba(255, 64, 44, 0.42), transparent 54%), rgba(35, 4, 2, 0.44)"
+        : "radial-gradient(circle at center, rgba(255, 214, 88, 0.22), transparent 38%), rgba(35, 4, 2, 0.28)";
     case "chaos":
       return event.kind === "nuke"
         ? "radial-gradient(circle at center, rgba(255, 80, 40, 0.42), transparent 42%), rgba(20, 4, 2, 0.48)"
@@ -377,6 +717,14 @@ function toastContent(
   now: number
 ): { label: string; sublabel?: string; background: string; color?: string } {
   switch (event.type) {
+    case "chaosBust":
+      return {
+        label: "BUST!",
+        sublabel: event.self
+          ? t("events.chaosBustSelf", { count: event.count })
+          : t("events.chaosBustOther", { name: event.nickname, count: event.count }),
+        background: "linear-gradient(180deg, #fff0a8, #ff6b1f 48%, #8d1609)"
+      };
     case "chaos": {
       if (event.kind === "nuke" && event.phase === "countdown") {
         const remaining = Math.max(0, Math.ceil(((event.countdownEndsAt ?? event.resolvesAt ?? now) - now) / 1000));

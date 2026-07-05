@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import type { Card, GameSnapshot, VisibleCardFace } from "@congcard/shared";
+import type { Card, GameSnapshot, PresentationEvent, VisibleCardFace } from "@congcard/shared";
 import { anchorRect } from "@/lib/anchors";
 import { cardText } from "@/lib/rules";
 import { playSound } from "@/lib/sound";
@@ -40,6 +40,7 @@ export function FlightLayer() {
   const animatedChaosIds = useRef(new Set<number>());
   const animatedDealIds = useRef(new Set<number>());
   const animatedDrawIds = useRef(new Set<number>());
+  const animatedPresentationIds = useRef(new Set<number>());
   const [reducedMotion, setReducedMotion] = useState(false);
   const snapshot = useRoomStore((state) => state.snapshot);
   const clockOffset = useRoomStore((state) => state.clockOffset);
@@ -67,6 +68,7 @@ export function FlightLayer() {
       animatedChaosIds.current.clear();
       animatedDealIds.current.clear();
       animatedDrawIds.current.clear();
+      animatedPresentationIds.current.clear();
     }
 
     if (reducedMotion || preset.reduceMotion) {
@@ -173,6 +175,22 @@ export function FlightLayer() {
         });
       }
 
+      const previousPresentationSeq = prev.presentationEvents?.at(-1)?.seq ?? 0;
+      const serverNow = Date.now() + clockOffset;
+      for (const event of snapshot.presentationEvents ?? []) {
+        if (event.seq <= previousPresentationSeq || animatedPresentationIds.current.has(event.id)) {
+          continue;
+        }
+        animatedPresentationIds.current.add(event.id);
+        const transfer = chaosTransferFlight(event, snapshot);
+        if (transfer) {
+          flights.push({
+            ...transfer,
+            delay: Math.max(0, event.startsAt - serverNow) / 1000
+          });
+        }
+      }
+
       for (const player of snapshot.players) {
         const before = prev.players.find((item) => item.id === player.id);
         if (!before) {
@@ -232,6 +250,27 @@ export function FlightLayer() {
       ) : null}
     </>
   );
+}
+
+function chaosTransferFlight(event: PresentationEvent, snapshot: GameSnapshot): Flight | null {
+  if (
+    event.kind !== "chaos" ||
+    event.phase !== "sequence" ||
+    (event.chaosKind !== "steal" && event.chaosKind !== "favor") ||
+    !event.actorId ||
+    !event.targetIds?.[0]
+  ) {
+    return null;
+  }
+
+  const actorDestination = event.actorId === snapshot.self?.id ? "hand" : `seat:${event.actorId}`;
+  return {
+    kind: "back",
+    from: `seat:${event.targetIds[0]}`,
+    to: actorDestination,
+    drawIndex: 1,
+    drawTotal: 1
+  };
 }
 
 function spawnFlight(layer: HTMLDivElement, flight: Flight, preset: import("@/lib/animationPresets").AnimationPreset) {

@@ -78,6 +78,7 @@ const PATTERNS: Pattern[] = [
     values: (match, t) => ({ name: match[1], card: cardName(match[2], match[3], t) })
   },
   { re: /^(.+) took (\d+) Nuke countdown cards?\.$/, key: "chaosNukePenalty", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
+  { re: /^(.+) busted out with (\d+) cards\.$/, key: "chaosBust", values: (match) => ({ name: match[1], count: Number(match[2]) }) },
   {
     re: new RegExp(`^(.+) played a batch of (\\d+) (${CARD_VALUE_PATTERN}) cards\\.$`),
     key: "playedBatch",
