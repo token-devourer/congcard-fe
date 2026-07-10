@@ -56,15 +56,26 @@ const CHAOS_SPARKS = [
 ] as const;
 
 const BUST_CONFETTI = [
-  [-92, -72, -32],
-  [-74, 54, 22],
-  [-28, -104, 9],
-  [40, 92, -18],
-  [84, -58, 34],
-  [112, 18, -12],
-  [-118, 4, 18],
-  [8, 116, 4]
+  [-154, -102, -38],
+  [-126, 90, 28],
+  [-62, -164, 14],
+  [72, 150, -24],
+  [138, -86, 38],
+  [174, 32, -18],
+  [-176, 18, 24],
+  [20, 182, 8]
 ] as const;
+
+const BUST_SMOKE = [
+  [-92, -54],
+  [78, -66],
+  [104, 52],
+  [-70, 78],
+  [8, -110]
+] as const;
+
+const STARBURST_CLIP = "polygon(50% 0%,57% 30%,73% 8%,72% 35%,96% 20%,78% 43%,100% 50%,77% 57%,94% 82%,69% 68%,70% 100%,56% 73%,43% 98%,44% 70%,19% 88%,31% 64%,0% 58%,28% 49%,3% 29%,35% 39%,28% 6%,47% 31%)";
+const CHAOS_BUST_VFX_MS = 2_800;
 
 const FLASHBANG_SFX_DELAY_MS = 650;
 const FLASHBANG_SFX_DURATION_MS = 4_730;
@@ -88,12 +99,16 @@ export function GameEventOverlay() {
     (!event.resolvesAt || event.resolvesAt + 500 > now)
   );
   const active = visibleToasts
-    .filter((event) => (!event.startsAt || event.startsAt <= now) && (!event.resolvesAt || event.resolvesAt + 500 > now))
+    .filter((event) => {
+      const visualEnd = visualEventEnd(event);
+      return (!event.startsAt || event.startsAt <= now) && (!visualEnd || visualEnd + 500 > now);
+    })
     .sort((a, b) => eventPriority(b) - eventPriority(a) || (a.startsAt ?? 0) - (b.startsAt ?? 0))[0];
 
   useEffect(() => {
     for (const event of toastEvents) {
-      if (event.resolvesAt && event.resolvesAt + 500 <= now) dismissEvent(event.id);
+      const visualEnd = visualEventEnd(event);
+      if (visualEnd && visualEnd + 500 <= now) dismissEvent(event.id);
     }
   }, [dismissEvent, now, toastEvents]);
 
@@ -126,7 +141,7 @@ function eventPriority(event: UiEvent): number {
 
 export function eventToastDurationMs(event: UiEvent): number {
   if (event.type === "chaosBust") {
-    return 2_200;
+    return CHAOS_BUST_VFX_MS;
   }
   if (event.type === "chaos") {
     if (event.kind === "flashbang" && event.phase === "sequence") {
@@ -165,6 +180,13 @@ export function eventToastDurationMs(event: UiEvent): number {
   return 1600;
 }
 
+function visualEventEnd(event: UiEvent): number | undefined {
+  if (event.type === "chaosBust" && event.startsAt) {
+    return Math.max(event.resolvesAt ?? 0, event.startsAt + CHAOS_BUST_VFX_MS);
+  }
+  return event.resolvesAt;
+}
+
 function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => void; preset: import("@/lib/animationPresets").AnimationPreset }) {
   const t = useTranslations();
   const reduceMotion = useReducedMotion() || preset.reduceMotion;
@@ -182,14 +204,23 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
   const now = useNow(200);
   const { label, sublabel, background, color } = toastContent(event, t, now);
   const wash = eventWash(event);
+  const shakeForSelfBust = event.type === "chaosBust" && event.self && !reduceMotion;
 
   return (
     <motion.div
       className="absolute inset-0 grid place-items-center px-3 sm:px-4"
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: reduceMotion ? 0.12 : 0.18 }}
+      animate={shakeForSelfBust ? {
+        opacity: 1,
+        x: [0, 0, -9, 8, -6, 5, 0, -4, 3, 0],
+        y: [0, 0, 4, -3, 3, -2, 0, 2, -1, 0]
+      } : { opacity: 1 }}
+      exit={{ opacity: 0, x: 0, y: 0 }}
+      transition={shakeForSelfBust ? {
+        opacity: { duration: 0.18 },
+        x: { duration: 0.84, times: [0, 0.18, 0.25, 0.32, 0.39, 0.46, 0.64, 0.75, 0.86, 1], ease: "easeOut" },
+        y: { duration: 0.84, times: [0, 0.18, 0.25, 0.32, 0.39, 0.46, 0.64, 0.75, 0.86, 1], ease: "easeOut" }
+      } : { duration: reduceMotion ? 0.12 : 0.18 }}
     >
       <motion.div
         className="absolute inset-0"
@@ -208,7 +239,7 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
         exit={reduceMotion ? { opacity: 0 } : { scale: 0.84, opacity: 0, y: -22 }}
         transition={{ type: reduceMotion ? "tween" : "spring", stiffness: 420, damping: 22 }}
         className={`relative z-10 grid justify-items-center gap-2 ${
-          (event.type === "penalty" && event.self) || (event.type === "chaosBust" && event.self) ? "shake" : ""
+          event.type === "penalty" && event.self ? "shake" : ""
         }`}
       >
         <div
@@ -478,55 +509,167 @@ function ChaosBustVfx({
   const particleCount = reduceMotion ? 0 : preset.particleCount;
 
   return (
-    <div className="absolute inset-0 z-[2]">
+    <div className="absolute inset-0 z-[2]" aria-hidden="true">
+      {event.self && !reduceMotion ? (
+        <motion.div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,248,188,0.54),rgba(255,105,38,0.28)_34%,rgba(121,16,8,0.18)_58%,transparent_76%)]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 0.46, 0.06, 0.22, 0] }}
+          transition={{ duration: 0.86, times: [0, 0.24, 0.48, 0.64, 1], ease: "easeOut" }}
+        />
+      ) : null}
       <div className="absolute h-0 w-0" style={style}>
-        {!reduceMotion ? (
+        {reduceMotion ? (
+          <>
+            <div
+              className="absolute bg-gradient-to-br from-yellow-100 via-orange-400 to-red-700 opacity-85 shadow-[0_0_32px_rgba(255,128,42,0.42)]"
+              style={{
+                clipPath: STARBURST_CLIP,
+                width: "clamp(220px, 32vw, 360px)",
+                height: "clamp(220px, 32vw, 360px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+            />
+            <div
+              className="absolute rounded-full border-4 border-yellow-100/55"
+              style={{
+                width: "clamp(180px, 27vw, 300px)",
+                height: "clamp(180px, 27vw, 300px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+            />
+          </>
+        ) : (
           <>
             <motion.div
-              className="absolute -left-28 -top-28 h-56 w-56 rounded-full border-4 border-yellow-200/65 bg-[radial-gradient(circle,rgba(255,241,142,0.58),rgba(255,90,48,0.24)_36%,transparent_68%)]"
-              initial={{ scale: 0.18, opacity: 0.95 }}
-              animate={{ scale: [0.18, 1.22, 1.65], opacity: [0.95, 0.7, 0] }}
-              transition={{ duration: 0.82, ease: "easeOut" }}
+              className="absolute rounded-full border-4 border-yellow-100/70 bg-orange-300/12 shadow-[0_0_34px_rgba(255,224,118,0.72)]"
+              style={{
+                width: "clamp(120px, 18vw, 180px)",
+                height: "clamp(120px, 18vw, 180px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 1.28, opacity: 0 }}
+              animate={{ scale: [1.28, 0.68, 0.08], opacity: [0, 0.58, 1] }}
+              transition={{ duration: 0.18, ease: "easeIn" }}
             />
             <motion.div
-              className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.88),rgba(255,210,88,0.62)_30%,rgba(255,64,44,0.16)_58%,transparent_70%)]"
-              initial={{ scale: 0.1, opacity: 0 }}
-              animate={{ scale: [0.1, 1.05, 0.78], opacity: [0, 1, 0] }}
-              transition={{ duration: 0.72, ease: "easeOut" }}
+              className="absolute -left-6 -top-6 h-12 w-12 rounded-full bg-white shadow-[0_0_38px_18px_rgba(255,230,118,0.75)]"
+              initial={{ scale: 0.15, opacity: 0 }}
+              animate={{ scale: [0.15, 0.82, 0.1, 1.45], opacity: [0, 0.9, 1, 0] }}
+              transition={{ duration: 0.48, times: [0, 0.28, 0.38, 1], ease: "easeOut" }}
             />
-            {BUST_CONFETTI.slice(0, particleCount).map(([x, y, rotate], index) => (
+            <motion.div
+              className="absolute bg-gradient-to-br from-red-500 via-orange-600 to-red-950 shadow-[0_0_54px_rgba(255,71,30,0.62)]"
+              style={{
+                clipPath: STARBURST_CLIP,
+                width: "clamp(240px, 35vw, 380px)",
+                height: "clamp(240px, 35vw, 380px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 0.05, opacity: 0, rotate: -7 }}
+              animate={{ scale: [0.05, 1.16, 0.98, 1.08], opacity: [0, 1, 0.88, 0], rotate: [-7, 5, -2, 9] }}
+              transition={{ delay: 0.15, duration: 1.18, times: [0, 0.12, 0.52, 1], ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute bg-gradient-to-br from-yellow-100 via-yellow-300 to-orange-500 shadow-[0_0_46px_rgba(255,224,105,0.72)]"
+              style={{
+                clipPath: STARBURST_CLIP,
+                width: "clamp(190px, 29vw, 310px)",
+                height: "clamp(190px, 29vw, 310px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 0.04, opacity: 0, rotate: 12 }}
+              animate={{ scale: [0.04, 1.12, 0.92, 1.02], opacity: [0, 1, 0.82, 0], rotate: [12, -7, 3, -10] }}
+              transition={{ delay: 0.17, duration: 0.98, times: [0, 0.12, 0.56, 1], ease: "easeOut" }}
+            />
+            <motion.div
+              className="absolute bg-white shadow-[0_0_38px_rgba(255,255,255,0.92)]"
+              style={{
+                clipPath: STARBURST_CLIP,
+                width: "clamp(110px, 18vw, 190px)",
+                height: "clamp(110px, 18vw, 190px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 0.03, opacity: 0, rotate: -10 }}
+              animate={{ scale: [0.03, 1.08, 0.72], opacity: [0, 1, 0], rotate: [-10, 4, 14] }}
+              transition={{ delay: 0.18, duration: 0.62, times: [0, 0.2, 1], ease: "easeOut" }}
+            />
+            {[0, 1].map((index) => (
               <motion.div
-                key={index}
-                className="absolute -left-4 -top-5 h-10 w-7 rounded-md border border-white/40 bg-gradient-to-b from-yellow-200 to-red-500 shadow-[0_0_18px_rgba(255,92,73,0.55)]"
-                initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.3 }}
-                animate={{ x, y, rotate, opacity: [0, 1, 0], scale: [0.4, 1.04, 0.7] }}
-                transition={{ duration: 1.05, delay: index * 0.035, ease: "easeOut" }}
+                key={`shockwave-${index}`}
+                className="absolute rounded-full border-4 border-yellow-100/70 shadow-[0_0_24px_rgba(255,182,66,0.35)]"
+                style={{
+                  width: "clamp(160px, 25vw, 280px)",
+                  height: "clamp(160px, 25vw, 280px)",
+                  left: "50%",
+                  top: "50%",
+                  translate: "-50% -50%"
+                }}
+                initial={{ scale: 0.18, opacity: 0 }}
+                animate={{ scale: [0.18, 1.12, 1.72], opacity: [0, 0.78, 0] }}
+                transition={{ delay: 0.18 + index * 0.12, duration: 0.94 + index * 0.2, times: [0, 0.18, 1], ease: "easeOut" }}
               />
             ))}
-            {Array.from({ length: Math.min(4, particleCount) }, (_, index) => (
+            {BUST_CONFETTI.slice(0, particleCount).map(([x, y, rotate], index) => {
+              const starFragment = index % 3 === 1;
+              return (
+                <motion.div
+                  key={index}
+                  className={starFragment
+                    ? "absolute -left-4 -top-4 h-8 w-8 bg-gradient-to-br from-white via-yellow-200 to-orange-500 shadow-[0_0_16px_rgba(255,222,92,0.78)]"
+                    : "absolute -left-4 -top-6 h-12 w-8 rounded-md border-2 border-white/55 bg-gradient-to-b from-yellow-100 via-orange-400 to-red-600 shadow-[0_0_18px_rgba(255,92,73,0.62)]"}
+                  style={starFragment ? { clipPath: STARBURST_CLIP } : undefined}
+                  initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.2 }}
+                  animate={{ x, y, rotate, opacity: [0, 1, 0.88, 0], scale: [0.2, 1.12, 0.86, 0.55] }}
+                  transition={{ duration: 1.42, delay: 0.31 + index * 0.028, times: [0, 0.16, 0.66, 1], ease: "easeOut" }}
+                />
+              );
+            })}
+            {BUST_SMOKE.slice(0, Math.min(BUST_SMOKE.length, Math.ceil(particleCount / 2) + 1)).map(([x, y], index) => (
               <motion.div
                 key={`smoke-${index}`}
-                className="absolute -left-7 -top-7 h-14 w-14 rounded-full bg-white/24 blur-[1px]"
-                initial={{ x: 0, y: 0, scale: 0.25, opacity: 0 }}
-                animate={{
-                  x: Math.cos(index * 1.7) * 70,
-                  y: Math.sin(index * 1.7) * 52,
-                  scale: [0.25, 1.2],
-                  opacity: [0, 0.42, 0]
-                }}
-                transition={{ duration: 1.25, delay: 0.1 + index * 0.06, ease: "easeOut" }}
+                className="absolute -left-9 -top-9 h-16 w-16 rounded-full bg-gradient-to-br from-white/48 via-zinc-300/30 to-zinc-700/10 blur-[1px]"
+                initial={{ x: 0, y: 0, scale: 0.2, opacity: 0 }}
+                animate={{ x, y, scale: [0.2, 1.18, 1.48], opacity: [0, 0.48, 0.24, 0] }}
+                transition={{ duration: 1.55, delay: 0.62 + index * 0.07, times: [0, 0.24, 0.66, 1], ease: "easeOut" }}
+              />
+            ))}
+            {BUST_CONFETTI.slice(0, Math.min(6, particleCount)).map(([x, y], index) => (
+              <motion.div
+                key={`ember-${index}`}
+                className="absolute -left-1 -top-1 h-2 w-7 rounded-full bg-yellow-100 shadow-[0_0_14px_rgba(255,204,72,0.86)]"
+                initial={{ x: 0, y: 0, rotate: 0, scaleX: 0.2, opacity: 0 }}
+                animate={{ x: x * 0.82, y: y * 0.82, rotate: Math.atan2(y, x) * (180 / Math.PI), scaleX: [0.2, 1.3, 0.4], opacity: [0, 0.9, 0] }}
+                transition={{ duration: 0.82, delay: 0.24 + index * 0.024, ease: "easeOut" }}
               />
             ))}
           </>
-        ) : null}
+        )}
         <motion.div
-          className="display absolute -left-16 -top-10 grid min-h-20 w-32 place-items-center rounded-[24px] border-4 border-white/45 bg-gradient-to-b from-yellow-200 via-red-500 to-red-800 px-4 text-center text-3xl font-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.48)]"
-          initial={reduceMotion ? { opacity: 0 } : { scale: 0.35, opacity: 0, rotate: -14 }}
-          animate={reduceMotion ? { opacity: 1 } : { scale: [0.35, 1.18, 0.94], opacity: [0, 1, 1], rotate: [-14, 10, -3] }}
-          transition={{ type: reduceMotion ? "tween" : "spring", stiffness: 520, damping: 18 }}
+          className="display absolute grid min-h-16 w-[clamp(5.5rem,10vw,7.5rem)] place-items-center rounded-[20px] border-4 border-white/60 bg-gradient-to-b from-yellow-100 via-orange-500 to-red-800 px-3 py-2 text-center font-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.52),0_0_28px_rgba(255,124,38,0.48)]"
+          style={{ left: "50%", top: "50%", translate: "-50% -50%" }}
+          initial={reduceMotion ? { opacity: 0 } : { scale: 0.2, opacity: 0, rotate: -12 }}
+          animate={reduceMotion
+            ? { opacity: 1 }
+            : { scale: [0.2, 0.2, 1.16, 0.96, 0.86], opacity: [0, 0, 1, 1, 0], rotate: [-12, -12, 8, -3, 2] }}
+          transition={reduceMotion
+            ? { duration: 0.14, ease: "easeOut" }
+            : { delay: 0.3, duration: 2.28, times: [0, 0.1, 0.25, 0.82, 1], ease: "easeOut" }}
         >
-          <span>BUST!</span>
-          <span className="text-base leading-none">&gt;25</span>
+          <span className="text-3xl leading-none">{event.count}</span>
+          <span className="text-sm leading-none">&gt;25</span>
         </motion.div>
       </div>
     </div>

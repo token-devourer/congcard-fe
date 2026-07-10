@@ -106,7 +106,7 @@ describe("diffSnapshots", () => {
 
     const bust = diffSnapshots(prev, next).find((event) => event.type === "chaosBust");
     expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 3_800 });
-    expect(eventToastDurationMs(bust!)).toBe(2_200);
+    expect(eventToastDurationMs(bust!)).toBe(2_800);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {
