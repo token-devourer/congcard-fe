@@ -137,7 +137,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                         }`}
                       >
                         <span className="flex items-center gap-2 truncate">
-                          <Avatar avatarId={player.avatarId} size={24} />
+                          <Avatar avatarId={player.avatarId} size={24} className={player.chaosBusted ? "busted-avatar" : ""} />
                           <span className="truncate">{player.nickname}</span>
                           {player.id === winner?.id ? <span>ðŸ†</span> : null}
                         </span>
@@ -157,7 +157,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                     }`}
                   >
                     <span className="flex items-center gap-2 truncate">
-                      <Avatar avatarId={player.avatarId} size={24} />
+                      <Avatar avatarId={player.avatarId} size={24} className={player.chaosBusted ? "busted-avatar" : ""} />
                       <span className="truncate">{player.nickname}</span>
                       {player.id === winner?.id ? <span>🏆</span> : null}
                     </span>

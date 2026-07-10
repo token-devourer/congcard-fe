@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
-import { eventToastDurationMs } from "../src/components/GameEventOverlay";
+import { eventToastDurationMs, nukeDangerStage } from "../src/components/GameEventOverlay";
 import { diffSnapshots } from "../src/lib/events";
 import { soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
 
@@ -107,6 +107,33 @@ describe("diffSnapshots", () => {
     const bust = diffSnapshots(prev, next).find((event) => event.type === "chaosBust");
     expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 3_800 });
     expect(eventToastDurationMs(bust!)).toBe(3_600);
+  });
+
+  it("uses only the server detonation window after the Nuke countdown", () => {
+    const prev = snapshot({ presentationEvents: [] });
+    const next = snapshot({
+      presentationEvents: [{
+        id: 10,
+        seq: 10,
+        kind: "chaos",
+        chaosKind: "nuke",
+        phase: "detonating",
+        targetIds: ["b"],
+        startsAt: 41_000,
+        resolvesAt: 42_600
+      }]
+    });
+
+    const detonation = diffSnapshots(prev, next).find(
+      (event) => event.type === "chaos" && event.kind === "nuke" && event.phase === "detonating"
+    );
+
+    expect(detonation).toBeDefined();
+    expect(eventToastDurationMs(detonation!)).toBe(1_600);
+  });
+
+  it("raises the Nuke danger stage as the countdown runs out", () => {
+    expect([35_000, 25_000, 15_000, 8_000, 3_000].map(nukeDangerStage)).toEqual([0, 1, 2, 3, 4]);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {

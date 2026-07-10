@@ -166,6 +166,7 @@
     "waitingNextRound": "Waiting for next round",
     "spectatingOnly": "Spectating only",
     "finishedRound": "Finished #{rank}",
+    "chaosBusted": "Charred by Chaos",
     "readOnlyView": "You can watch the table, log, and scores, but cannot take player actions.",
     "scoreboard": "Scoreboard",
     "viewers": "Viewers",

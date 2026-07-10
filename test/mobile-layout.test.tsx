@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
 import messages from "../messages/en.json";
 import { ColorPicker } from "../src/components/ColorPicker";
+import { PlayerSeat } from "../src/components/PlayerSeat";
 import { RoundEndOverlay, roundEndRevealAt } from "../src/components/RoundEndOverlay";
 import { CHAOS_BUST_RESULT_SETTLE_MS } from "../src/lib/events";
 import { useRoomStore } from "../src/lib/store";
@@ -90,6 +91,16 @@ describe("mobile layout surfaces", () => {
     expect(screen.getByTestId("round-end-overlay")).toHaveClass("overflow-hidden");
     expect(screen.getByTestId("round-end-overlay")).not.toHaveClass("overflow-y-auto");
     expect(screen.getByRole("dialog")).toHaveClass("mobile-modal", "modal-round-end");
+  });
+
+  it("renders a Chaos-busted player as charred", () => {
+    const burned = player({ id: "burned", seat: 1, finishedRank: 1, chaosBusted: true });
+    const { container } = renderWithIntl(<PlayerSeat player={burned} />);
+
+    expect(screen.getByText("burned").closest(".tableseat")).toHaveClass("busted");
+    expect(screen.getByText("Charred by Chaos")).toBeInTheDocument();
+    expect(container.querySelector(".busted-avatar")).toBeInTheDocument();
+    expect(container.querySelector(".busted-soot-mask")).toBeInTheDocument();
   });
 
   it("waits for a finishing chaos bust before showing the round result", () => {

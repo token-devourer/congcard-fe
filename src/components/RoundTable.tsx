@@ -362,7 +362,7 @@ function OpponentFaceTray({
 
 function NukeCountdownChip({ remaining, label }: { remaining: number; label: string }) {
   return (
-    <div className="nuke-countdown-chip" aria-label={label}>
+    <div className={`nuke-countdown-chip ${remaining <= 10 ? "is-warning" : ""} ${remaining <= 5 ? "is-critical" : ""}`} aria-label={label}>
       <span>{remaining}</span>
       <small>NUKE</small>
     </div>

@@ -166,6 +166,7 @@
     "waitingNextRound": "Menunggu ronde berikutnya",
     "spectatingOnly": "Hanya menonton",
     "finishedRound": "Selesai #{rank}",
+    "chaosBusted": "Gosong karena Chaos",
     "readOnlyView": "Kamu bisa melihat meja, log, dan skor, tetapi tidak bisa melakukan aksi pemain.",
     "scoreboard": "Papan skor",
     "viewers": "Penonton",

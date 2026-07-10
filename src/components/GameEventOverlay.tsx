@@ -82,21 +82,18 @@ const FLASHBANG_TOTAL_VFX_MS = FLASHBANG_SFX_DELAY_MS + FLASHBANG_SFX_DURATION_M
 
 export function GameEventOverlay() {
   const events = useRoomStore((state) => state.events);
+  const snapshot = useRoomStore((state) => state.snapshot);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
+  const nukeCountdown = snapshot?.pendingChaos?.kind === "nuke" && snapshot.pendingChaos.phase === "countdown"
+    ? snapshot.pendingChaos
+    : undefined;
   // useNow already returns the server-synced clock — adding clockOffset on
   // top shifted every toast gate by the offset. Only tick while toasts exist.
-  const now = useNow(50, events.length > 0);
+  const now = useNow(50, events.length > 0 || Boolean(nukeCountdown));
   const { preset } = useGraphicsPreset();
   const reduceMotion = useReducedMotion() || preset.reduceMotion;
   const toastEvents = events.filter((event) => event.type !== "yourTurn" && event.type !== "matchChain");
   const visibleToasts = toastEvents.filter((event) => !(event.type === "chaos" && event.kind === "nuke" && event.phase === "countdown"));
-  const nukeCountdownPulse = toastEvents.find((event): event is Extract<UiEvent, { type: "chaos" }> =>
-    event.type === "chaos" &&
-    event.kind === "nuke" &&
-    event.phase === "countdown" &&
-    (!event.startsAt || event.startsAt <= now) &&
-    (!event.resolvesAt || event.resolvesAt + 500 > now)
-  );
   const active = visibleToasts
     .filter((event) => {
       const visualEnd = visualEventEnd(event);
@@ -113,7 +110,9 @@ export function GameEventOverlay() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center overflow-hidden">
-      {nukeCountdownPulse ? <NukeCountdownPulse event={nukeCountdownPulse} reduceMotion={Boolean(reduceMotion)} /> : null}
+      {nukeCountdown?.countdownEndsAt ? (
+        <NukeCountdownPulse startsAt={nukeCountdown.startsAt} endsAt={nukeCountdown.countdownEndsAt} reduceMotion={Boolean(reduceMotion)} now={now} />
+      ) : null}
       <AnimatePresence>
         {active ? <EventToast key={active.id} event={active} onDone={() => dismissEvent(active.id)} preset={preset} /> : null}
       </AnimatePresence>
@@ -150,7 +149,9 @@ export function eventToastDurationMs(event: UiEvent): number {
       return Math.max(2_400, event.resolvesAt - event.startsAt);
     }
     if (event.kind === "nuke" && event.phase === "detonating") {
-      return 3_200;
+      return event.startsAt && event.resolvesAt
+        ? Math.max(700, event.resolvesAt - event.startsAt)
+        : 1_600;
     }
     if (event.kind === "peek" && event.phase === "reveal") {
       return 5_200;
@@ -439,17 +440,48 @@ function anchoredCenterStyle(anchorKey: string): CSSProperties {
   };
 }
 
-function NukeCountdownPulse({ event, reduceMotion }: { event: Extract<UiEvent, { type: "chaos" }>; reduceMotion: boolean }) {
-  const targetId = event.targetIds?.[0];
-  const style = anchoredCenterStyle(targetId ? `seat:${targetId}` : "draw");
+export function nukeDangerStage(remainingMs: number): 0 | 1 | 2 | 3 | 4 {
+  if (remainingMs <= 5_000) return 4;
+  if (remainingMs <= 10_000) return 3;
+  if (remainingMs <= 20_000) return 2;
+  if (remainingMs <= 30_000) return 1;
+  return 0;
+}
+
+function NukeCountdownPulse({
+  startsAt,
+  endsAt,
+  reduceMotion,
+  now
+}: {
+  startsAt: number;
+  endsAt: number;
+  reduceMotion: boolean;
+  now: number;
+}) {
+  const style = anchoredCenterStyle("draw");
+  const totalMs = Math.max(1, endsAt - startsAt);
+  const remainingMs = Math.max(0, endsAt - now);
+  const progress = Math.min(1, Math.max(0, 1 - remainingMs / totalMs));
+  const dangerStage = nukeDangerStage(remainingMs);
+  const pulseDuration = [1.8, 1.45, 1.08, 0.72, 0.46][dangerStage]!;
+  const edgeOpacity = 0.08 + progress * 0.5;
+
   if (reduceMotion) {
     return (
       <div className="absolute inset-0 z-[1]">
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: edgeOpacity,
+            background: "radial-gradient(ellipse at center, transparent 38%, rgba(74,0,0,0.42) 70%, rgba(18,0,0,0.88) 100%)",
+            boxShadow: `inset 0 0 ${48 + progress * 90}px rgba(136, 0, 0, ${0.18 + progress * 0.38})`
+          }}
+        />
         <div className="absolute h-0 w-0" style={style}>
-          <motion.div
+          <div
             className="absolute -left-12 -top-12 h-24 w-24 rounded-full border-2 border-red-300/30"
-            animate={{ opacity: [0.18, 0.34, 0.18] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            style={{ opacity: 0.22 + progress * 0.38 }}
           />
         </div>
       </div>
@@ -458,18 +490,42 @@ function NukeCountdownPulse({ event, reduceMotion }: { event: Extract<UiEvent, {
 
   return (
     <div className="absolute inset-0 z-[1]">
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 34%, rgba(92,0,0,0.42) 68%, rgba(17,0,0,0.92) 100%)",
+          boxShadow: `inset 0 0 ${52 + progress * 118}px rgba(154, 0, 0, ${0.2 + progress * 0.46})`
+        }}
+        animate={{ opacity: [edgeOpacity * 0.56, edgeOpacity, edgeOpacity * 0.56] }}
+        transition={{ duration: pulseDuration, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute inset-2 rounded-[18px] border-2"
+        style={{ borderColor: `rgba(255, 55, 38, ${0.12 + progress * 0.58})` }}
+        animate={{ opacity: [0.35, 0.92, 0.35] }}
+        transition={{ duration: pulseDuration, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {dangerStage >= 2 ? (
+        <motion.div
+          className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,28,18,0.12),transparent_24%,transparent_76%,rgba(255,28,18,0.14))] mix-blend-screen"
+          animate={{ opacity: [0.08, 0.2 + progress * 0.32, 0.08] }}
+          transition={{ duration: pulseDuration, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
       <div className="absolute h-0 w-0" style={style}>
         <motion.div
           className="absolute -left-20 -top-20 h-40 w-40 rounded-full border border-red-300/24"
-          animate={{ scale: [0.76, 1.25, 0.76], opacity: [0.12, 0.34, 0.12] }}
-          transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ scale: [0.72, 1.2 + progress * 0.3, 0.72], opacity: [0.12, 0.3 + progress * 0.42, 0.12] }}
+          transition={{ duration: pulseDuration, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
-      <motion.div
-        className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,62,40,0.10),transparent_42%)]"
-        animate={{ opacity: [0.18, 0.34, 0.18] }}
-        transition={{ duration: 1.35, repeat: Infinity, ease: "easeInOut" }}
-      />
+      {dangerStage === 4 ? (
+        <motion.div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,60,24,0.08),rgba(180,0,0,0.22)_62%,rgba(45,0,0,0.34))]"
+          animate={{ opacity: [0.12, 0.48, 0.12] }}
+          transition={{ duration: 0.46, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -906,9 +962,8 @@ function toastContent(
         };
       }
       if (event.kind === "nuke" && event.phase === "detonating") {
-        const remaining = Math.max(0, Math.ceil(((event.detonationEndsAt ?? event.resolvesAt ?? now) - now) / 1000));
         return {
-          label: remaining > 0 ? `${remaining}` : "BOOM",
+          label: "BOOM",
           sublabel: t("events.nukeDetonating"),
           background: "linear-gradient(180deg, #fff0a8, #ff6b1f 46%, #7d1207)"
         };

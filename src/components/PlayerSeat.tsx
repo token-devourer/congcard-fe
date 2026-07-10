@@ -56,6 +56,7 @@ export function PlayerSeat({
 
   const finishedRank = player.finishedRank;
   const finished = Boolean(finishedRank);
+  const busted = Boolean(player.chaosBusted);
   const seatActive = Boolean(active && !finished);
 
   return (
@@ -63,7 +64,7 @@ export function PlayerSeat({
       ref={anchorRef(`seat:${player.id}`)}
       className={`tableseat ${seatActive ? "active" : ""} ${oneOpen && !finished ? "pulse-red" : ""} ${
         !player.connected ? "offline" : player.away ? "away" : ""
-      } ${shaking ? "shake" : ""}`}
+      } ${busted ? "busted" : ""} ${shaking ? "shake" : ""}`}
       onMouseEnter={onOppositeEnter}
       onMouseLeave={onOppositeLeave}
       onClick={onOppositeToggle}
@@ -82,10 +83,11 @@ export function PlayerSeat({
         <Avatar
           avatarId={player.avatarId}
           size={48}
-          className={`absolute left-1 top-1 ${seatActive ? "ring-2 ring-[var(--gold)]" : "ring-1 ring-white/15"} ${
-            finished ? "opacity-75 grayscale-[0.25]" : ""
+          className={`absolute left-1 top-1 ${busted ? "busted-avatar ring-2 ring-orange-950" : seatActive ? "ring-2 ring-[var(--gold)]" : "ring-1 ring-white/15"} ${
+            finished && !busted ? "opacity-75 grayscale-[0.25]" : ""
           }`}
         />
+        {busted ? <span className="busted-soot-mask" aria-hidden="true" /> : null}
         {player.isHost ? (
           <span className="absolute -right-1.5 -top-1.5 text-sm drop-shadow" aria-label={t("lobby.host")}>
             👑
@@ -97,7 +99,9 @@ export function PlayerSeat({
           </span>
         ) : null}
         {finished ? (
-          <span className="display absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-300 px-1.5 py-px text-[10px] font-black text-black shadow">
+          <span className={`display absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-1.5 py-px text-[10px] font-black shadow ${
+            busted ? "bg-zinc-800 text-orange-200 ring-1 ring-orange-500/50" : "bg-green-300 text-black"
+          }`}>
             #{finishedRank}
           </span>
         ) : null}
@@ -115,7 +119,9 @@ export function PlayerSeat({
       </div>
 
       {finished ? (
-        <div className="mt-0.5 text-center text-[10px] font-black text-green-200">{t("board.finishedRank", { rank: finishedRank ?? "" })}</div>
+        <div className={`mt-0.5 text-center text-[10px] font-black ${busted ? "text-orange-300" : "text-green-200"}`}>
+          {busted ? t("board.chaosBusted") : t("board.finishedRank", { rank: finishedRank ?? "" })}
+        </div>
       ) : null}
       {!player.connected ? <div className="mt-0.5 text-center text-[10px] font-bold text-red-300">{t("lobby.offline")}</div> : null}
       {player.connected && player.away ? <div className="mt-0.5 text-center text-[10px] font-bold text-[var(--gold)]">{t("lobby.away")}</div> : null}

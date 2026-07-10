@@ -177,6 +177,7 @@ export interface PublicPlayer {
   autoPlay: boolean;
   missedDisconnectedTurns: number;
   finishedRank?: number;
+  chaosBusted?: boolean;
   ping: number;
   oppositeHand?: OpponentCardFace[];
 }
