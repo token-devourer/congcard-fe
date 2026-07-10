@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { GameSnapshot } from "@congcard/shared";
+import { CHAOS_BUST_RESULT_SETTLE_MS } from "@/lib/events";
+import { useRoomStore } from "@/lib/store";
 import { Avatar } from "./Avatar";
 
 const CONFETTI_COLORS = ["var(--red)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--gold)"];
@@ -13,9 +16,27 @@ interface RoundEndOverlayProps {
   onLeave: () => void;
 }
 
+export function roundEndRevealAt(snapshot: GameSnapshot, referenceNow = snapshot.serverNow ?? Date.now()): number | undefined {
+  if (snapshot.phase !== "roundEnd" && snapshot.phase !== "gameEnd") {
+    return undefined;
+  }
+
+  const pendingBustEnds = (snapshot.presentationEvents ?? [])
+    .filter((event) => event.kind === "chaosBust" && event.resolvesAt + CHAOS_BUST_RESULT_SETTLE_MS > referenceNow)
+    .map((event) => event.resolvesAt);
+
+  return pendingBustEnds.length > 0
+    ? Math.max(...pendingBustEnds) + CHAOS_BUST_RESULT_SETTLE_MS
+    : undefined;
+}
+
 export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProps) {
   const t = useTranslations();
-  const open = snapshot.phase === "roundEnd" || snapshot.phase === "gameEnd";
+  const phaseEnded = snapshot.phase === "roundEnd" || snapshot.phase === "gameEnd";
+  const revealAt = roundEndRevealAt(snapshot);
+  const clockOffset = useRoomStore((state) => state.clockOffset);
+  const [completedRevealAt, setCompletedRevealAt] = useState<number>();
+  const open = phaseEnded && (!revealAt || completedRevealAt === revealAt);
   const isPlayer = snapshot.self?.role === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const winner = snapshot.players.find((player) => player.id === (snapshot.gameWinnerId ?? snapshot.roundWinnerId));
@@ -35,6 +56,23 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
       : snapshot.settings.modeId === "chaos"
         ? "roundEnd.scoringRuleChaos"
         : "roundEnd.scoringRule";
+
+  useEffect(() => {
+    if (!revealAt) {
+      setCompletedRevealAt(undefined);
+      return undefined;
+    }
+
+    const delayMs = Math.max(0, revealAt - (Date.now() + clockOffset));
+    if (delayMs === 0) {
+      setCompletedRevealAt(revealAt);
+      return undefined;
+    }
+
+    setCompletedRevealAt((current) => current === revealAt ? current : undefined);
+    const id = window.setTimeout(() => setCompletedRevealAt(revealAt), delayMs);
+    return () => window.clearTimeout(id);
+  }, [clockOffset, revealAt]);
 
   return (
     <AnimatePresence>

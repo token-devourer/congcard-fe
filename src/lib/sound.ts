@@ -1,4 +1,4 @@
-import type { UiEvent } from "./events";
+import { CHAOS_BUST_RESULT_SETTLE_MS, CHAOS_BUST_VFX_MS, type UiEvent } from "./events";
 import { audioAvailable, getSfxVolume, onSfxVolumeChange, sfxDestination, sharedAudioContext, unlockAudio } from "./audio";
 import { duckMusic } from "./music";
 import { safeGet, safeSet } from "./storage";
@@ -28,6 +28,7 @@ export type SoundName =
   | "penalty"
   | "skip"
   | "reverse"
+  | "chaosBust"
   | "win"
   | "lose"
   | "jumpIn"
@@ -198,6 +199,7 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     case "drawResult": return "penalty";
     case "skip": return "skip";
     case "reverse": return "reverse";
+    case "chaosBust": return "chaosBust";
     case "colorChange": return "wild";
     case "stack": return "stack";
     case "matchChain": return "matchChain";
@@ -210,9 +212,14 @@ export function soundForEvent(event: UiEvent): SoundName | null {
   }
 }
 export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
+  const serverNow = Date.now() + clockOffset;
+  const bustEvent = events.find((event): event is Extract<UiEvent, { type: "chaosBust" }> => event.type === "chaosBust");
+  const roundResultStartsAt = bustEvent
+    ? Math.max(bustEvent.resolvesAt ?? 0, (bustEvent.startsAt ?? serverNow) + CHAOS_BUST_VFX_MS) + CHAOS_BUST_RESULT_SETTLE_MS
+    : undefined;
+
   for (const event of events) {
     if (event.type === "chaos") {
-      const serverNow = Date.now() + clockOffset;
       const startsInMs = event.startsAt ? Math.max(0, event.startsAt - serverNow) : 0;
       playChaosEventSounds(event, startsInMs, serverNow);
       duckMusic(startsInMs, event.kind === "nuke" ? 2_200 : 1_200);
@@ -220,16 +227,25 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
     }
     const sound = soundForEvent(event);
     if (!sound) continue;
-    const serverStart = event.type === "catchWindow" ? event.opensAt : event.startsAt;
-    const startsInMs = serverStart ? Math.max(0, serverStart - (Date.now() + clockOffset)) : 0;
+    const serverStart = (event.type === "roundWon" || event.type === "roundLost") && roundResultStartsAt
+      ? roundResultStartsAt
+      : event.type === "catchWindow"
+        ? event.opensAt
+        : event.startsAt;
+    const startsInMs = serverStart ? Math.max(0, serverStart - serverNow) : 0;
     const level = event.type === "stack" || event.type === "matchChain"
       ? event.level
       : event.type === "skip" || event.type === "reverse" || event.type === "colorChange"
         ? event.level ?? 1
-        : 1;
+        : event.type === "chaosBust"
+          ? Math.min(8, Math.max(1, event.count - 24))
+          : 1;
     playSoundAt(sound, startsInMs, level);
-      if (["penalty", "drawResult", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "roundWon", "roundLost"].includes(event.type)) {
-        duckMusic(startsInMs, event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760);
+    if (["penalty", "drawResult", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "chaosBust", "roundWon", "roundLost"].includes(event.type)) {
+      duckMusic(
+        startsInMs,
+        event.type === "chaosBust" ? 3_000 : event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760
+      );
     }
   }
 }
@@ -625,6 +641,40 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
 
       noise(ctx, t, { dur: 0.1, gain: 0.08, hp: 3000, lp: 9000 });
       noise(ctx, chordStart, { dur: 0.22, gain: 0.1 + size * 0.01, hp: 2400, lp: 9500 });
+      break;
+    }
+    case "chaosBust": {
+      const intensity = Math.min(8, Math.max(1, Math.round(level)));
+      const impact = t + 0.18;
+
+      // A short charge makes the impact feel earned instead of appearing as
+      // another generic penalty hit.
+      tone(ctx, t, { freq: 110, dur: 0.2, type: "sawtooth", gain: 0.13, sweepTo: 520, lp: 1900, attack: 0.01 });
+      tone(ctx, t + 0.035, { freq: 220, dur: 0.17, type: "triangle", gain: 0.08, sweepTo: 920, lp: 4200, attack: 0.008 });
+
+      // Main cartoon blast: broad crack, heavy sub impact, then a dirty body.
+      noise(ctx, impact, { dur: 0.56, gain: 0.43 + intensity * 0.012, hp: 35, lp: 6800 });
+      noise(ctx, impact + 0.005, { dur: 0.15, gain: 0.34, hp: 2200, lp: 10500 });
+      tone(ctx, impact, { freq: 92 + intensity * 2, dur: 1.12, type: "sine", gain: 0.32, sweepTo: 28, lp: 320, attack: 0.004 });
+      tone(ctx, impact, { freq: 185, dur: 0.62, type: "sawtooth", gain: 0.17, sweepTo: 46, lp: 950, attack: 0.004 });
+
+      // The second visual pulse gets its own smaller aftershock and a long
+      // rumble so the explosion has weight without masking the result fanfare.
+      noise(ctx, impact + 0.58, { dur: 0.4, gain: 0.24, hp: 45, lp: 1900 });
+      tone(ctx, impact + 0.58, { freq: 68, dur: 0.82, type: "sine", gain: 0.23, sweepTo: 32, lp: 260, attack: 0.004 });
+      tone(ctx, impact + 1.16, { freq: 48, dur: 1.36, type: "sine", gain: 0.09, sweepTo: 24, lp: 180, attack: 0.015 });
+
+      [1568, 1318, 988, 784].forEach((freq, index) => {
+        tone(ctx, impact + 0.82 + index * 0.11, {
+          freq,
+          dur: 0.3 + index * 0.08,
+          type: index % 2 === 0 ? "triangle" : "sine",
+          gain: 0.075 - index * 0.009,
+          lp: 7200,
+          detune: index % 2 === 0 ? 7 : -7,
+          attack: 0.004
+        });
+      });
       break;
     }
     case "penalty": {

@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
 import messages from "../messages/en.json";
 import { ColorPicker } from "../src/components/ColorPicker";
-import { RoundEndOverlay } from "../src/components/RoundEndOverlay";
+import { RoundEndOverlay, roundEndRevealAt } from "../src/components/RoundEndOverlay";
+import { CHAOS_BUST_RESULT_SETTLE_MS } from "../src/lib/events";
+import { useRoomStore } from "../src/lib/store";
 
 function player(overrides: Partial<PublicPlayer> & { id: string; seat: number }): PublicPlayer {
   const { id, seat, ...rest } = overrides;
@@ -72,6 +74,8 @@ function renderWithIntl(children: React.ReactNode) {
   );
 }
 
+afterEach(() => vi.useRealTimers());
+
 describe("mobile layout surfaces", () => {
   it("uses the mobile safe modal shell for color picking", () => {
     renderWithIntl(<ColorPicker onPick={vi.fn()} onCancel={vi.fn()} />);
@@ -86,5 +90,35 @@ describe("mobile layout surfaces", () => {
     expect(screen.getByTestId("round-end-overlay")).toHaveClass("overflow-hidden");
     expect(screen.getByTestId("round-end-overlay")).not.toHaveClass("overflow-y-auto");
     expect(screen.getByRole("dialog")).toHaveClass("mobile-modal", "modal-round-end");
+  });
+
+  it("waits for a finishing chaos bust before showing the round result", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    useRoomStore.setState({ clockOffset: 0 });
+    const result = snapshot();
+    result.serverNow = 1_000;
+    result.settings.modeId = "chaos";
+    result.presentationEvents = [{
+      id: 9,
+      seq: 9,
+      kind: "chaosBust",
+      targetIds: ["guest"],
+      amount: 26,
+      startsAt: 1_000,
+      resolvesAt: 4_600
+    }];
+    const revealAt = 4_600 + CHAOS_BUST_RESULT_SETTLE_MS;
+
+    expect(roundEndRevealAt(result)).toBe(revealAt);
+    expect(roundEndRevealAt(result, revealAt)).toBeUndefined();
+    renderWithIntl(<RoundEndOverlay snapshot={result} send={vi.fn()} onLeave={vi.fn()} />);
+    expect(screen.queryByTestId("round-end-overlay")).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(revealAt - 1_000 - 1));
+    expect(screen.queryByTestId("round-end-overlay")).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.getByTestId("round-end-overlay")).toBeInTheDocument();
   });
 });

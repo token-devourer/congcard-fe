@@ -106,7 +106,7 @@ describe("diffSnapshots", () => {
 
     const bust = diffSnapshots(prev, next).find((event) => event.type === "chaosBust");
     expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 3_800 });
-    expect(eventToastDurationMs(bust!)).toBe(2_800);
+    expect(eventToastDurationMs(bust!)).toBe(3_600);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {
@@ -360,8 +360,9 @@ describe("diffSnapshots", () => {
     expect(soundForEvent({ id: 9, type: "skip" })).toBe("skip");
     expect(soundForEvent({ id: 10, type: "reverse", direction: -1 })).toBe("reverse");
     expect(soundForEvent({ id: 11, type: "jumpIn", playerId: "b", nickname: "Ben", self: false })).toBe("jumpIn");
-    expect(soundForEvent({ id: 12, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
-    expect(soundForEvent({ id: 13, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
+    expect(soundForEvent({ id: 12, type: "chaosBust", playerId: "b", nickname: "Ben", count: 26, self: false })).toBe("chaosBust");
+    expect(soundForEvent({ id: 13, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
+    expect(soundForEvent({ id: 14, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
 
   it("announces the total drawn when a Wild Draw Color hunt clears", () => {

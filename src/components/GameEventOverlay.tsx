@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { anchorRect } from "@/lib/anchors";
 import { useRoomStore } from "@/lib/store";
-import type { UiEvent } from "@/lib/events";
+import { CHAOS_BUST_VFX_MS, type UiEvent } from "@/lib/events";
 import { useNow } from "@/lib/useNow";
 import { useGraphicsPreset } from "./AnimationProvider";
 
@@ -75,7 +75,6 @@ const BUST_SMOKE = [
 ] as const;
 
 const STARBURST_CLIP = "polygon(50% 0%,57% 30%,73% 8%,72% 35%,96% 20%,78% 43%,100% 50%,77% 57%,94% 82%,69% 68%,70% 100%,56% 73%,43% 98%,44% 70%,19% 88%,31% 64%,0% 58%,28% 49%,3% 29%,35% 39%,28% 6%,47% 31%)";
-const CHAOS_BUST_VFX_MS = 2_800;
 
 const FLASHBANG_SFX_DELAY_MS = 650;
 const FLASHBANG_SFX_DURATION_MS = 4_730;
@@ -212,14 +211,14 @@ function EventToast({ event, onDone, preset }: { event: UiEvent; onDone: () => v
       initial={{ opacity: 0 }}
       animate={shakeForSelfBust ? {
         opacity: 1,
-        x: [0, 0, -9, 8, -6, 5, 0, -4, 3, 0],
-        y: [0, 0, 4, -3, 3, -2, 0, 2, -1, 0]
+        x: [0, 0, -10, 9, -7, 6, 0, 0, -5, 4, -2, 0],
+        y: [0, 0, 5, -4, 3, -3, 0, 0, 3, -2, 1, 0]
       } : { opacity: 1 }}
       exit={{ opacity: 0, x: 0, y: 0 }}
       transition={shakeForSelfBust ? {
         opacity: { duration: 0.18 },
-        x: { duration: 0.84, times: [0, 0.18, 0.25, 0.32, 0.39, 0.46, 0.64, 0.75, 0.86, 1], ease: "easeOut" },
-        y: { duration: 0.84, times: [0, 0.18, 0.25, 0.32, 0.39, 0.46, 0.64, 0.75, 0.86, 1], ease: "easeOut" }
+        x: { duration: 1.18, times: [0, 0.14, 0.2, 0.26, 0.32, 0.38, 0.46, 0.62, 0.7, 0.77, 0.85, 1], ease: "easeOut" },
+        y: { duration: 1.18, times: [0, 0.14, 0.2, 0.26, 0.32, 0.38, 0.46, 0.62, 0.7, 0.77, 0.85, 1], ease: "easeOut" }
       } : { duration: reduceMotion ? 0.12 : 0.18 }}
     >
       <motion.div
@@ -606,7 +605,21 @@ function ChaosBustVfx({
               animate={{ scale: [0.03, 1.08, 0.72], opacity: [0, 1, 0], rotate: [-10, 4, 14] }}
               transition={{ delay: 0.18, duration: 0.62, times: [0, 0.2, 1], ease: "easeOut" }}
             />
-            {[0, 1].map((index) => (
+            <motion.div
+              className="absolute bg-gradient-to-br from-yellow-100 via-orange-400 to-red-700 shadow-[0_0_42px_rgba(255,117,38,0.58)]"
+              style={{
+                clipPath: STARBURST_CLIP,
+                width: "clamp(170px, 26vw, 280px)",
+                height: "clamp(170px, 26vw, 280px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 0.16, opacity: 0, rotate: -18 }}
+              animate={{ scale: [0.16, 1.04, 1.34], opacity: [0, 0.58, 0], rotate: [-18, 8, 20] }}
+              transition={{ delay: 0.74, duration: 0.92, times: [0, 0.22, 1], ease: "easeOut" }}
+            />
+            {[0.18, 0.3, 0.78].map((delay, index) => (
               <motion.div
                 key={`shockwave-${index}`}
                 className="absolute rounded-full border-4 border-yellow-100/70 shadow-[0_0_24px_rgba(255,182,66,0.35)]"
@@ -619,7 +632,7 @@ function ChaosBustVfx({
                 }}
                 initial={{ scale: 0.18, opacity: 0 }}
                 animate={{ scale: [0.18, 1.12, 1.72], opacity: [0, 0.78, 0] }}
-                transition={{ delay: 0.18 + index * 0.12, duration: 0.94 + index * 0.2, times: [0, 0.18, 1], ease: "easeOut" }}
+                transition={{ delay, duration: index === 2 ? 1.28 : 0.94 + index * 0.2, times: [0, 0.18, 1], ease: "easeOut" }}
               />
             ))}
             {BUST_CONFETTI.slice(0, particleCount).map(([x, y, rotate], index) => {
@@ -633,7 +646,7 @@ function ChaosBustVfx({
                   style={starFragment ? { clipPath: STARBURST_CLIP } : undefined}
                   initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.2 }}
                   animate={{ x, y, rotate, opacity: [0, 1, 0.88, 0], scale: [0.2, 1.12, 0.86, 0.55] }}
-                  transition={{ duration: 1.42, delay: 0.31 + index * 0.028, times: [0, 0.16, 0.66, 1], ease: "easeOut" }}
+                  transition={{ duration: 2.15, delay: 0.31 + index * 0.028, times: [0, 0.12, 0.68, 1], ease: "easeOut" }}
                 />
               );
             })}
@@ -643,7 +656,7 @@ function ChaosBustVfx({
                 className="absolute -left-9 -top-9 h-16 w-16 rounded-full bg-gradient-to-br from-white/48 via-zinc-300/30 to-zinc-700/10 blur-[1px]"
                 initial={{ x: 0, y: 0, scale: 0.2, opacity: 0 }}
                 animate={{ x, y, scale: [0.2, 1.18, 1.48], opacity: [0, 0.48, 0.24, 0] }}
-                transition={{ duration: 1.55, delay: 0.62 + index * 0.07, times: [0, 0.24, 0.66, 1], ease: "easeOut" }}
+                transition={{ duration: 2.05, delay: 0.62 + index * 0.07, times: [0, 0.2, 0.7, 1], ease: "easeOut" }}
               />
             ))}
             {BUST_CONFETTI.slice(0, Math.min(6, particleCount)).map(([x, y], index) => (
@@ -652,7 +665,7 @@ function ChaosBustVfx({
                 className="absolute -left-1 -top-1 h-2 w-7 rounded-full bg-yellow-100 shadow-[0_0_14px_rgba(255,204,72,0.86)]"
                 initial={{ x: 0, y: 0, rotate: 0, scaleX: 0.2, opacity: 0 }}
                 animate={{ x: x * 0.82, y: y * 0.82, rotate: Math.atan2(y, x) * (180 / Math.PI), scaleX: [0.2, 1.3, 0.4], opacity: [0, 0.9, 0] }}
-                transition={{ duration: 0.82, delay: 0.24 + index * 0.024, ease: "easeOut" }}
+                transition={{ duration: 1.15, delay: 0.24 + index * 0.024, ease: "easeOut" }}
               />
             ))}
           </>
@@ -666,7 +679,7 @@ function ChaosBustVfx({
             : { scale: [0.2, 0.2, 1.16, 0.96, 0.86], opacity: [0, 0, 1, 1, 0], rotate: [-12, -12, 8, -3, 2] }}
           transition={reduceMotion
             ? { duration: 0.14, ease: "easeOut" }
-            : { delay: 0.3, duration: 2.28, times: [0, 0.1, 0.25, 0.82, 1], ease: "easeOut" }}
+            : { delay: 0.3, duration: 3, times: [0, 0.08, 0.2, 0.86, 1], ease: "easeOut" }}
         >
           <span className="text-3xl leading-none">{event.count}</span>
           <span className="text-sm leading-none">&gt;25</span>

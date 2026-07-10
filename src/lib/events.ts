@@ -18,6 +18,9 @@ export type UiEvent = (
   | { id: number; type: "roundLost"; winnerId: string; nickname: string; gameEnd: boolean }
 ) & { startsAt?: number; resolvesAt?: number };
 
+export const CHAOS_BUST_VFX_MS = 3_600;
+export const CHAOS_BUST_RESULT_SETTLE_MS = 220;
+
 const ACTION_LOCK_EVENT_TYPES = new Set<UiEvent["type"]>(["skip", "reverse", "penalty", "stack", "colorChange"]);
 const ACTION_LOCK_MS = 700;
 
