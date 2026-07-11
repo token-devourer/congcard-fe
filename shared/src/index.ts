@@ -78,6 +78,36 @@ export const ACTIVE_CHAOS_SPECIAL_VALUES = [
   "nuke"
 ] as const satisfies readonly CardValue[];
 
+export const CHAOS_SPECIAL_VALUES = ["throwup", ...ACTIVE_CHAOS_SPECIAL_VALUES] as const satisfies readonly CardValue[];
+export type ChaosSpecialValue = (typeof CHAOS_SPECIAL_VALUES)[number];
+export type ChaosSpecialSpawnMode = "fixed" | "percentage";
+export interface ChaosModeOptions {
+  chaosSpecialSpawnMode: ChaosSpecialSpawnMode;
+  chaosSpecialSpawnPercent: number;
+}
+export type ModeOptions = Record<string, unknown> & Partial<ChaosModeOptions>;
+export const DEFAULT_CHAOS_SPECIAL_SPAWN_MODE: ChaosSpecialSpawnMode = "fixed";
+export const DEFAULT_CHAOS_SPECIAL_SPAWN_PERCENT = 16;
+
+export function getChaosSpecialSpawnMode(modeOptions?: Record<string, unknown>): ChaosSpecialSpawnMode {
+  return modeOptions?.chaosSpecialSpawnMode === "percentage" ? "percentage" : DEFAULT_CHAOS_SPECIAL_SPAWN_MODE;
+}
+
+export function getChaosSpecialSpawnPercent(modeOptions?: Record<string, unknown>): number {
+  const value = typeof modeOptions?.chaosSpecialSpawnPercent === "number"
+    ? modeOptions.chaosSpecialSpawnPercent
+    : DEFAULT_CHAOS_SPECIAL_SPAWN_PERCENT;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+export function normalizeChaosModeOptions(modeOptions?: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...(modeOptions ?? {}),
+    chaosSpecialSpawnMode: getChaosSpecialSpawnMode(modeOptions),
+    chaosSpecialSpawnPercent: getChaosSpecialSpawnPercent(modeOptions)
+  };
+}
+
 export type ActiveChaosSpecialValue = (typeof ACTIVE_CHAOS_SPECIAL_VALUES)[number];
 export type ChaosEffectKind = ActiveChaosSpecialValue | "throwup";
 export type PendingChaosPhase =
@@ -141,7 +171,7 @@ export interface RoomSettings {
   absentPlayerAction: AbsentPlayerAction;
   autoPlayCallOne: boolean;
   deckBoxes: number;
-  modeOptions: Record<string, unknown>;
+  modeOptions: ModeOptions;
 }
 
 export type RoomSettingsInput = {
@@ -464,7 +494,7 @@ export interface TurnContext {
 export interface GameMode {
   id: "standard" | "flip" | "chaos";
   initialHandSize: number;
-  buildDeck(playerCount: number, deckBoxes?: number): Card[];
+  buildDeck(playerCount: number, deckBoxes?: number, modeOptions?: Record<string, unknown>): Card[];
   isPlayable(card: Card, ctx: TurnContext): boolean;
   scoreHand(hand: Card[]): number;
   allowedOutOfTurnActions(ctx: TurnContext): ActionType[];
@@ -612,6 +642,8 @@ export function mergeRoomSettings(input?: RoomSettingsInput): RoomSettings {
     absentPlayerAction: parsed.absentPlayerAction ?? DEFAULT_ROOM_SETTINGS.absentPlayerAction,
     autoPlayCallOne: parsed.autoPlayCallOne ?? DEFAULT_ROOM_SETTINGS.autoPlayCallOne,
     deckBoxes: parsed.deckBoxes ?? defaultDeckBoxes,
-    modeOptions: parsed.modeOptions ?? DEFAULT_ROOM_SETTINGS.modeOptions
+    modeOptions: modeId === "chaos"
+      ? normalizeChaosModeOptions(parsed.modeOptions)
+      : parsed.modeOptions ?? DEFAULT_ROOM_SETTINGS.modeOptions
   };
 }

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { getChaosSpecialSpawnMode, getChaosSpecialSpawnPercent } from "@congcard/shared";
 import type { RoomSettings } from "@congcard/shared";
 import { shouldIgnoreShortcut } from "@/lib/shortcuts";
 
@@ -22,6 +23,9 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const flipMode = settings?.modeId === "flip";
   const chaosMode = settings?.modeId === "chaos";
   const deckBoxesRuleKey = chaosMode ? "deckBoxesChaosRule" : flipMode ? "deckBoxesFlipRule" : "deckBoxesRule";
+  const chaosSpecialSpawnMode = getChaosSpecialSpawnMode(settings?.modeOptions);
+  const chaosSpecialPercent = getChaosSpecialSpawnPercent(settings?.modeOptions);
+  const chaosSpecialCount = Math.round(deckBoxes * 128 * chaosSpecialPercent / 100);
   const wild4RuleKey = settings?.stackingEnabled
     ? "actionWild4Stacking"
     : settings?.challengeEnabled ?? true
@@ -106,6 +110,13 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                   <li>{settings.autoPlayCallOne ? t("autoPlayOneOn") : t("autoPlayOneOff")}</li>
                 ) : null}
                 <li>{t(deckBoxesRuleKey, { count: deckBoxes })}</li>
+                {chaosMode ? (
+                  <li>
+                    {chaosSpecialSpawnMode === "percentage"
+                      ? t("chaosSpecialPercentage", { percent: chaosSpecialPercent, total: deckBoxes * 128, count: chaosSpecialCount })
+                      : t("chaosSpecialFixed", { count: deckBoxes })}
+                  </li>
+                ) : null}
               </ul>
             </section>
 

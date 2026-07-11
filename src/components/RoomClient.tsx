@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
 import type { Card, ChaosSelectableCard, Color, GameSnapshot, ParticipantRole, RoomSettings } from "@congcard/shared";
-import { AVATARS } from "@congcard/shared";
+import { AVATARS, getChaosSpecialSpawnMode, getChaosSpecialSpawnPercent } from "@congcard/shared";
 import {
   Accessibility,
   Bot,
@@ -379,7 +379,13 @@ export function RoomClient({ code }: RoomClientProps) {
       <ErrorToast />
 
       <RulesModal open={showRules} onClose={() => setShowRules(false)} settings={snapshot?.settings} />
-      <CardsModal key={localModeId || snapshot?.settings.modeId || "standard"} open={showCards} onClose={() => setShowCards(false)} modeId={localModeId || snapshot?.settings.modeId || "standard"} />
+      <CardsModal
+        key={`${localModeId || snapshot?.settings.modeId || "standard"}-${snapshot?.settings.deckBoxes ?? 1}`}
+        open={showCards}
+        onClose={() => setShowCards(false)}
+        modeId={localModeId || snapshot?.settings.modeId || "standard"}
+        settings={snapshot?.settings}
+      />
 
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
@@ -537,6 +543,10 @@ export function Lobby({
       : visibleModeId === "flip"
         ? "lobby.deckBoxesHintFlip"
         : "lobby.deckBoxesHint";
+  const chaosSpecialSpawnMode = getChaosSpecialSpawnMode(snapshot.settings.modeOptions);
+  const chaosSpecialSpawnPercent = getChaosSpecialSpawnPercent(snapshot.settings.modeOptions);
+  const chaosDeckSlots = snapshot.settings.deckBoxes * 128;
+  const chaosSpecialEstimate = Math.round(chaosDeckSlots * chaosSpecialSpawnPercent / 100);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const { tier, setTier, autoDetected } = useGraphicsPreset();
 
@@ -747,6 +757,53 @@ export function Lobby({
             {t(deckBoxesHintKey, { count: deckBoxMinimum })}
           </span>
         </label>
+        {visibleModeId === "chaos" ? (
+          <label className="grid gap-2">
+            <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.chaosSpecialSpawn")}</span>
+            <select
+              className="field"
+              disabled={!isHost}
+              value={chaosSpecialSpawnMode}
+              onChange={(event) => updateSetting({
+                modeOptions: {
+                  ...snapshot.settings.modeOptions,
+                  chaosSpecialSpawnMode: event.target.value as "fixed" | "percentage",
+                  chaosSpecialSpawnPercent
+                }
+              })}
+            >
+              <option value="fixed">{t("lobby.chaosSpecialSpawnFixed")}</option>
+              <option value="percentage">{t("lobby.chaosSpecialSpawnPercentage")}</option>
+            </select>
+            {chaosSpecialSpawnMode === "percentage" ? (
+              <>
+                <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.chaosSpecialPercent")}</span>
+                <input
+                  className="field"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  disabled={!isHost}
+                  value={chaosSpecialSpawnPercent}
+                  onChange={(event) => {
+                    const value = Math.min(100, Math.max(0, Number(event.target.value) || 0));
+                    updateSetting({
+                      modeOptions: {
+                        ...snapshot.settings.modeOptions,
+                        chaosSpecialSpawnMode: "percentage",
+                        chaosSpecialSpawnPercent: value
+                      }
+                    });
+                  }}
+                />
+                <span className="text-xs leading-snug text-[var(--muted)]">
+                  {t("lobby.chaosSpecialSpawnHint", { percent: chaosSpecialSpawnPercent, count: chaosSpecialEstimate, total: chaosDeckSlots })}
+                </span>
+              </>
+            ) : null}
+          </label>
+        ) : null}
         <label className="setting-card flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"

@@ -152,6 +152,24 @@ describe("Lobby settings", () => {
     expect(call).toBeChecked();
   });
 
+  it("configures Chaos special cards by percentage and includes ThrowUp in the estimate", () => {
+    render(<LobbyHarness />);
+
+    const gameMode = screen.getByText("Game mode").closest("label")?.querySelector("select") as HTMLSelectElement;
+    fireEvent.change(gameMode, { target: { value: "chaos" } });
+
+    const spawn = screen.getByText("Special card spawn").closest("label")?.querySelector("select") as HTMLSelectElement;
+    expect(spawn).toHaveValue("fixed");
+    fireEvent.change(spawn, { target: { value: "percentage" } });
+
+    const percent = screen.getByText("Special card percentage").closest("label")?.querySelector("input") as HTMLInputElement;
+    expect(percent).toHaveValue(16);
+    fireEvent.change(percent, { target: { value: "25" } });
+
+    expect(percent).toHaveValue(25);
+    expect(screen.getByText("25% of 256 Chaos cards becomes special, including ThrowUp. Estimated total: 64 cards.")).toBeInTheDocument();
+  });
+
   it("keeps Batch Cards disabled by default and independently configurable", () => {
     render(<LobbyHarness />);
 

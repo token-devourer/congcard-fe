@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { CardValue, Color, FlipSide } from "@congcard/shared";
-import { ACTIVE_CHAOS_SPECIAL_VALUES, LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
+import type { CardValue, Color, FlipSide, RoomSettings } from "@congcard/shared";
+import { CHAOS_SPECIAL_VALUES, getChaosSpecialSpawnMode, getChaosSpecialSpawnPercent, LIGHT_COLORS, DARK_COLORS } from "@congcard/shared";
 import { CardView } from "./CardView";
 import { playSound, type SoundName } from "@/lib/sound";
 import { shouldIgnoreShortcut } from "@/lib/shortcuts";
@@ -14,9 +14,10 @@ interface CardsModalProps {
   open: boolean;
   onClose: () => void;
   modeId: string;
+  settings?: RoomSettings;
 }
 
-type CardFace = { color: Color | null; value: CardValue; side?: FlipSide };
+type CardFace = { color: Color | null; value: CardValue; side?: FlipSide; count?: number };
 type CardGroup = { label: string; cards: CardFace[] };
 
 const STANDARD_NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as CardValue[];
@@ -172,14 +173,35 @@ function generateFlip(): CardGroup[] {
 }
 
 const CHAOS_ACTIONS = ["skip", "reverse", "draw1", "throwup"] as CardValue[];
-const CHAOS_SPECIALS = [...ACTIVE_CHAOS_SPECIAL_VALUES] as CardValue[];
+const CHAOS_SPECIALS = CHAOS_SPECIAL_VALUES.filter((value) => value !== "throwup") as CardValue[];
 
-function generateChaos(): CardGroup[] {
+function chaosSpecialCounts(settings?: RoomSettings): Record<string, number> {
+  const deckBoxes = settings?.deckBoxes ?? 1;
+  if (getChaosSpecialSpawnMode(settings?.modeOptions) === "fixed") {
+    return Object.fromEntries(CHAOS_SPECIAL_VALUES.map((value) => [value, value === "throwup" ? deckBoxes * 8 : deckBoxes * 2]));
+  }
+
+  const total = deckBoxes * 128;
+  const target = Math.round(total * getChaosSpecialSpawnPercent(settings?.modeOptions) / 100);
+  const base = Math.floor(target / CHAOS_SPECIAL_VALUES.length);
+  const remainder = target % CHAOS_SPECIAL_VALUES.length;
+  return Object.fromEntries(CHAOS_SPECIAL_VALUES.map((value, index) => [value, base + (index < remainder ? 1 : 0)]));
+}
+
+function generateChaos(settings?: RoomSettings): CardGroup[] {
+  const specialCounts = chaosSpecialCounts(settings);
+  const throwupTotal = specialCounts.throwup ?? 0;
+  const throwupBase = Math.floor(throwupTotal / LIGHT_COLORS.length);
+  const throwupRemainder = throwupTotal % LIGHT_COLORS.length;
   const groups: CardGroup[] = [];
-  for (const color of LIGHT_COLORS) {
+  for (const [colorIndex, color] of LIGHT_COLORS.entries()) {
     const cards: CardFace[] = [
       ...STANDARD_NUMBERS.map((value) => ({ color, value })),
-      ...CHAOS_ACTIONS.map((value) => ({ color, value }))
+      ...CHAOS_ACTIONS.map((value) => ({
+        color,
+        value,
+        ...(value === "throwup" ? { count: throwupBase + (colorIndex < throwupRemainder ? 1 : 0) } : {})
+      }))
     ];
     groups.push({ label: `color-${color}`, cards });
   }
@@ -192,14 +214,14 @@ function generateChaos(): CardGroup[] {
   });
   groups.push({
     label: "special",
-    cards: CHAOS_SPECIALS.map((value) => ({ color: null, value }))
+    cards: CHAOS_SPECIALS.map((value) => ({ color: null, value, count: specialCounts[value] ?? 0 }))
   });
   return groups;
 }
 
-function generateCards(modeId: string): CardGroup[] {
+function generateCards(modeId: string, settings?: RoomSettings): CardGroup[] {
   if (modeId === "flip") return generateFlip();
-  if (modeId === "chaos") return generateChaos();
+  if (modeId === "chaos") return generateChaos(settings);
   return generateStandard();
 }
 
@@ -221,7 +243,7 @@ function groupLabel(label: string, t: (key: string) => string): string {
   return t(label);
 }
 
-export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
+export function CardsModal({ open, onClose, modeId, settings }: CardsModalProps) {
   const t = useTranslations("cardsModal");
   const [previewedKey, setPreviewedKey] = useState<string | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -245,7 +267,7 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
     previewTimer.current = setTimeout(() => setPreviewedKey(null), 600);
   }, []);
 
-  const groups = generateCards(modeId);
+  const groups = generateCards(modeId, settings);
 
   return (
     <>
@@ -305,6 +327,11 @@ export function CardsModal({ open, onClose, modeId }: CardsModalProps) {
                             card={face}
                             onClick={() => handleCardClick(face, key)}
                           />
+                          {face.count !== undefined ? (
+                            <span className="absolute -right-1 -top-2 z-20 rounded-full border border-[var(--gold)] bg-[var(--panel)] px-1.5 py-0.5 text-[10px] font-black text-[var(--gold)] shadow-lg">
+                              x{face.count}
+                            </span>
+                          ) : null}
                           {isPreview ? (
                             <span className="card-preview-toast">
                               {CARD_TOAST_LABELS[face.value] ?? String(face.value)}
