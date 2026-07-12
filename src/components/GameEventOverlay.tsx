@@ -92,9 +92,9 @@ const BUST_RAYS = [-78, -54, -30, -6, 18, 42, 66, 90] as const;
 
 const STARBURST_CLIP = "polygon(50% 0%,57% 30%,73% 8%,72% 35%,96% 20%,78% 43%,100% 50%,77% 57%,94% 82%,69% 68%,70% 100%,56% 73%,43% 98%,44% 70%,19% 88%,31% 64%,0% 58%,28% 49%,3% 29%,35% 39%,28% 6%,47% 31%)";
 
-const FLASHBANG_SFX_DELAY_MS = 320;
-const FLASHBANG_SFX_DURATION_MS = 3_780;
-const FLASHBANG_TOTAL_VFX_MS = 4_100;
+const FLASHBANG_SFX_DELAY_MS = 400;
+const FLASHBANG_SFX_DURATION_MS = 4_400;
+const FLASHBANG_TOTAL_VFX_MS = 4_800;
 type NoticeUiEvent = Exclude<UiEvent, { type: "chaos" }>;
 
 export function GameEventOverlay() {
@@ -354,7 +354,7 @@ function ChaosTextLanes({ event, reduceMotion }: { event: Extract<UiEvent, { typ
     return undefined;
   })();
   const resultDelay = event.kind === "flashbang"
-    ? 3.35
+    ? 4.05
     : event.kind === "nuke"
       ? 1.9
       : event.kind === "throwup"
@@ -822,7 +822,7 @@ function FlashbangCardGhost({ playerId, index }: { playerId: string; index: numb
         scale: [0.4, 0.9, 0.62, 0.84, 0.42],
         rotate: [-18 + index * 7, 90 + index * 22, 230 + index * 26, 390 + index * 18, 520 + index * 11]
       }}
-      transition={{ duration: 3.72, delay: 0.1 + index * 0.022, times: [0, 0.16, 0.54, 0.82, 1], ease: "easeInOut" }}
+      transition={{ duration: 4.38, delay: 0.12 + index * 0.024, times: [0, 0.16, 0.54, 0.84, 1], ease: "easeInOut" }}
       aria-hidden="true"
     />
   );
@@ -1307,7 +1307,7 @@ function ChaosCardVfx({
           style={{ background: "linear-gradient(90deg, rgba(255,36,196,0.18), transparent 34%, transparent 66%, rgba(38,231,255,0.2))" }}
           initial={{ x: 0, opacity: 0 }}
           animate={{ x: [-12, 10, -6, 0], opacity: [0, 0.62, 0.2, 0] }}
-          transition={{ delay: flashDelay + 0.12, duration: 2.55, ease: "easeOut" }}
+          transition={{ delay: flashDelay + 0.14, duration: 3.1, ease: "easeOut" }}
         />
         {Array.from({ length: Math.min(4, preset.particleCount) }, (_, index) => (
           <motion.div

@@ -100,7 +100,7 @@ const CLIP_GAIN: Partial<Record<SoundName, number>> = {
 };
 
 const CLIP_PLAYBACK_RATE: Partial<Record<SoundName, number>> = {
-  memeFlashbang: 1.25
+  memeFlashbang: 1.08
 };
 
 let spriteInitPromise: Promise<void> | null = null;
@@ -366,9 +366,9 @@ export function chaosSoundTimeline(event: Extract<UiEvent, { type: "chaos" }>): 
   if (event.kind === "flashbang" && event.phase === "sequence") {
     at("opening");
     at("chaosFlashbangCharge");
-    at("memeFlashbang", 320);
-    at("chaosFlashbangImpact", 320);
-    at("chaosFlashbangSwap", 3_350);
+    at("memeFlashbang", 400);
+    at("chaosFlashbangImpact", 400);
+    at("chaosFlashbangSwap", 4_050);
     return cues;
   }
 
@@ -902,9 +902,9 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "chaosFlashbangCharge": {
-      tone(ctx, t, { freq: 86, dur: 0.32, type: "sine", gain: 0.1, sweepTo: 220, lp: 480, attack: 0.012 });
-      tone(ctx, t + 0.02, { freq: 340, dur: 0.29, type: "sawtooth", gain: 0.052, sweepTo: 2_180, lp: 3_200, attack: 0.01 });
-      noise(ctx, t + 0.08, { dur: 0.22, gain: 0.04, hp: 1_200, lp: 8_400 });
+      tone(ctx, t, { freq: 86, dur: 0.4, type: "sine", gain: 0.1, sweepTo: 220, lp: 480, attack: 0.012 });
+      tone(ctx, t + 0.02, { freq: 340, dur: 0.37, type: "sawtooth", gain: 0.052, sweepTo: 2_180, lp: 3_200, attack: 0.01 });
+      noise(ctx, t + 0.1, { dur: 0.28, gain: 0.04, hp: 1_200, lp: 8_400 });
       break;
     }
     case "chaosFlashbangImpact": {

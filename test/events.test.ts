@@ -195,9 +195,9 @@ describe("diffSnapshots", () => {
     expect(chaosSoundTimeline(chaosEvent("flashbang", "sequence"))).toEqual([
       { sound: "opening", offsetMs: 0, level: 1 },
       { sound: "chaosFlashbangCharge", offsetMs: 0, level: 1 },
-      { sound: "memeFlashbang", offsetMs: 320, level: 1 },
-      { sound: "chaosFlashbangImpact", offsetMs: 320, level: 1 },
-      { sound: "chaosFlashbangSwap", offsetMs: 3_350, level: 1 }
+      { sound: "memeFlashbang", offsetMs: 400, level: 1 },
+      { sound: "chaosFlashbangImpact", offsetMs: 400, level: 1 },
+      { sound: "chaosFlashbangSwap", offsetMs: 4_050, level: 1 }
     ]);
     expect(chaosSoundTimeline(chaosEvent("nuke", "opening"))).toEqual([
       { sound: "batchFinale", offsetMs: 0, level: 1 },
