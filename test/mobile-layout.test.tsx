@@ -6,6 +6,7 @@ import messages from "../messages/en.json";
 import { ColorPicker } from "../src/components/ColorPicker";
 import { PlayerSeat } from "../src/components/PlayerSeat";
 import { RoundEndOverlay, roundEndRevealAt } from "../src/components/RoundEndOverlay";
+import { PeekRevealWall } from "../src/components/GameEventOverlay";
 import { CHAOS_BUST_RESULT_SETTLE_MS } from "../src/lib/events";
 import { useRoomStore } from "../src/lib/store";
 
@@ -101,6 +102,24 @@ describe("mobile layout surfaces", () => {
     expect(screen.getByText("Charred by Chaos")).toBeInTheDocument();
     expect(container.querySelector(".busted-avatar")).toBeInTheDocument();
     expect(container.querySelector(".busted-soot-mask")).toBeInTheDocument();
+  });
+
+  it("renders every revealed hand in the Peek cinematic wall", () => {
+    const game = snapshot();
+    game.phase = "playing";
+    renderWithIntl(
+      <PeekRevealWall
+        snapshot={game}
+        revealedHands={{
+          host: [{ id: "host-red", trackingId: "host-red", color: "red", value: 4 }],
+          guest: [{ id: "guest-blue", trackingId: "guest-blue", color: "blue", value: 7 }]
+        }}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "Peek reveal" })).toBeInTheDocument();
+    expect(screen.getByLabelText("red 4")).toBeInTheDocument();
+    expect(screen.getByLabelText("blue 7")).toBeInTheDocument();
   });
 
   it("waits for a finishing chaos bust before showing the round result", () => {

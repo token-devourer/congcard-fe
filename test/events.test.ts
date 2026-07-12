@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { eventToastDurationMs, nukeDangerStage } from "../src/components/GameEventOverlay";
 import { diffSnapshots } from "../src/lib/events";
-import { soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
+import { chaosSoundTimeline, soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
 
 function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer {
   return {
@@ -134,6 +134,59 @@ describe("diffSnapshots", () => {
 
   it("raises the Nuke danger stage as the countdown runs out", () => {
     expect([35_000, 25_000, 15_000, 8_000, 3_000].map(nukeDangerStage)).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it("maps dramatic Chaos metadata and follows the server duration", () => {
+    const prev = snapshot({ presentationEvents: [] });
+    const next = snapshot({
+      presentationEvents: [{
+        id: 11,
+        seq: 11,
+        kind: "chaos",
+        chaosKind: "throwup",
+        phase: "sequence",
+        actorId: "a",
+        amount: 12,
+        color: "red",
+        startsAt: 2_000,
+        resolvesAt: 4_180
+      }]
+    });
+
+    const event = diffSnapshots(prev, next).find((item) => item.type === "chaos");
+    expect(event).toMatchObject({ kind: "throwup", phase: "sequence", actorId: "a", amount: 12, color: "red" });
+    expect(eventToastDurationMs(event!)).toBe(2_180);
+  });
+
+  it("keeps each meme clip at its intended cinematic phase", () => {
+    const chaosEvent = (kind: "throwup" | "steal" | "favor" | "peek" | "timeskip", phase: "opening" | "sequence" | "reveal" | "autoplay", targetIds?: string[], amount?: number) => ({
+      id: 1,
+      type: "chaos" as const,
+      kind,
+      phase,
+      ...(targetIds ? { targetIds } : {}),
+      ...(amount !== undefined ? { amount } : {})
+    });
+
+    expect(chaosSoundTimeline(chaosEvent("throwup", "sequence", undefined, 2)).filter((cue) => cue.sound === "memeThrowup")).toEqual([
+      { sound: "memeThrowup", offsetMs: 650, level: 1 }
+    ]);
+    expect(chaosSoundTimeline(chaosEvent("steal", "opening")).some((cue) => cue.sound === "memeSteal")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("steal", "opening", ["b"])).some((cue) => cue.sound.startsWith("meme"))).toBe(false);
+    expect(chaosSoundTimeline(chaosEvent("steal", "sequence")).some((cue) => cue.sound === "memeStealExecute")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("favor", "opening")).some((cue) => cue.sound === "memeFavor")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("favor", "opening", ["b"])).some((cue) => cue.sound === "memeFavorOpen")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("favor", "sequence")).some((cue) => cue.sound === "memeFavorExecute")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("peek", "opening")).some((cue) => cue.sound === "memePeek")).toBe(false);
+    expect(chaosSoundTimeline(chaosEvent("peek", "reveal")).some((cue) => cue.sound === "memePeek")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("timeskip", "opening")).some((cue) => cue.sound === "memeTimeskip")).toBe(true);
+    expect(chaosSoundTimeline(chaosEvent("timeskip", "autoplay", ["b", "c"]))).toEqual([
+      { sound: "chaosTimeStep", offsetMs: 0, level: 1 },
+      { sound: "chaosTimeStep", offsetMs: 1_000, level: 2 }
+    ]);
+    expect(chaosSoundTimeline(chaosEvent("timeskip", "sequence"))).toEqual([
+      { sound: "chaosTimeReturn", offsetMs: 0, level: 1 }
+    ]);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {

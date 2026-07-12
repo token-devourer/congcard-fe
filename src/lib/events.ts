@@ -10,7 +10,7 @@ export type UiEvent = (
   | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
-  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; amount?: number; countdownEndsAt?: number }
+  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; amount?: number; color?: Color; countdownEndsAt?: number }
   | { id: number; type: "chaosBust"; playerId: string; nickname: string; count: number; self: boolean }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
@@ -301,6 +301,7 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, p
             ...(event.actorId ? { actorId: event.actorId } : {}),
             ...(event.targetIds ? { targetIds: event.targetIds } : {}),
             ...(event.amount !== undefined ? { amount: event.amount } : {}),
+            ...(event.color ? { color: event.color } : {}),
             ...(snapshot.pendingChaos?.countdownEndsAt ? { countdownEndsAt: snapshot.pendingChaos.countdownEndsAt } : {}),
             ...timing
           }]

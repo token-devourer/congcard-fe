@@ -53,7 +53,22 @@ export type SoundName =
   | "memeMime"
   | "memeStealExecute"
   | "memeFavorExecute"
-  | "memeNukeCountdown";
+  | "memeNukeCountdown"
+  | "chaosThrowupCharge"
+  | "chaosThrowupImpact"
+  | "chaosThrowupCard"
+  | "chaosStealCharge"
+  | "chaosStealLock"
+  | "chaosStealImpact"
+  | "chaosFavorCharge"
+  | "chaosFavorOpen"
+  | "chaosFavorImpact"
+  | "chaosPeekPrelude"
+  | "chaosPeekReveal"
+  | "chaosPeekClose"
+  | "chaosTimeCharge"
+  | "chaosTimeStep"
+  | "chaosTimeReturn";
 
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
@@ -222,7 +237,12 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
     if (event.type === "chaos") {
       const startsInMs = event.startsAt ? Math.max(0, event.startsAt - serverNow) : 0;
       playChaosEventSounds(event, startsInMs, serverNow);
-      duckMusic(startsInMs, event.kind === "nuke" ? 2_200 : 1_200);
+      if (event.phase !== "chooseTarget" && event.phase !== "chooseCard") {
+        const duration = event.startsAt && event.resolvesAt
+          ? Math.max(1_200, event.resolvesAt - event.startsAt + 180)
+          : event.kind === "nuke" ? 2_200 : 1_200;
+        duckMusic(startsInMs, duration, event.kind === "timeskip" ? 0.24 : 0.3);
+      }
       continue;
     }
     const sound = soundForEvent(event);
@@ -250,6 +270,89 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   }
 }
 
+export interface ChaosSoundCue {
+  sound: SoundName;
+  offsetMs: number;
+  level: number;
+}
+
+export function chaosSoundTimeline(event: Extract<UiEvent, { type: "chaos" }>): ChaosSoundCue[] {
+  const cues: ChaosSoundCue[] = [];
+  const at = (sound: SoundName, offsetMs = 0, level = 1) => cues.push({ sound, offsetMs, level });
+  if (event.kind === "throwup" && event.phase === "sequence") {
+    at("opening");
+    at("chaosThrowupCharge");
+    at("memeThrowup", 650);
+    at("chaosThrowupImpact", 880);
+    for (let index = 0; index < Math.min(24, event.amount ?? 0); index += 1) {
+      at("chaosThrowupCard", 1_100 + index * 90, Math.min(8, index + 1));
+    }
+    return cues;
+  }
+
+  if (event.kind === "steal") {
+    if (event.phase === "opening") {
+      if (event.targetIds?.length) {
+        at("chaosStealLock");
+      } else {
+        at("opening");
+        at("chaosStealCharge");
+        at("memeSteal", 650);
+      }
+    } else if (event.phase === "sequence") {
+      at("chaosStealImpact");
+      at("memeStealExecute", 120);
+    }
+    return cues;
+  }
+
+  if (event.kind === "favor") {
+    if (event.phase === "opening") {
+      if (event.targetIds?.length) {
+        at("chaosFavorOpen");
+        at("memeFavorOpen", 150);
+      } else {
+        at("opening");
+        at("chaosFavorCharge");
+        at("memeFavor", 650);
+      }
+    } else if (event.phase === "sequence") {
+      at("chaosFavorImpact");
+      at("memeFavorExecute", 120);
+    }
+    return cues;
+  }
+
+  if (event.kind === "peek") {
+    if (event.phase === "opening") {
+      at("opening");
+      at("chaosPeekPrelude");
+    } else if (event.phase === "reveal") {
+      at("chaosPeekReveal");
+      at("memePeek");
+      at("chaosPeekClose", 4_100);
+    }
+    return cues;
+  }
+
+  if (event.kind === "timeskip") {
+    if (event.phase === "opening") {
+      at("batchFinale");
+      at("chaosTimeCharge");
+      at("memeTimeskip", 650);
+    } else if (event.phase === "autoplay") {
+      for (let index = 0; index < (event.targetIds?.length ?? 0); index += 1) {
+        at("chaosTimeStep", index * 1_000, Math.min(8, index + 1));
+      }
+    } else if (event.phase === "sequence") {
+      at("chaosTimeReturn");
+    }
+    return cues;
+  }
+
+  return cues;
+}
+
 function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number, serverNow: number): void {
   const at = (sound: SoundName, offsetMs = 0, level = 1) => playSoundAt(sound, startsInMs + offsetMs, level);
 
@@ -257,38 +360,19 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
     return;
   }
 
-  if (event.phase === "sequence" && (event.kind === "steal" || event.kind === "favor")) {
-    at(event.kind === "steal" ? "memeStealExecute" : "memeFavorExecute");
-    return;
-  }
-
-  if (event.phase === "chooseCard") {
-    if (event.kind === "favor") {
-      at("memeFavorOpen");
+  const dramaticTimeline = chaosSoundTimeline(event);
+  if (dramaticTimeline.length > 0 || ["throwup", "steal", "favor", "peek", "timeskip"].includes(event.kind)) {
+    for (const cue of dramaticTimeline) {
+      at(cue.sound, cue.offsetMs, cue.level);
     }
     return;
   }
 
-  at(event.kind === "nuke" || event.kind === "timeskip" ? "batchFinale" : "opening");
+  at(event.kind === "nuke" ? "batchFinale" : "opening");
 
   switch (event.kind) {
-    case "throwup":
-      at("memeThrowup", 650);
-      break;
-    case "steal":
-      at("memeSteal", 650);
-      break;
-    case "favor":
-      at("memeFavor", 650);
-      break;
     case "flashbang":
       at("memeFlashbang", 650);
-      break;
-    case "peek":
-      at("memePeek", 650);
-      break;
-    case "timeskip":
-      at("memeTimeskip", 650);
       break;
     case "nuke":
       at("memeNuke", 650);
@@ -399,6 +483,22 @@ function noise(
   g.connect(dest());
   src.start(start);
   src.stop(start + dur + 0.02);
+}
+
+function echoTone(
+  ctx: AudioContext,
+  start: number,
+  opts: Parameters<typeof tone>[2],
+  repeats = 3,
+  delay = 0.11,
+  decay = 0.52
+): void {
+  for (let index = 0; index < repeats; index += 1) {
+    tone(ctx, start + index * delay, {
+      ...opts,
+      gain: (opts.gain ?? 0.25) * decay ** index
+    });
+  }
 }
 
 // Small helpers for tasteful per-event variation. We keep musical intent intact
@@ -775,6 +875,111 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
         gain: rand(0.06, 0.09),
         lp: 7500
       });
+      break;
+    }
+    case "chaosThrowupCharge": {
+      tone(ctx, t, { freq: 170, dur: 0.72, type: "sawtooth", gain: 0.12, sweepTo: 52, lp: 1100, attack: 0.018 });
+      tone(ctx, t + 0.08, { freq: 82, dur: 0.92, type: "sine", gain: 0.16, sweepTo: 34, lp: 260, attack: 0.025 });
+      noise(ctx, t + 0.2, { dur: 0.5, gain: 0.08, hp: 90, lp: 720 });
+      break;
+    }
+    case "chaosThrowupImpact": {
+      noise(ctx, t, { dur: 0.38, gain: 0.22, hp: 55, lp: 1800 });
+      tone(ctx, t, { freq: 96, dur: 0.55, type: "sine", gain: 0.2, sweepTo: 35, lp: 300, attack: 0.004 });
+      tone(ctx, t + 0.03, { freq: 240, dur: 0.32, type: "square", gain: 0.08, sweepTo: 72, lp: 950, attack: 0.004 });
+      break;
+    }
+    case "chaosThrowupCard": {
+      const { ratio } = pitchedLevel(level);
+      tone(ctx, t, { freq: 150 * ratio, dur: 0.09, type: "triangle", gain: 0.075, sweepTo: 82 * ratio, lp: 1300, attack: 0.002 });
+      noise(ctx, t, { dur: 0.055, gain: 0.055, hp: 240, lp: 1800 });
+      break;
+    }
+    case "chaosStealCharge": {
+      tone(ctx, t, { freq: 58, dur: 2.8, type: "sine", gain: 0.11, sweepTo: 42, lp: 220, attack: 0.05 });
+      tone(ctx, t + 0.15, { freq: 130, dur: 2.45, type: "sawtooth", gain: 0.075, sweepTo: 620, lp: 1700, attack: 0.04 });
+      echoTone(ctx, t + 0.42, { freq: 1460, dur: 0.18, type: "triangle", gain: 0.07, lp: 6200, detune: -8 }, 4, 0.24, 0.55);
+      break;
+    }
+    case "chaosStealLock": {
+      noise(ctx, t, { dur: 0.12, gain: 0.14, hp: 1800, lp: 9000 });
+      echoTone(ctx, t + 0.02, { freq: 1180, dur: 0.14, type: "square", gain: 0.11, lp: 4200 }, 3, 0.12, 0.5);
+      tone(ctx, t + 0.22, { freq: 380, dur: 0.48, type: "sawtooth", gain: 0.08, sweepTo: 105, lp: 1400 });
+      break;
+    }
+    case "chaosStealImpact": {
+      [0, 0.065, 0.13].forEach((offset, index) => {
+        noise(ctx, t + offset, { dur: 0.11, gain: 0.18 - index * 0.03, hp: 900 + index * 700, lp: 9200 });
+      });
+      tone(ctx, t + 0.04, { freq: 118, dur: 0.7, type: "sine", gain: 0.18, sweepTo: 38, lp: 320, attack: 0.004 });
+      echoTone(ctx, t + 0.22, { freq: 780, dur: 0.22, type: "triangle", gain: 0.08, lp: 4600 }, 4, 0.16, 0.48);
+      break;
+    }
+    case "chaosFavorCharge": {
+      [220, 330, 440, 660].forEach((freq, index) => {
+        tone(ctx, t + index * 0.13, { freq, dur: 0.52, type: "sine", gain: 0.07, sweepTo: freq * 1.25, lp: 5200, attack: 0.02 });
+      });
+      tone(ctx, t + 0.08, { freq: 72, dur: 1.45, type: "sine", gain: 0.11, sweepTo: 48, lp: 260, attack: 0.025 });
+      break;
+    }
+    case "chaosFavorOpen": {
+      [523, 659, 784, 1046, 1318].forEach((freq, index) => {
+        echoTone(ctx, t + index * 0.08, { freq, dur: 0.3, type: "triangle", gain: 0.07, lp: 7200 }, 2, 0.16, 0.42);
+      });
+      tone(ctx, t + 0.35, { freq: 64, dur: 1.1, type: "sine", gain: 0.09, sweepTo: 46, lp: 240, attack: 0.02 });
+      break;
+    }
+    case "chaosFavorImpact": {
+      noise(ctx, t, { dur: 0.18, gain: 0.13, hp: 300, lp: 5200 });
+      [392, 523, 659, 988].forEach((freq, index) => {
+        tone(ctx, t + index * 0.045, { freq, dur: 0.62, type: index === 0 ? "triangle" : "sine", gain: 0.075, lp: 6500, attack: 0.006 });
+      });
+      tone(ctx, t, { freq: 92, dur: 0.64, type: "sine", gain: 0.15, sweepTo: 46, lp: 320, attack: 0.004 });
+      break;
+    }
+    case "chaosPeekPrelude": {
+      tone(ctx, t, { freq: 72, dur: 0.62, type: "sine", gain: 0.13, sweepTo: 360, lp: 900, attack: 0.025 });
+      noise(ctx, t + 0.04, { dur: 0.52, gain: 0.09, hp: 260, lp: 4200 });
+      echoTone(ctx, t + 0.26, { freq: 1760, dur: 0.13, type: "sine", gain: 0.055, lp: 8200 }, 3, 0.11, 0.5);
+      break;
+    }
+    case "chaosPeekReveal": {
+      noise(ctx, t, { dur: 0.16, gain: 0.18, hp: 1300, lp: 10_500 });
+      tone(ctx, t, { freq: 54, dur: 1.15, type: "sine", gain: 0.17, sweepTo: 29, lp: 240, attack: 0.004 });
+      [880, 1175, 1568].forEach((freq, index) => {
+        echoTone(ctx, t + 0.18 + index * 0.08, { freq, dur: 0.3, type: "triangle", gain: 0.06, lp: 7600 }, 3, 0.17, 0.45);
+      });
+      break;
+    }
+    case "chaosPeekClose": {
+      noise(ctx, t, { dur: 0.09, gain: 0.2, hp: 1800, lp: 10_000 });
+      tone(ctx, t, { freq: 980, dur: 0.35, type: "sawtooth", gain: 0.08, sweepTo: 120, lp: 2600, attack: 0.002 });
+      tone(ctx, t + 0.04, { freq: 74, dur: 0.5, type: "sine", gain: 0.14, sweepTo: 34, lp: 250, attack: 0.004 });
+      break;
+    }
+    case "chaosTimeCharge": {
+      for (let index = 0; index < 12; index += 1) {
+        const offset = index * (0.18 - index * 0.008);
+        tone(ctx, t + offset, { freq: 420 + index * 32, dur: 0.055, type: "square", gain: 0.052 + index * 0.002, lp: 3400 });
+      }
+      tone(ctx, t, { freq: 48, dur: 4.2, type: "sine", gain: 0.1, sweepTo: 96, lp: 260, attack: 0.06 });
+      tone(ctx, t + 0.25, { freq: 180, dur: 3.6, type: "sawtooth", gain: 0.055, sweepTo: 1180, lp: 2200, attack: 0.05 });
+      break;
+    }
+    case "chaosTimeStep": {
+      const { ratio } = pitchedLevel(level);
+      noise(ctx, t, { dur: 0.12, gain: 0.15, hp: 900, lp: 8800 });
+      tone(ctx, t, { freq: 110 * ratio, dur: 0.45, type: "sine", gain: 0.15, sweepTo: 46 * ratio, lp: 420, attack: 0.004 });
+      echoTone(ctx, t + 0.04, { freq: 920 * ratio, dur: 0.13, type: "triangle", gain: 0.07, lp: 6500 }, 3, 0.1, 0.45);
+      break;
+    }
+    case "chaosTimeReturn": {
+      noise(ctx, t, { dur: 0.34, gain: 0.18, hp: 250, lp: 7600 });
+      tone(ctx, t, { freq: 1400, dur: 0.5, type: "sawtooth", gain: 0.08, sweepTo: 96, lp: 3200, attack: 0.004 });
+      [392, 523, 659, 784].forEach((freq, index) => {
+        tone(ctx, t + 0.18 + index * 0.055, { freq, dur: 0.48, type: "triangle", gain: 0.075, lp: 6200 });
+      });
+      tone(ctx, t + 0.16, { freq: 62, dur: 0.75, type: "sine", gain: 0.17, sweepTo: 31, lp: 240, attack: 0.004 });
       break;
     }
     // ---- Chaos meme sounds ----

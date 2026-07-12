@@ -167,7 +167,7 @@ export function FlightLayer() {
             card,
             from: source,
             to: "discard",
-            delay: Math.max(0, chaos.startsAt + 650 + index * 90 - serverNow) / 1000,
+            delay: Math.max(0, chaos.startsAt + 1_100 + index * 90 - serverNow) / 1000,
             pitchLevel: Math.min(8, index + 1),
             batchIndex: index + 1,
             batchTotal: chaos.affectedCards?.length
@@ -177,6 +177,7 @@ export function FlightLayer() {
 
       const previousPresentationSeq = prev.presentationEvents?.at(-1)?.seq ?? 0;
       const serverNow = Date.now() + clockOffset;
+      const chaosTransferActorIds = new Set<string>();
       for (const event of snapshot.presentationEvents ?? []) {
         if (event.seq <= previousPresentationSeq || animatedPresentationIds.current.has(event.id)) {
           continue;
@@ -184,6 +185,7 @@ export function FlightLayer() {
         animatedPresentationIds.current.add(event.id);
         const transfer = chaosTransferFlight(event, snapshot);
         if (transfer) {
+          if (event.actorId) chaosTransferActorIds.add(event.actorId);
           flights.push({
             ...transfer,
             delay: Math.max(0, event.startsAt - serverNow) / 1000
@@ -198,7 +200,7 @@ export function FlightLayer() {
         }
 
         const gained = player.cardCount - before.cardCount;
-        if (gained > 0 && !snapshot.pendingDraw && !prev.pendingDraw) {
+        if (gained > 0 && !snapshot.pendingDraw && !prev.pendingDraw && !chaosTransferActorIds.has(player.id)) {
           const to = player.id === snapshot.self?.id ? "hand" : `seat:${player.id}`;
           const visibleGained = Math.min(gained, MAX_DRAW_FLIGHTS);
           for (let i = 0; i < visibleGained; i += 1) {
