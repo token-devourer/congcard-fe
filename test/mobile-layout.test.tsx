@@ -103,6 +103,7 @@ describe("mobile layout surfaces", () => {
     expect(screen.getByText("Charred by Chaos")).toBeInTheDocument();
     expect(container.querySelector(".busted-avatar")).toBeInTheDocument();
     expect(container.querySelector(".busted-soot-mask")).toBeInTheDocument();
+    expect(container.querySelector(".busted-ash-plume")).toBeInTheDocument();
   });
 
   it("renders every revealed hand in the Peek cinematic wall", () => {
@@ -154,7 +155,8 @@ describe("mobile layout surfaces", () => {
 
     renderWithIntl(<GameEventOverlay />);
 
-    expect(screen.getByTestId("timeskip-overscan")).toHaveClass("h-[160vmax]", "w-[160vmax]");
+    expect(screen.getByTestId("chaos-energy-field")).toBeInTheDocument();
+    expect(screen.getByTestId("timeskip-overscan")).toHaveClass("h-[260vmax]", "w-[260vmax]", "rounded-full");
   });
 
   it("suppresses the turn banner during blocking Chaos phases", () => {
@@ -190,9 +192,9 @@ describe("mobile layout surfaces", () => {
       targetIds: ["guest"],
       amount: 26,
       startsAt: 1_000,
-      resolvesAt: 4_600
+      resolvesAt: 5_800
     }];
-    const revealAt = 4_600 + CHAOS_BUST_RESULT_SETTLE_MS;
+    const revealAt = 5_800 + CHAOS_BUST_RESULT_SETTLE_MS;
 
     expect(roundEndRevealAt(result)).toBe(revealAt);
     expect(roundEndRevealAt(result, revealAt)).toBeUndefined();

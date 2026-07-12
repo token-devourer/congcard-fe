@@ -59,29 +59,42 @@ const CHAOS_SPARKS = [
 ] as const;
 
 const BUST_CONFETTI = [
-  [-154, -102, -38],
-  [-126, 90, 28],
-  [-62, -164, 14],
-  [72, 150, -24],
-  [138, -86, 38],
-  [174, 32, -18],
-  [-176, 18, 24],
-  [20, 182, 8]
+  [-232, -144, -58],
+  [-206, 84, 46],
+  [-162, 178, 72],
+  [-116, -226, -34],
+  [-72, 236, 24],
+  [-28, -274, -12],
+  [28, 272, 18],
+  [78, -238, 38],
+  [126, 218, -44],
+  [174, -184, 64],
+  [214, 132, -28],
+  [252, -72, 42],
+  [-266, -26, -76],
+  [276, 28, 82],
+  [-214, 218, 32],
+  [224, -224, -36]
 ] as const;
 
 const BUST_SMOKE = [
-  [-92, -54],
-  [78, -66],
-  [104, 52],
-  [-70, 78],
-  [8, -110]
+  [-142, -82],
+  [124, -96],
+  [164, 58],
+  [-128, 112],
+  [12, -166],
+  [74, 142],
+  [-42, 174],
+  [184, -18]
 ] as const;
+
+const BUST_RAYS = [-78, -54, -30, -6, 18, 42, 66, 90] as const;
 
 const STARBURST_CLIP = "polygon(50% 0%,57% 30%,73% 8%,72% 35%,96% 20%,78% 43%,100% 50%,77% 57%,94% 82%,69% 68%,70% 100%,56% 73%,43% 98%,44% 70%,19% 88%,31% 64%,0% 58%,28% 49%,3% 29%,35% 39%,28% 6%,47% 31%)";
 
-const FLASHBANG_SFX_DELAY_MS = 650;
-const FLASHBANG_SFX_DURATION_MS = 4_730;
-const FLASHBANG_TOTAL_VFX_MS = FLASHBANG_SFX_DELAY_MS + FLASHBANG_SFX_DURATION_MS;
+const FLASHBANG_SFX_DELAY_MS = 320;
+const FLASHBANG_SFX_DURATION_MS = 3_780;
+const FLASHBANG_TOTAL_VFX_MS = 4_100;
 type NoticeUiEvent = Exclude<UiEvent, { type: "chaos" }>;
 
 export function GameEventOverlay() {
@@ -172,7 +185,7 @@ export function eventToastDurationMs(event: UiEvent): number {
     if (event.kind === "flashbang" && event.phase === "sequence") {
       return event.startsAt && event.resolvesAt
         ? Math.max(FLASHBANG_TOTAL_VFX_MS, event.resolvesAt - event.startsAt)
-        : 5_650;
+        : FLASHBANG_TOTAL_VFX_MS;
     }
     if (event.kind === "nuke" && event.phase === "countdown" && event.startsAt && event.resolvesAt) {
       return Math.max(2_400, event.resolvesAt - event.startsAt);
@@ -272,8 +285,10 @@ function ChaosCinematic({
   const shakeScreen = !reduceMotion && (
     event.kind === "flashbang" ||
     event.kind === "throwup" && event.phase === "sequence" ||
-    event.kind === "steal" && event.phase === "sequence" ||
-    event.kind === "timeskip" && event.phase === "opening" ||
+    event.kind === "steal" && (event.phase === "opening" || event.phase === "sequence") ||
+    event.kind === "favor" && (event.phase === "opening" || event.phase === "sequence") ||
+    event.kind === "peek" && event.phase === "reveal" ||
+    event.kind === "timeskip" && event.phase !== "autoplay" ||
     event.kind === "nuke" && event.phase === "detonating"
   );
   useEventDismissTimer(event, onDone);
@@ -290,8 +305,8 @@ function ChaosCinematic({
       exit={{ opacity: 0, x: 0, y: 0 }}
       transition={shakeScreen ? {
         opacity: { duration: 0.16 },
-        x: { delay: event.kind === "flashbang" ? 0.62 : 0, duration: 1.15, ease: "easeOut" },
-        y: { delay: event.kind === "flashbang" ? 0.62 : 0, duration: 1.15, ease: "easeOut" }
+        x: { delay: event.kind === "flashbang" ? 0.3 : event.kind === "peek" ? 0.5 : 0.12, duration: 1.15, ease: "easeOut" },
+        y: { delay: event.kind === "flashbang" ? 0.3 : event.kind === "peek" ? 0.5 : 0.12, duration: 1.15, ease: "easeOut" }
       } : { duration: reduceMotion ? 0.1 : 0.16 }}
     >
       {!isChoice ? (
@@ -304,6 +319,7 @@ function ChaosCinematic({
           transition={{ duration: reduceMotion ? 0.1 : eventToastDurationMs(event) / 1000, ease: "easeOut" }}
         />
       ) : null}
+      {!isChoice && !reduceMotion ? <ChaosEnergyField event={event} preset={preset} /> : null}
       <EventVfx event={event} reduceMotion={Boolean(reduceMotion)} preset={preset} />
       <ChaosTextLanes event={event} reduceMotion={Boolean(reduceMotion)} />
     </motion.div>
@@ -338,7 +354,7 @@ function ChaosTextLanes({ event, reduceMotion }: { event: Extract<UiEvent, { typ
     return undefined;
   })();
   const resultDelay = event.kind === "flashbang"
-    ? 4.8
+    ? 3.35
     : event.kind === "nuke"
       ? 1.9
       : event.kind === "throwup"
@@ -400,8 +416,9 @@ function EventToast({ event, onDone, preset }: { event: NoticeUiEvent; onDone: (
 
   const { label, sublabel, background, color } = toastContent(event, t);
   const wash = eventWash(event);
-  const shakeForSelfBust = event.type === "chaosBust" && event.self && !reduceMotion;
-  const shakeScreen = shakeForSelfBust;
+  const bust = event.type === "chaosBust";
+  const shakeScreen = bust && !reduceMotion;
+  const strongShake = bust && event.self;
 
   return (
     <motion.div
@@ -409,14 +426,18 @@ function EventToast({ event, onDone, preset }: { event: NoticeUiEvent; onDone: (
       initial={{ opacity: 0 }}
       animate={shakeScreen ? {
         opacity: 1,
-        x: [0, 0, -10, 9, -7, 6, 0, 0, -5, 4, -2, 0],
-        y: [0, 0, 5, -4, 3, -3, 0, 0, 3, -2, 1, 0]
+        x: strongShake
+          ? [0, -16, 14, -12, 11, -8, 7, -4, 3, 0, -8, 6, -3, 0]
+          : [0, -8, 7, -6, 5, -4, 3, -2, 0, -4, 3, -1, 0],
+        y: strongShake
+          ? [0, 10, -9, 8, -7, 6, -5, 3, -2, 0, 5, -4, 2, 0]
+          : [0, 5, -4, 4, -3, 3, -2, 1, 0, 2, -2, 1, 0]
       } : { opacity: 1 }}
       exit={{ opacity: 0, x: 0, y: 0 }}
       transition={shakeScreen ? {
         opacity: { duration: 0.18 },
-        x: { duration: 1.18, times: [0, 0.14, 0.2, 0.26, 0.32, 0.38, 0.46, 0.62, 0.7, 0.77, 0.85, 1], ease: "easeOut" },
-        y: { duration: 1.18, times: [0, 0.14, 0.2, 0.26, 0.32, 0.38, 0.46, 0.62, 0.7, 0.77, 0.85, 1], ease: "easeOut" }
+        x: { delay: 1.04, duration: 1.72, ease: "easeOut" },
+        y: { delay: 1.04, duration: 1.72, ease: "easeOut" }
       } : { duration: reduceMotion ? 0.12 : 0.18 }}
     >
       <motion.div
@@ -434,7 +455,7 @@ function EventToast({ event, onDone, preset }: { event: NoticeUiEvent; onDone: (
         initial={reduceMotion ? { opacity: 0 } : { scale: 0.45, opacity: 0, y: 28 }}
         animate={reduceMotion ? { opacity: 1 } : { scale: [0.72, 1.12, 1], opacity: 1, y: 0 }}
         exit={reduceMotion ? { opacity: 0 } : { scale: 0.84, opacity: 0, y: -22 }}
-        transition={{ type: "tween", duration: reduceMotion ? 0.12 : 0.46, ease: "easeOut" }}
+        transition={{ type: "tween", delay: !reduceMotion && bust ? 1.46 : 0, duration: reduceMotion ? 0.12 : bust ? 0.62 : 0.46, ease: "easeOut" }}
         className={`relative z-10 grid justify-items-center gap-2 ${
           event.type === "penalty" && event.self ? "shake" : ""
         }`}
@@ -801,7 +822,7 @@ function FlashbangCardGhost({ playerId, index }: { playerId: string; index: numb
         scale: [0.4, 0.9, 0.62, 0.84, 0.42],
         rotate: [-18 + index * 7, 90 + index * 22, 230 + index * 26, 390 + index * 18, 520 + index * 11]
       }}
-      transition={{ duration: 5.25, delay: 0.16 + index * 0.025, times: [0, 0.14, 0.55, 0.84, 1], ease: "easeInOut" }}
+      transition={{ duration: 3.72, delay: 0.1 + index * 0.022, times: [0, 0.16, 0.54, 0.82, 1], ease: "easeInOut" }}
       aria-hidden="true"
     />
   );
@@ -817,19 +838,71 @@ function ChaosBustVfx({
   preset: import("@/lib/animationPresets").AnimationPreset;
 }) {
   const style = anchoredCenterStyle(`seat:${event.playerId}`);
-  const particleCount = reduceMotion ? 0 : preset.particleCount;
+  const particleCount = reduceMotion ? 0 : Math.min(BUST_CONFETTI.length, preset.particleCount * 2);
 
   return (
     <div className="absolute inset-0 z-[2]" aria-hidden="true">
+      {!reduceMotion ? (
+        <>
+          <motion.div
+            className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(96,10,4,0.08),rgba(4,1,1,0.92)_78%)]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.78, 0.9, 0.3, 0] }}
+            transition={{ duration: CHAOS_BUST_VFX_MS / 1000, times: [0, 0.12, 0.22, 0.76, 1], ease: "easeInOut" }}
+          />
+          <motion.div
+            className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,42,16,0.42),transparent_42%),repeating-radial-gradient(circle_at_center,transparent_0_34px,rgba(255,89,22,0.1)_36px_40px)] mix-blend-screen"
+            initial={{ opacity: 0, scale: 1.35 }}
+            animate={{ opacity: [0, 0.18, 0.72, 0], scale: [1.35, 1.08, 0.94, 1.8] }}
+            transition={{ duration: 1.62, times: [0, 0.38, 0.66, 1], ease: "easeIn" }}
+          />
+          <motion.div
+            className="absolute inset-0 z-[8] bg-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0.74, 0] }}
+            transition={{ delay: 1.06, duration: 0.42, times: [0, 0.12, 0.36, 1], ease: "easeOut" }}
+          />
+        </>
+      ) : null}
       {event.self && !reduceMotion ? (
         <motion.div
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,248,188,0.54),rgba(255,105,38,0.28)_34%,rgba(121,16,8,0.18)_58%,transparent_76%)]"
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.46, 0.06, 0.22, 0] }}
-          transition={{ duration: 0.86, times: [0, 0.24, 0.48, 0.64, 1], ease: "easeOut" }}
+          animate={{ opacity: [0, 0.24, 0.08, 0.7, 0] }}
+          transition={{ duration: 1.55, times: [0, 0.42, 0.66, 0.72, 1], ease: "easeOut" }}
         />
       ) : null}
       <div className="absolute h-0 w-0" style={style}>
+        {!reduceMotion ? (
+          <>
+            {[0, 1, 2, 3].map((index) => (
+              <motion.div
+                key={`overcharge-ring-${index}`}
+                className="absolute rounded-full border-[5px] border-yellow-100/70 shadow-[0_0_32px_rgba(255,125,34,0.68)]"
+                style={{
+                  width: "clamp(190px, 28vw, 330px)",
+                  height: "clamp(190px, 28vw, 330px)",
+                  left: "50%",
+                  top: "50%",
+                  translate: "-50% -50%"
+                }}
+                initial={{ scale: 2.6 + index * 0.35, opacity: 0, rotate: index * 24 }}
+                animate={{ scale: [2.6 + index * 0.35, 0.82, 0.18], opacity: [0, 0.82, 1], rotate: index % 2 === 0 ? 150 : -150 }}
+                transition={{ duration: 1.02, delay: index * 0.055, times: [0, 0.72, 1], ease: "easeIn" }}
+              />
+            ))}
+            {BUST_RAYS.map((rotate, index) => (
+              <motion.div
+                key={`overcharge-ray-${rotate}`}
+                className="absolute left-0 top-0 h-1 w-[clamp(130px,24vw,300px)] origin-left bg-gradient-to-r from-white via-yellow-200 to-transparent shadow-[0_0_18px_rgba(255,177,57,0.82)]"
+                style={{ rotate: `${rotate + index * 11}deg` }}
+                initial={{ opacity: 0, scaleX: 0.08 }}
+                animate={{ opacity: [0, 0.84, 0], scaleX: [0.08, 1.35, 0.04] }}
+                transition={{ duration: 0.76, delay: 0.22 + index * 0.045, ease: "easeIn" }}
+              />
+            ))}
+          </>
+        ) : null}
         {reduceMotion ? (
           <>
             <div
@@ -866,85 +939,85 @@ function ChaosBustVfx({
                 translate: "-50% -50%"
               }}
               initial={{ scale: 1.28, opacity: 0 }}
-              animate={{ scale: [1.28, 0.68, 0.08], opacity: [0, 0.58, 1] }}
-              transition={{ duration: 0.18, ease: "easeIn" }}
+              animate={{ scale: [1.28, 0.72, 0.04], opacity: [0, 0.62, 1] }}
+              transition={{ duration: 1.04, ease: "easeIn" }}
             />
             <motion.div
               className="absolute -left-6 -top-6 h-12 w-12 rounded-full bg-white shadow-[0_0_38px_18px_rgba(255,230,118,0.75)]"
               initial={{ scale: 0.15, opacity: 0 }}
-              animate={{ scale: [0.15, 0.82, 0.1, 1.45], opacity: [0, 0.9, 1, 0] }}
-              transition={{ duration: 0.48, times: [0, 0.28, 0.38, 1], ease: "easeOut" }}
+              animate={{ scale: [0.15, 1.16, 0.28, 3.2], opacity: [0, 0.84, 1, 0] }}
+              transition={{ duration: 1.48, times: [0, 0.62, 0.72, 1], ease: "easeOut" }}
             />
             <motion.div
               className="absolute bg-gradient-to-br from-red-500 via-orange-600 to-red-950 shadow-[0_0_54px_rgba(255,71,30,0.62)]"
               style={{
                 clipPath: STARBURST_CLIP,
-                width: "clamp(240px, 35vw, 380px)",
-                height: "clamp(240px, 35vw, 380px)",
+                width: "clamp(340px, 58vw, 680px)",
+                height: "clamp(340px, 58vw, 680px)",
                 left: "50%",
                 top: "50%",
                 translate: "-50% -50%"
               }}
               initial={{ scale: 0.05, opacity: 0, rotate: -7 }}
               animate={{ scale: [0.05, 1.16, 0.98, 1.08], opacity: [0, 1, 0.88, 0], rotate: [-7, 5, -2, 9] }}
-              transition={{ delay: 0.15, duration: 1.18, times: [0, 0.12, 0.52, 1], ease: "easeOut" }}
+              transition={{ delay: 1.04, duration: 1.72, times: [0, 0.1, 0.48, 1], ease: "easeOut" }}
             />
             <motion.div
               className="absolute bg-gradient-to-br from-yellow-100 via-yellow-300 to-orange-500 shadow-[0_0_46px_rgba(255,224,105,0.72)]"
               style={{
                 clipPath: STARBURST_CLIP,
-                width: "clamp(190px, 29vw, 310px)",
-                height: "clamp(190px, 29vw, 310px)",
+                width: "clamp(280px, 48vw, 560px)",
+                height: "clamp(280px, 48vw, 560px)",
                 left: "50%",
                 top: "50%",
                 translate: "-50% -50%"
               }}
               initial={{ scale: 0.04, opacity: 0, rotate: 12 }}
               animate={{ scale: [0.04, 1.12, 0.92, 1.02], opacity: [0, 1, 0.82, 0], rotate: [12, -7, 3, -10] }}
-              transition={{ delay: 0.17, duration: 0.98, times: [0, 0.12, 0.56, 1], ease: "easeOut" }}
+              transition={{ delay: 1.07, duration: 1.42, times: [0, 0.1, 0.52, 1], ease: "easeOut" }}
             />
             <motion.div
               className="absolute bg-white shadow-[0_0_38px_rgba(255,255,255,0.92)]"
               style={{
                 clipPath: STARBURST_CLIP,
-                width: "clamp(110px, 18vw, 190px)",
-                height: "clamp(110px, 18vw, 190px)",
+                width: "clamp(180px, 31vw, 360px)",
+                height: "clamp(180px, 31vw, 360px)",
                 left: "50%",
                 top: "50%",
                 translate: "-50% -50%"
               }}
               initial={{ scale: 0.03, opacity: 0, rotate: -10 }}
               animate={{ scale: [0.03, 1.08, 0.72], opacity: [0, 1, 0], rotate: [-10, 4, 14] }}
-              transition={{ delay: 0.18, duration: 0.62, times: [0, 0.2, 1], ease: "easeOut" }}
+              transition={{ delay: 1.09, duration: 0.92, times: [0, 0.16, 1], ease: "easeOut" }}
             />
             <motion.div
               className="absolute bg-gradient-to-br from-yellow-100 via-orange-400 to-red-700 shadow-[0_0_42px_rgba(255,117,38,0.58)]"
               style={{
                 clipPath: STARBURST_CLIP,
-                width: "clamp(170px, 26vw, 280px)",
-                height: "clamp(170px, 26vw, 280px)",
+                width: "clamp(300px, 52vw, 610px)",
+                height: "clamp(300px, 52vw, 610px)",
                 left: "50%",
                 top: "50%",
                 translate: "-50% -50%"
               }}
               initial={{ scale: 0.16, opacity: 0, rotate: -18 }}
               animate={{ scale: [0.16, 1.04, 1.34], opacity: [0, 0.58, 0], rotate: [-18, 8, 20] }}
-              transition={{ delay: 0.74, duration: 0.92, times: [0, 0.22, 1], ease: "easeOut" }}
+              transition={{ delay: 1.58, duration: 1.34, times: [0, 0.2, 1], ease: "easeOut" }}
             />
-            {[0.18, 0.3, 0.78].map((delay, index) => (
+            {[1.08, 1.2, 1.66].map((delay, index) => (
               <motion.div
                 key={`shockwave-${index}`}
                 className="absolute rounded-full border-4 border-yellow-100/70 shadow-[0_0_24px_rgba(255,182,66,0.35)]"
                 style={{
-                  width: "clamp(160px, 25vw, 280px)",
-                  height: "clamp(160px, 25vw, 280px)",
+                  width: "clamp(210px, 35vw, 410px)",
+                  height: "clamp(210px, 35vw, 410px)",
                   left: "50%",
                   top: "50%",
                   translate: "-50% -50%"
                 }}
                 initial={{ scale: 0.18, opacity: 0 }}
                 animate={{ scale: [0.18, 1.12, 1.72], opacity: [0, 0.78, 0] }}
-                transition={{ delay, duration: index === 2 ? 1.28 : 0.94 + index * 0.2, times: [0, 0.18, 1], ease: "easeOut" }}
+                transition={{ delay, duration: index === 2 ? 1.74 : 1.24 + index * 0.2, times: [0, 0.14, 1], ease: "easeOut" }}
               />
             ))}
             {BUST_CONFETTI.slice(0, particleCount).map(([x, y, rotate], index) => {
@@ -958,17 +1031,17 @@ function ChaosBustVfx({
                   style={starFragment ? { clipPath: STARBURST_CLIP } : undefined}
                   initial={{ x: 0, y: 0, rotate: 0, opacity: 0, scale: 0.2 }}
                   animate={{ x, y, rotate, opacity: [0, 1, 0.88, 0], scale: [0.2, 1.12, 0.86, 0.55] }}
-                  transition={{ duration: 2.15, delay: 0.31 + index * 0.028, times: [0, 0.12, 0.68, 1], ease: "easeOut" }}
+                  transition={{ duration: 2.72, delay: 1.18 + index * 0.022, times: [0, 0.1, 0.7, 1], ease: "easeOut" }}
                 />
               );
             })}
             {BUST_SMOKE.slice(0, Math.min(BUST_SMOKE.length, Math.ceil(particleCount / 2) + 1)).map(([x, y], index) => (
               <motion.div
                 key={`smoke-${index}`}
-                className="absolute -left-9 -top-9 h-16 w-16 rounded-full bg-gradient-to-br from-white/48 via-zinc-300/30 to-zinc-700/10 blur-[1px]"
+                className="absolute -left-12 -top-12 h-24 w-24 rounded-full bg-gradient-to-br from-zinc-300/48 via-zinc-700/52 to-black/30 blur-[2px]"
                 initial={{ x: 0, y: 0, scale: 0.2, opacity: 0 }}
-                animate={{ x, y, scale: [0.2, 1.18, 1.48], opacity: [0, 0.48, 0.24, 0] }}
-                transition={{ duration: 2.05, delay: 0.62 + index * 0.07, times: [0, 0.2, 0.7, 1], ease: "easeOut" }}
+                animate={{ x, y, scale: [0.2, 1.34, 1.92], opacity: [0, 0.72, 0.36, 0] }}
+                transition={{ duration: 2.92, delay: 1.48 + index * 0.065, times: [0, 0.18, 0.72, 1], ease: "easeOut" }}
               />
             ))}
             {BUST_CONFETTI.slice(0, Math.min(6, particleCount)).map(([x, y], index) => (
@@ -977,24 +1050,37 @@ function ChaosBustVfx({
                 className="absolute -left-1 -top-1 h-2 w-7 rounded-full bg-yellow-100 shadow-[0_0_14px_rgba(255,204,72,0.86)]"
                 initial={{ x: 0, y: 0, rotate: 0, scaleX: 0.2, opacity: 0 }}
                 animate={{ x: x * 0.82, y: y * 0.82, rotate: Math.atan2(y, x) * (180 / Math.PI), scaleX: [0.2, 1.3, 0.4], opacity: [0, 0.9, 0] }}
-                transition={{ duration: 1.15, delay: 0.24 + index * 0.024, ease: "easeOut" }}
+                transition={{ duration: 1.65, delay: 1.14 + index * 0.024, ease: "easeOut" }}
               />
             ))}
+            <motion.div
+              className="absolute rounded-full bg-[radial-gradient(circle,rgba(8,8,7,0.94)_0_22%,rgba(42,27,19,0.74)_42%,transparent_72%)]"
+              style={{
+                width: "clamp(180px, 29vw, 340px)",
+                height: "clamp(180px, 29vw, 340px)",
+                left: "50%",
+                top: "50%",
+                translate: "-50% -50%"
+              }}
+              initial={{ scale: 0.1, opacity: 0 }}
+              animate={{ scale: [0.1, 1.18, 0.92], opacity: [0, 0.86, 0.34, 0] }}
+              transition={{ delay: 1.52, duration: 2.94, times: [0, 0.18, 0.8, 1], ease: "easeOut" }}
+            />
           </>
         )}
         <motion.div
-          className="display absolute grid min-h-16 w-[clamp(5.5rem,10vw,7.5rem)] place-items-center rounded-[20px] border-4 border-white/60 bg-gradient-to-b from-yellow-100 via-orange-500 to-red-800 px-3 py-2 text-center font-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.52),0_0_28px_rgba(255,124,38,0.48)]"
+          className="display absolute grid min-h-16 w-[clamp(6rem,11vw,8rem)] place-items-center rounded-[20px] border-4 border-white/60 bg-gradient-to-b from-yellow-100 via-orange-500 to-red-800 px-3 py-2 text-center font-black text-white shadow-[0_18px_44px_rgba(0,0,0,0.52),0_0_38px_rgba(255,124,38,0.72)]"
           style={{ left: "50%", top: "50%", translate: "-50% -50%" }}
           initial={reduceMotion ? { opacity: 0 } : { scale: 0.2, opacity: 0, rotate: -12 }}
           animate={reduceMotion
             ? { opacity: 1 }
-            : { scale: [0.2, 0.2, 1.16, 0.96, 0.86], opacity: [0, 0, 1, 1, 0], rotate: [-12, -12, 8, -3, 2] }}
+            : { scale: [0.2, 1.14, 0.92, 0.08], opacity: [0, 1, 1, 0], rotate: [-12, 7, -3, 18] }}
           transition={reduceMotion
             ? { duration: 0.14, ease: "easeOut" }
-            : { delay: 0.3, duration: 3, times: [0, 0.08, 0.2, 0.86, 1], ease: "easeOut" }}
+            : { delay: 0.08, duration: 1.04, times: [0, 0.26, 0.72, 1], ease: "easeIn" }}
         >
           <span className="text-3xl leading-none">{event.count}</span>
-          <span className="text-sm leading-none">&gt;25</span>
+          <span className="text-xs leading-none">OVERLOAD</span>
         </motion.div>
       </div>
     </div>
@@ -1026,13 +1112,19 @@ function MemeCutout({
   if (!src) return null;
   return (
     <div className="absolute inset-0 z-[2] grid place-items-center pb-[8dvh]" aria-hidden="true">
+      <motion.div
+        className="absolute h-[clamp(230px,42vw,520px)] w-[clamp(230px,42vw,520px)] rounded-full border-4 border-white/24 bg-white/8 shadow-[0_0_88px_rgba(255,255,255,0.28)]"
+        initial={{ scale: 0.08, opacity: 0, rotate: -18 }}
+        animate={{ scale: [0.08, 1.18, 0.92, 1.08], opacity: [0, 0.76, 0.28, 0], rotate: [-18, 16, -8, 22] }}
+        transition={{ duration: 1.48, delay: Math.max(0, delay - 0.08), ease: "easeOut" }}
+      />
       <motion.img
         src={src}
         alt=""
-        className={`relative max-h-[42vh] w-[clamp(170px,30vw,390px)] object-contain drop-shadow-[0_24px_36px_rgba(0,0,0,0.62)] ${className}`}
-        initial={{ scale: 0.18, opacity: 0, rotate: rotate - 16, y: 34 }}
-        animate={{ scale: [0.18, 1.18, 0.98], opacity: [0, 1, 0.92], rotate: [rotate - 16, rotate + 7, rotate], y: [34, -10, 0] }}
-        transition={{ duration: 1.05, delay, ease: [0.16, 1, 0.3, 1] }}
+        className={`relative max-h-[48vh] w-[clamp(190px,34vw,450px)] object-contain drop-shadow-[0_28px_42px_rgba(0,0,0,0.72)] ${className}`}
+        initial={{ scale: 0.12, opacity: 0, rotate: rotate - 18, y: 42 }}
+        animate={{ scale: [0.12, 1.28, 0.94, 1.04], opacity: [0, 1, 0.94, 0.9], rotate: [rotate - 18, rotate + 9, rotate - 3, rotate], y: [42, -18, 5, 0] }}
+        transition={{ duration: 1.24, delay, ease: [0.16, 1, 0.3, 1] }}
       />
     </div>
   );
@@ -1064,6 +1156,82 @@ function StaticChaosCutout({ event }: { event: Extract<UiEvent, { type: "chaos" 
     <div className="absolute inset-0 z-[1] grid place-items-center pb-[8dvh]" aria-hidden="true">
       <div className="absolute h-56 w-56 rounded-full border-2 border-white/30 bg-black/35" />
       <img src={src} alt="" className="relative max-h-[34vh] w-[clamp(150px,28vw,300px)] object-contain drop-shadow-[0_18px_28px_rgba(0,0,0,0.58)]" />
+    </div>
+  );
+}
+
+const CHAOS_FIELD_PALETTE: Partial<Record<Extract<UiEvent, { type: "chaos" }>["kind"], [string, string, string]>> = {
+  throwup: ["#d9ff72", "#35e673", "#063f1e"],
+  steal: ["#ffd5ff", "#d84dff", "#310046"],
+  favor: ["#fff0a8", "#ff72bc", "#5b123f"],
+  peek: ["#d8ffff", "#42eadc", "#043f52"],
+  timeskip: ["#fff09c", "#43e7dd", "#15164f"]
+};
+
+function ChaosEnergyField({
+  event,
+  preset
+}: {
+  event: Extract<UiEvent, { type: "chaos" }>;
+  preset: import("@/lib/animationPresets").AnimationPreset;
+}) {
+  const palette = CHAOS_FIELD_PALETTE[event.kind];
+  if (!palette) return null;
+  const [hot, energy, deep] = palette;
+  const duration = Math.max(1.2, eventToastDurationMs(event) / 1000);
+  const particles = Math.min(CHAOS_SPARKS.length, preset.particleCount);
+
+  return (
+    <div data-testid="chaos-energy-field" className="absolute inset-0 z-[1] overflow-hidden" aria-hidden="true">
+      <motion.div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(circle at center, ${energy}2e 0 18%, transparent 48%), radial-gradient(ellipse at center, transparent 34%, ${deep}c9 88%)`
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: [0, 0.88, 0.52, 0.78, 0] }}
+        transition={{ duration, times: [0, 0.12, 0.48, 0.82, 1], ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute left-1/2 top-1/2 h-[220vmax] w-[220vmax] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          background: `conic-gradient(from 0deg, transparent, ${energy}2b, transparent 18%, ${hot}25 28%, transparent 42%, ${energy}35 58%, transparent 72%, ${hot}22 84%, transparent)`,
+          maskImage: "radial-gradient(circle, transparent 0 17%, black 42%, transparent 76%)"
+        }}
+        initial={{ opacity: 0, rotate: -22, scale: 0.78 }}
+        animate={{ opacity: [0, 0.92, 0.46, 0], rotate: [event.kind === "timeskip" ? -120 : -22, event.kind === "timeskip" ? 520 : 210], scale: [0.78, 1.08, 1.24] }}
+        transition={{ duration, ease: event.kind === "timeskip" ? "linear" : "easeOut" }}
+      />
+      {[0, 1, 2].map((index) => (
+        <motion.div
+          key={`chaos-field-ring-${index}`}
+          className="absolute left-1/2 top-1/2 h-[min(70vmax,760px)] w-[min(70vmax,760px)] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px]"
+          style={{ borderColor: index === 1 ? `${hot}8f` : `${energy}76`, boxShadow: `0 0 ${26 + index * 16}px ${energy}38` }}
+          initial={{ opacity: 0, scale: 0.16 }}
+          animate={{ opacity: [0, 0.84, 0], scale: [0.16, 1.02 + index * 0.32, 1.62 + index * 0.42], rotate: index % 2 === 0 ? 120 : -120 }}
+          transition={{ duration: Math.min(duration, 2.2), delay: 0.18 + index * 0.16, times: [0, 0.2, 1], ease: "easeOut" }}
+        />
+      ))}
+      {CHAOS_SPARKS.slice(0, particles).map(([, , rotate], index) => (
+        <motion.div
+          key={`chaos-field-ray-${index}`}
+          className="absolute left-1/2 top-1/2 h-[3px] w-[min(47vmax,560px)] origin-left"
+          style={{
+            rotate: `${rotate + index * 37}deg`,
+            background: `linear-gradient(90deg, ${hot}, ${energy}99 34%, transparent 88%)`,
+            boxShadow: `0 0 16px ${energy}99`
+          }}
+          initial={{ opacity: 0, scaleX: 0.05 }}
+          animate={{ opacity: [0, 0.9, 0.2, 0], scaleX: [0.05, 1.18, 0.72, 1.36] }}
+          transition={{ duration: Math.min(duration, 1.75), delay: 0.3 + index * 0.045, ease: "easeOut" }}
+        />
+      ))}
+      <motion.div
+        className="absolute inset-0 mix-blend-screen"
+        style={{ background: `repeating-linear-gradient(0deg, transparent 0 7px, ${hot}12 8px)` }}
+        animate={{ y: ["-2%", "2%"], opacity: [0, 0.55, 0.18, 0] }}
+        transition={{ duration, ease: "linear" }}
+      />
     </div>
   );
 }
@@ -1107,7 +1275,7 @@ function ChaosCardVfx({
           className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(77,15,91,0.2),rgba(2,4,12,0.94)_72%)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 0.92, 0.78, 0] }}
-          transition={{ duration: 5.65, times: [0, 0.08, 0.82, 1], ease: "easeInOut" }}
+          transition={{ duration: FLASHBANG_TOTAL_VFX_MS / 1000, times: [0, 0.08, 0.78, 1], ease: "easeInOut" }}
         />
         <MemeCutout kind="flashbang" delay={0.08} />
         {[0, 1, 2].map((index) => (
@@ -1116,7 +1284,7 @@ function ChaosCardVfx({
             className="absolute z-[3] rounded-full border-2 border-amber-100/65 shadow-[0_0_28px_rgba(255,235,164,0.7)]"
             initial={{ width: 90, height: 90, opacity: 0, rotate: index * 36, scale: 1.7 }}
             animate={{ width: 210 + index * 72, height: 210 + index * 72, opacity: [0, 0.86, 0], rotate: index * 36 + 120, scale: [1.7, 0.72, 0.54] }}
-            transition={{ duration: 0.66, delay: index * 0.045, ease: "easeIn" }}
+            transition={{ duration: 0.34, delay: index * 0.035, ease: "easeIn" }}
           />
         ))}
         {event.targetIds?.slice(0, 10).map((playerId, index) => (
@@ -1126,20 +1294,20 @@ function ChaosCardVfx({
           className="absolute inset-0 z-[6] bg-white"
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 0.96, 0.48, 0.16, 0] }}
-          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.025, 0.08, 0.38, 0.78, 1], ease: "easeOut" }}
+          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.035, 0.11, 0.34, 0.68, 1], ease: "easeOut" }}
         />
         <motion.div
           className="absolute inset-0 z-[7] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.98),rgba(255,246,198,0.62)_24%,rgba(120,229,255,0.18)_52%,rgba(255,255,255,0)_74%)] mix-blend-screen"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: [0, 0.98, 0.5, 0], scale: [0.9, 1.02, 1.14, 1.28] }}
-          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.05, 0.58, 1], ease: "easeOut" }}
+          transition={{ delay: flashDelay, duration: flashDuration, times: [0, 0.05, 0.5, 1], ease: "easeOut" }}
         />
         <motion.div
           className="absolute inset-0 z-[7] opacity-45 mix-blend-screen"
           style={{ background: "linear-gradient(90deg, rgba(255,36,196,0.18), transparent 34%, transparent 66%, rgba(38,231,255,0.2))" }}
           initial={{ x: 0, opacity: 0 }}
           animate={{ x: [-12, 10, -6, 0], opacity: [0, 0.62, 0.2, 0] }}
-          transition={{ delay: flashDelay + 0.18, duration: 3.8, ease: "easeOut" }}
+          transition={{ delay: flashDelay + 0.12, duration: 2.55, ease: "easeOut" }}
         />
         {Array.from({ length: Math.min(4, preset.particleCount) }, (_, index) => (
           <motion.div
@@ -1147,7 +1315,7 @@ function ChaosCardVfx({
             className="absolute z-[8] rounded-full border-4 border-white/65 shadow-[0_0_24px_rgba(255,255,255,0.78)]"
             initial={{ width: 80, height: 80, opacity: 0 }}
             animate={{ width: 360 + index * 110, height: 360 + index * 110, opacity: [0, 0.82, 0] }}
-            transition={{ duration: 1.45, delay: flashDelay + index * 0.07, ease: "easeOut" }}
+            transition={{ duration: 1.05, delay: flashDelay + index * 0.055, ease: "easeOut" }}
           />
         ))}
       </div>
@@ -1348,7 +1516,7 @@ function ChaosCardVfx({
         <div className="absolute inset-0 grid place-items-center overflow-hidden">
           <motion.div
             data-testid="timeskip-overscan"
-            className="h-[160vmax] w-[160vmax] shrink-0 bg-[conic-gradient(from_0deg_at_center,rgba(255,217,96,0.2),rgba(35,220,210,0.18),rgba(14,18,35,0.8),rgba(255,217,96,0.2))]"
+            className="h-[260vmax] w-[260vmax] shrink-0 rounded-full bg-[conic-gradient(from_0deg_at_center,rgba(255,241,142,0.3),rgba(35,220,210,0.24),rgba(14,18,35,0.92),rgba(255,90,196,0.16),rgba(255,241,142,0.3))] shadow-[inset_0_0_22vmax_rgba(0,0,0,0.48),0_0_18vmax_rgba(69,238,224,0.2)]"
             animate={{ rotate: autoplay ? [0, 80] : [0, 260], opacity: [0, 0.82, 0.5, 0] }}
             transition={{ duration: Math.max(1.4, eventToastDurationMs(event) / 1000), ease: autoplay ? "linear" : "easeInOut" }}
           />

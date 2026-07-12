@@ -102,13 +102,13 @@ describe("diffSnapshots", () => {
         targetIds: ["b"],
         amount: 26,
         startsAt: 2_000,
-        resolvesAt: 3_800
+        resolvesAt: 6_800
       }]
     });
 
     const bust = diffSnapshots(prev, next).find((event) => event.type === "chaosBust");
-    expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 3_800 });
-    expect(eventToastDurationMs(bust!)).toBe(3_600);
+    expect(bust).toMatchObject({ playerId: "b", nickname: "b", count: 26, self: false, startsAt: 2_000, resolvesAt: 6_800 });
+    expect(eventToastDurationMs(bust!)).toBe(4_800);
   });
 
   it("uses only the server detonation window after the Nuke countdown", () => {
@@ -195,9 +195,9 @@ describe("diffSnapshots", () => {
     expect(chaosSoundTimeline(chaosEvent("flashbang", "sequence"))).toEqual([
       { sound: "opening", offsetMs: 0, level: 1 },
       { sound: "chaosFlashbangCharge", offsetMs: 0, level: 1 },
-      { sound: "memeFlashbang", offsetMs: 650, level: 1 },
-      { sound: "chaosFlashbangImpact", offsetMs: 650, level: 1 },
-      { sound: "chaosFlashbangSwap", offsetMs: 4_800, level: 1 }
+      { sound: "memeFlashbang", offsetMs: 320, level: 1 },
+      { sound: "chaosFlashbangImpact", offsetMs: 320, level: 1 },
+      { sound: "chaosFlashbangSwap", offsetMs: 3_350, level: 1 }
     ]);
     expect(chaosSoundTimeline(chaosEvent("nuke", "opening"))).toEqual([
       { sound: "batchFinale", offsetMs: 0, level: 1 },

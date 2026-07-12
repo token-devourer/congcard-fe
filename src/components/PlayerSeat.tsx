@@ -88,6 +88,7 @@ export function PlayerSeat({
           }`}
         />
         {busted ? <span className="busted-soot-mask" aria-hidden="true" /> : null}
+        {busted ? <span className="busted-ash-plume" aria-hidden="true" /> : null}
         {player.isHost ? (
           <span className="absolute -right-1.5 -top-1.5 text-sm drop-shadow" aria-label={t("lobby.host")}>
             👑

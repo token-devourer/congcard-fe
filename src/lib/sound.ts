@@ -99,6 +99,10 @@ const CLIP_GAIN: Partial<Record<SoundName, number>> = {
   memeNuke: 1.12
 };
 
+const CLIP_PLAYBACK_RATE: Partial<Record<SoundName, number>> = {
+  memeFlashbang: 1.25
+};
+
 let spriteInitPromise: Promise<void> | null = null;
 
 type ActiveClip = {
@@ -172,6 +176,8 @@ function playClip(name: SoundName, startsInMs: number, level: number): boolean {
     baseVolume: Math.min(1, (0.58 + (Math.max(1, level) - 1) * 0.06) * clipGain)
   };
   audio.volume = effectiveClipVolume(clip.baseVolume);
+  audio.playbackRate = CLIP_PLAYBACK_RATE[name] ?? 1;
+  audio.preservesPitch = true;
   activeClips.add(clip);
   const cleanup = () => activeClips.delete(clip);
   audio.addEventListener("ended", cleanup, { once: true });
@@ -271,7 +277,7 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
     if (["penalty", "drawResult", "skip", "reverse", "colorChange", "stack", "jumpIn", "calledOne", "chaosBust", "roundWon", "roundLost"].includes(event.type)) {
       duckMusic(
         startsInMs,
-        event.type === "chaosBust" ? 3_000 : event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760
+        event.type === "chaosBust" ? CHAOS_BUST_VFX_MS : event.type === "roundWon" || event.type === "roundLost" ? 1_600 : event.type === "jumpIn" ? 520 : 760
       );
     }
   }
@@ -360,9 +366,9 @@ export function chaosSoundTimeline(event: Extract<UiEvent, { type: "chaos" }>): 
   if (event.kind === "flashbang" && event.phase === "sequence") {
     at("opening");
     at("chaosFlashbangCharge");
-    at("memeFlashbang", 650);
-    at("chaosFlashbangImpact", 650);
-    at("chaosFlashbangSwap", 4_800);
+    at("memeFlashbang", 320);
+    at("chaosFlashbangImpact", 320);
+    at("chaosFlashbangSwap", 3_350);
     return cues;
   }
 
@@ -755,27 +761,35 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
     }
     case "chaosBust": {
       const intensity = Math.min(8, Math.max(1, Math.round(level)));
-      const impact = t + 0.18;
+      const impact = t + 1.08;
 
-      // A short charge makes the impact feel earned instead of appearing as
-      // another generic penalty hit.
-      tone(ctx, t, { freq: 110, dur: 0.2, type: "sawtooth", gain: 0.13, sweepTo: 520, lp: 1900, attack: 0.01 });
-      tone(ctx, t + 0.035, { freq: 220, dur: 0.17, type: "triangle", gain: 0.08, sweepTo: 920, lp: 4200, attack: 0.008 });
+      tone(ctx, t, { freq: 64, dur: 1.08, type: "sawtooth", gain: 0.12, sweepTo: 760, lp: 2400, attack: 0.025 });
+      tone(ctx, t + 0.04, { freq: 122, dur: 1.02, type: "triangle", gain: 0.09, sweepTo: 1_680, lp: 5200, attack: 0.018 });
+      tone(ctx, t + 0.28, { freq: 246, dur: 0.72, type: "square", gain: 0.045, sweepTo: 2_260, lp: 6100, attack: 0.012 });
+      noise(ctx, t + 0.46, { dur: 0.58, gain: 0.055, hp: 900, lp: 8_800 });
+      [0.2, 0.46, 0.7, 0.9].forEach((offset, index) => {
+        tone(ctx, t + offset, {
+          freq: 420 + index * 210,
+          dur: 0.09,
+          type: "square",
+          gain: 0.05 + index * 0.006,
+          lp: 4_600,
+          attack: 0.002
+        });
+      });
 
-      // Main cartoon blast: broad crack, heavy sub impact, then a dirty body.
-      noise(ctx, impact, { dur: 0.56, gain: 0.43 + intensity * 0.012, hp: 35, lp: 6800 });
-      noise(ctx, impact + 0.005, { dur: 0.15, gain: 0.34, hp: 2200, lp: 10500 });
-      tone(ctx, impact, { freq: 92 + intensity * 2, dur: 1.12, type: "sine", gain: 0.32, sweepTo: 28, lp: 320, attack: 0.004 });
-      tone(ctx, impact, { freq: 185, dur: 0.62, type: "sawtooth", gain: 0.17, sweepTo: 46, lp: 950, attack: 0.004 });
+      noise(ctx, impact, { dur: 0.82, gain: 0.5 + intensity * 0.012, hp: 28, lp: 8_600 });
+      noise(ctx, impact + 0.005, { dur: 0.2, gain: 0.4, hp: 2_200, lp: 11_500 });
+      tone(ctx, impact, { freq: 98 + intensity * 2, dur: 1.54, type: "sine", gain: 0.38, sweepTo: 24, lp: 340, attack: 0.003 });
+      tone(ctx, impact, { freq: 210, dur: 0.88, type: "sawtooth", gain: 0.2, sweepTo: 38, lp: 1_100, attack: 0.003 });
 
-      // The second visual pulse gets its own smaller aftershock and a long
-      // rumble so the explosion has weight without masking the result fanfare.
-      noise(ctx, impact + 0.58, { dur: 0.4, gain: 0.24, hp: 45, lp: 1900 });
-      tone(ctx, impact + 0.58, { freq: 68, dur: 0.82, type: "sine", gain: 0.23, sweepTo: 32, lp: 260, attack: 0.004 });
-      tone(ctx, impact + 1.16, { freq: 48, dur: 1.36, type: "sine", gain: 0.09, sweepTo: 24, lp: 180, attack: 0.015 });
+      noise(ctx, impact + 0.62, { dur: 0.54, gain: 0.3, hp: 38, lp: 2_200 });
+      tone(ctx, impact + 0.62, { freq: 74, dur: 1.06, type: "sine", gain: 0.26, sweepTo: 28, lp: 280, attack: 0.004 });
+      noise(ctx, impact + 1.34, { dur: 0.46, gain: 0.19, hp: 55, lp: 1_600 });
+      tone(ctx, impact + 1.34, { freq: 52, dur: 1.82, type: "sine", gain: 0.13, sweepTo: 20, lp: 190, attack: 0.018 });
 
       [1568, 1318, 988, 784].forEach((freq, index) => {
-        tone(ctx, impact + 0.82 + index * 0.11, {
+        tone(ctx, impact + 0.92 + index * 0.11, {
           freq,
           dur: 0.3 + index * 0.08,
           type: index % 2 === 0 ? "triangle" : "sine",
@@ -888,9 +902,9 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       break;
     }
     case "chaosFlashbangCharge": {
-      tone(ctx, t, { freq: 86, dur: 0.64, type: "sine", gain: 0.09, sweepTo: 180, lp: 420, attack: 0.02 });
-      tone(ctx, t + 0.04, { freq: 340, dur: 0.58, type: "sawtooth", gain: 0.045, sweepTo: 1_780, lp: 2_600, attack: 0.02 });
-      noise(ctx, t + 0.18, { dur: 0.42, gain: 0.035, hp: 1_200, lp: 7_600 });
+      tone(ctx, t, { freq: 86, dur: 0.32, type: "sine", gain: 0.1, sweepTo: 220, lp: 480, attack: 0.012 });
+      tone(ctx, t + 0.02, { freq: 340, dur: 0.29, type: "sawtooth", gain: 0.052, sweepTo: 2_180, lp: 3_200, attack: 0.01 });
+      noise(ctx, t + 0.08, { dur: 0.22, gain: 0.04, hp: 1_200, lp: 8_400 });
       break;
     }
     case "chaosFlashbangImpact": {
