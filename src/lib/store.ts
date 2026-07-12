@@ -48,6 +48,24 @@ function stableClockOffset(serverNow: unknown, previous: number): number {
   return Math.max(...clockOffsetSamples);
 }
 
+function chaosChainKey(event: UiEvent): string | undefined {
+  if (event.type !== "chaos") return undefined;
+  if (event.chainId !== undefined) return `chain:${event.chainId}`;
+  return event.actorId ? `legacy:${event.kind}:${event.actorId}` : undefined;
+}
+
+export function mergeVisibleUiEvents(existing: UiEvent[], incoming: UiEvent[]): UiEvent[] {
+  let merged = [...existing];
+  for (const event of incoming) {
+    const chainKey = chaosChainKey(event);
+    if (chainKey) {
+      merged = merged.filter((current) => chaosChainKey(current) !== chainKey);
+    }
+    merged.push(event);
+  }
+  return merged.slice(-MAX_VISIBLE_EVENTS);
+}
+
 export const useRoomStore = create<RoomStore>((set, get) => ({
   snapshot: null,
   events: [],
@@ -69,7 +87,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
       snapshot,
       clockOffset: nextClockOffset,
       eventLockUntil: eventLockMs > 0 ? Math.max(state.eventLockUntil, Date.now() + eventLockMs) : state.eventLockUntil,
-      events: [...state.events, ...visibleEvents].slice(-MAX_VISIBLE_EVENTS)
+      events: mergeVisibleUiEvents(state.events, visibleEvents)
     }));
   },
   dismissEvent: (id) => set((state) => ({ events: state.events.filter((event) => event.id !== id) })),

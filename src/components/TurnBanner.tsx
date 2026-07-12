@@ -8,8 +8,15 @@ import { useRoomStore } from "@/lib/store";
 export function TurnBanner() {
   const t = useTranslations();
   const events = useRoomStore((state) => state.events);
+  const snapshot = useRoomStore((state) => state.snapshot);
   const dismissEvent = useRoomStore((state) => state.dismissEvent);
-  const turnEvent = events.find((event) => event.type === "yourTurn");
+  const chaosBlocking = Boolean(
+    snapshot?.pendingChaos &&
+    !(snapshot.pendingChaos.kind === "nuke" && snapshot.pendingChaos.phase === "countdown")
+  );
+  const turnEvent = !chaosBlocking && snapshot && snapshot.currentPlayerId === snapshot.self?.id
+    ? events.find((event) => event.type === "yourTurn")
+    : undefined;
 
   useEffect(() => {
     if (!turnEvent) {

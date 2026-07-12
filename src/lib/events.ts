@@ -10,7 +10,7 @@ export type UiEvent = (
   | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number; kind?: PendingStack["kind"]; targetColor?: Color }
   | { id: number; type: "matchChain"; value: CardValue; level: number }
-  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; actorId?: string; targetIds?: string[]; amount?: number; color?: Color; countdownEndsAt?: number }
+  | { id: number; type: "chaos"; kind: ChaosEffectKind; phase: PendingChaosPhase; chainId?: number; actorId?: string; targetIds?: string[]; amount?: number; color?: Color; countdownEndsAt?: number }
   | { id: number; type: "chaosBust"; playerId: string; nickname: string; count: number; self: boolean }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
@@ -293,18 +293,27 @@ function presentationUiEvent(event: PresentationEvent, snapshot: GameSnapshot, p
       return actor ? [{ id: idBase, type: "calledOne", nickname: actor.nickname, ...timing }] : [];
     case "chaos":
       return event.chaosKind && event.phase
-        ? [{
+        ? (() => {
+            const pendingChainId =
+              snapshot.pendingChaos?.kind === event.chaosKind &&
+              snapshot.pendingChaos.actorId === event.actorId
+                ? snapshot.pendingChaos.id
+                : undefined;
+            const chainId = event.chainId ?? pendingChainId;
+            return [{
             id: idBase,
             type: "chaos",
             kind: event.chaosKind,
             phase: event.phase,
+            ...(chainId !== undefined ? { chainId } : {}),
             ...(event.actorId ? { actorId: event.actorId } : {}),
             ...(event.targetIds ? { targetIds: event.targetIds } : {}),
             ...(event.amount !== undefined ? { amount: event.amount } : {}),
             ...(event.color ? { color: event.color } : {}),
             ...(snapshot.pendingChaos?.countdownEndsAt ? { countdownEndsAt: snapshot.pendingChaos.countdownEndsAt } : {}),
             ...timing
-          }]
+            }];
+          })()
         : [];
     case "chaosBust":
       return target ? [{

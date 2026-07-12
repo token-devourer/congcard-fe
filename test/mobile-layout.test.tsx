@@ -6,7 +6,8 @@ import messages from "../messages/en.json";
 import { ColorPicker } from "../src/components/ColorPicker";
 import { PlayerSeat } from "../src/components/PlayerSeat";
 import { RoundEndOverlay, roundEndRevealAt } from "../src/components/RoundEndOverlay";
-import { PeekRevealWall } from "../src/components/GameEventOverlay";
+import { GameEventOverlay, PeekRevealWall } from "../src/components/GameEventOverlay";
+import { TurnBanner } from "../src/components/TurnBanner";
 import { CHAOS_BUST_RESULT_SETTLE_MS } from "../src/lib/events";
 import { useRoomStore } from "../src/lib/store";
 
@@ -120,6 +121,59 @@ describe("mobile layout surfaces", () => {
     expect(screen.getByRole("region", { name: "Peek reveal" })).toBeInTheDocument();
     expect(screen.getByLabelText("red 4")).toBeInTheDocument();
     expect(screen.getByLabelText("blue 7")).toBeInTheDocument();
+  });
+
+  it("keeps the rotating Time Skip backdrop oversized beyond the viewport", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
+    const game = snapshot();
+    game.phase = "playing";
+    game.serverNow = 1_000;
+    game.pendingChaos = {
+      id: 7,
+      kind: "timeskip",
+      phase: "opening",
+      actorId: "host",
+      startsAt: 1_000,
+      resolvesAt: 5_900
+    };
+    useRoomStore.setState({
+      snapshot: game,
+      clockOffset: 0,
+      events: [{
+        id: 70,
+        type: "chaos",
+        kind: "timeskip",
+        phase: "opening",
+        chainId: 7,
+        actorId: "host",
+        startsAt: 1_000,
+        resolvesAt: 5_900
+      }]
+    });
+
+    renderWithIntl(<GameEventOverlay />);
+
+    expect(screen.getByTestId("timeskip-overscan")).toHaveClass("h-[160vmax]", "w-[160vmax]");
+  });
+
+  it("suppresses the turn banner during blocking Chaos phases", () => {
+    const game = snapshot();
+    game.phase = "playing";
+    game.currentPlayerId = "guest";
+    game.pendingChaos = {
+      id: 9,
+      kind: "favor",
+      phase: "opening",
+      actorId: "guest",
+      startsAt: 1_000,
+      resolvesAt: 3_250
+    };
+    useRoomStore.setState({ snapshot: game, events: [{ id: 91, type: "yourTurn" }] });
+
+    renderWithIntl(<TurnBanner />);
+
+    expect(screen.queryByText("YOUR TURN!")).not.toBeInTheDocument();
   });
 
   it("waits for a finishing chaos bust before showing the round result", () => {

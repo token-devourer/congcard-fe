@@ -68,7 +68,14 @@ export type SoundName =
   | "chaosPeekClose"
   | "chaosTimeCharge"
   | "chaosTimeStep"
-  | "chaosTimeReturn";
+  | "chaosTimeReturn"
+  | "chaosFlashbangCharge"
+  | "chaosFlashbangImpact"
+  | "chaosFlashbangSwap"
+  | "chaosNukeArm"
+  | "chaosNukeCountdownBed"
+  | "chaosNukeDetonate"
+  | "chaosNukeFinal";
 
 const STORAGE_KEY = "congcard:sound-muted";
 export const TURN_ALERT_SOUND: SoundName = "turnAlert";
@@ -236,7 +243,7 @@ export function playUiEventSounds(events: UiEvent[], clockOffset = 0): void {
   for (const event of events) {
     if (event.type === "chaos") {
       const startsInMs = event.startsAt ? Math.max(0, event.startsAt - serverNow) : 0;
-      playChaosEventSounds(event, startsInMs, serverNow);
+      playChaosEventSounds(event, startsInMs);
       if (event.phase !== "chooseTarget" && event.phase !== "chooseCard") {
         const duration = event.startsAt && event.resolvesAt
           ? Math.max(1_200, event.resolvesAt - event.startsAt + 180)
@@ -350,18 +357,39 @@ export function chaosSoundTimeline(event: Extract<UiEvent, { type: "chaos" }>): 
     return cues;
   }
 
+  if (event.kind === "flashbang" && event.phase === "sequence") {
+    at("opening");
+    at("chaosFlashbangCharge");
+    at("memeFlashbang", 650);
+    at("chaosFlashbangImpact", 650);
+    at("chaosFlashbangSwap", 4_800);
+    return cues;
+  }
+
+  if (event.kind === "nuke") {
+    if (event.phase === "opening") {
+      at("batchFinale");
+      at("chaosNukeArm");
+      at("memeNuke");
+    } else if (event.phase === "countdown") {
+      at("memeNukeCountdown");
+      at("chaosNukeCountdownBed");
+    } else if (event.phase === "detonating") {
+      at("memeNukeDeath");
+      at("chaosNukeDetonate");
+      at("chaosNukeFinal", 1_900);
+    }
+    return cues;
+  }
+
   return cues;
 }
 
-function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number, serverNow: number): void {
+function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, startsInMs: number): void {
   const at = (sound: SoundName, offsetMs = 0, level = 1) => playSoundAt(sound, startsInMs + offsetMs, level);
 
-  if (event.phase === "detonating" && event.kind === "nuke") {
-    return;
-  }
-
   const dramaticTimeline = chaosSoundTimeline(event);
-  if (dramaticTimeline.length > 0 || ["throwup", "steal", "favor", "peek", "timeskip"].includes(event.kind)) {
+  if (dramaticTimeline.length > 0 || ["throwup", "steal", "favor", "peek", "timeskip", "flashbang", "nuke"].includes(event.kind)) {
     for (const cue of dramaticTimeline) {
       at(cue.sound, cue.offsetMs, cue.level);
     }
@@ -369,24 +397,6 @@ function playChaosEventSounds(event: Extract<UiEvent, { type: "chaos" }>, starts
   }
 
   at(event.kind === "nuke" ? "batchFinale" : "opening");
-
-  switch (event.kind) {
-    case "flashbang":
-      at("memeFlashbang", 650);
-      break;
-    case "nuke":
-      at("memeNuke", 650);
-      playSoundAt("memeNukeCountdown", Math.max(0, (event.startsAt ?? serverNow) - serverNow));
-      {
-        const deathStartsAt = event.countdownEndsAt ?? event.resolvesAt ?? ((event.startsAt ?? serverNow) + 40_000);
-        const deathDelayMs = Math.max(0, deathStartsAt - serverNow);
-        playSoundAt("memeNukeDeath", deathDelayMs);
-        duckMusic(deathDelayMs, 1_200);
-      }
-      break;
-    default:
-      break;
-  }
 }
 
 function playSoundAt(name: SoundName, startsInMs: number, level = 1): void {
@@ -875,6 +885,50 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
         gain: rand(0.06, 0.09),
         lp: 7500
       });
+      break;
+    }
+    case "chaosFlashbangCharge": {
+      tone(ctx, t, { freq: 86, dur: 0.64, type: "sine", gain: 0.09, sweepTo: 180, lp: 420, attack: 0.02 });
+      tone(ctx, t + 0.04, { freq: 340, dur: 0.58, type: "sawtooth", gain: 0.045, sweepTo: 1_780, lp: 2_600, attack: 0.02 });
+      noise(ctx, t + 0.18, { dur: 0.42, gain: 0.035, hp: 1_200, lp: 7_600 });
+      break;
+    }
+    case "chaosFlashbangImpact": {
+      noise(ctx, t, { dur: 0.34, gain: 0.14, hp: 60, lp: 8_500 });
+      tone(ctx, t, { freq: 72, dur: 0.82, type: "sine", gain: 0.14, sweepTo: 31, lp: 260, attack: 0.003 });
+      echoTone(ctx, t + 0.08, { freq: 2_900, dur: 0.22, type: "sine", gain: 0.035, lp: 7_800 }, 4, 0.19, 0.46);
+      break;
+    }
+    case "chaosFlashbangSwap": {
+      noise(ctx, t, { dur: 0.28, gain: 0.07, hp: 420, lp: 6_800 });
+      [392, 523, 659, 988].forEach((freq, index) => {
+        tone(ctx, t + index * 0.045, { freq, dur: 0.36, type: "triangle", gain: 0.045, lp: 5_800, attack: 0.004 });
+      });
+      break;
+    }
+    case "chaosNukeArm": {
+      tone(ctx, t, { freq: 38, dur: 3.05, type: "sine", gain: 0.075, sweepTo: 56, lp: 180, attack: 0.08 });
+      tone(ctx, t + 0.12, { freq: 92, dur: 2.8, type: "sawtooth", gain: 0.035, sweepTo: 410, lp: 1_100, attack: 0.08 });
+      [0.35, 1.05, 1.68, 2.2].forEach((offset, index) => {
+        tone(ctx, t + offset, { freq: 520 + index * 90, dur: 0.12, type: "square", gain: 0.035, lp: 2_900, attack: 0.003 });
+      });
+      break;
+    }
+    case "chaosNukeCountdownBed": {
+      tone(ctx, t, { freq: 34, dur: 39.9, type: "sine", gain: 0.022, sweepTo: 46, lp: 150, attack: 0.3 });
+      tone(ctx, t + 30, { freq: 58, dur: 9.8, type: "sawtooth", gain: 0.02, sweepTo: 128, lp: 420, attack: 0.18 });
+      break;
+    }
+    case "chaosNukeDetonate": {
+      noise(ctx, t, { dur: 0.58, gain: 0.18, hp: 45, lp: 9_000 });
+      tone(ctx, t, { freq: 54, dur: 1.5, type: "sine", gain: 0.18, sweepTo: 24, lp: 190, attack: 0.002 });
+      tone(ctx, t + 0.04, { freq: 180, dur: 0.72, type: "sawtooth", gain: 0.055, sweepTo: 42, lp: 780, attack: 0.003 });
+      break;
+    }
+    case "chaosNukeFinal": {
+      noise(ctx, t, { dur: 0.26, gain: 0.12, hp: 90, lp: 4_200 });
+      tone(ctx, t, { freq: 82, dur: 0.78, type: "sine", gain: 0.16, sweepTo: 28, lp: 230, attack: 0.003 });
+      echoTone(ctx, t + 0.08, { freq: 740, dur: 0.16, type: "triangle", gain: 0.045, lp: 4_800 }, 3, 0.14, 0.42);
       break;
     }
     case "chaosThrowupCharge": {

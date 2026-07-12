@@ -412,6 +412,7 @@ export interface PresentationEvent {
   id: number;
   seq: number;
   kind: PresentationEventKind;
+  chainId?: number;
   actorId?: string;
   targetIds?: string[];
   cardValue?: CardValue;

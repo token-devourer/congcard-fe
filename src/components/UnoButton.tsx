@@ -90,7 +90,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             animate={{ scale: [1, 1.12, 1], opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 420, damping: 16 }}
+            transition={{ type: "tween", duration: 0.42, ease: "easeOut" }}
             className={`display pointer-events-auto flex items-center gap-2 rounded-full border-2 px-5 py-3 text-lg font-black text-white ${
               catchReady ? "pulse-red urgent-action border-white/45" : "border-white/20 bg-black/80"
             }`}

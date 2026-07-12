@@ -21,6 +21,31 @@ const POOL_SIZE = 30;
 // Pooled DOM elements for flights to reduce GC pressure
 const elPool: HTMLDivElement[] = [];
 
+export function resolvedChaosGainPlayerIds(
+  events: PresentationEvent[],
+  previousServerNow: number,
+  currentServerNow: number
+): string[] {
+  const playerIds = new Set<string>();
+  for (const event of events) {
+    if (event.kind !== "chaos" || event.resolvesAt < previousServerNow - 250 || event.resolvesAt > currentServerNow + 500) {
+      continue;
+    }
+    if (event.chaosKind === "flashbang") {
+      event.targetIds?.forEach((playerId) => playerIds.add(playerId));
+    } else if (event.chaosKind === "nuke" && event.targetIds?.[0]) {
+      playerIds.add(event.targetIds[0]);
+    }
+  }
+  return [...playerIds];
+}
+
+export function nukePenaltyFlightCount(event: PresentationEvent): number {
+  return event.kind === "chaos" && event.chaosKind === "nuke" && event.phase === "detonating"
+    ? Math.min(MAX_DRAW_FLIGHTS, event.amount ?? 0)
+    : 0;
+}
+
 function acquireEl(): HTMLDivElement {
   return elPool.pop() ?? document.createElement("div");
 }
@@ -177,7 +202,7 @@ export function FlightLayer() {
 
       const previousPresentationSeq = prev.presentationEvents?.at(-1)?.seq ?? 0;
       const serverNow = Date.now() + clockOffset;
-      const chaosTransferActorIds = new Set<string>();
+      const chaosHandledGainIds = new Set<string>();
       for (const event of snapshot.presentationEvents ?? []) {
         if (event.seq <= previousPresentationSeq || animatedPresentationIds.current.has(event.id)) {
           continue;
@@ -185,13 +210,33 @@ export function FlightLayer() {
         animatedPresentationIds.current.add(event.id);
         const transfer = chaosTransferFlight(event, snapshot);
         if (transfer) {
-          if (event.actorId) chaosTransferActorIds.add(event.actorId);
+          if (event.actorId) chaosHandledGainIds.add(event.actorId);
           flights.push({
             ...transfer,
             delay: Math.max(0, event.startsAt - serverNow) / 1000
           });
         }
+        if (event.kind === "chaos" && event.chaosKind === "nuke" && event.phase === "detonating" && event.targetIds?.[0]) {
+          const targetId = event.targetIds[0];
+          const destination = targetId === snapshot.self?.id ? "hand" : `seat:${targetId}`;
+          chaosHandledGainIds.add(targetId);
+          for (let index = 0; index < nukePenaltyFlightCount(event); index += 1) {
+            flights.push({
+              kind: "back",
+              from: "discard",
+              to: destination,
+              delay: Math.max(0, event.startsAt + 1_800 + index * 55 - serverNow) / 1000,
+              drawIndex: index + 1,
+              drawTotal: event.amount ?? 0
+            });
+          }
+        }
       }
+
+      const previousServerNow = prev.serverNow ?? serverNow;
+      const currentServerNow = snapshot.serverNow ?? serverNow;
+      resolvedChaosGainPlayerIds(snapshot.presentationEvents ?? [], previousServerNow, currentServerNow)
+        .forEach((playerId) => chaosHandledGainIds.add(playerId));
 
       for (const player of snapshot.players) {
         const before = prev.players.find((item) => item.id === player.id);
@@ -200,7 +245,7 @@ export function FlightLayer() {
         }
 
         const gained = player.cardCount - before.cardCount;
-        if (gained > 0 && !snapshot.pendingDraw && !prev.pendingDraw && !chaosTransferActorIds.has(player.id)) {
+        if (gained > 0 && !snapshot.pendingDraw && !prev.pendingDraw && !chaosHandledGainIds.has(player.id)) {
           const to = player.id === snapshot.self?.id ? "hand" : `seat:${player.id}`;
           const visibleGained = Math.min(gained, MAX_DRAW_FLIGHTS);
           for (let i = 0; i < visibleGained; i += 1) {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
-import { eventToastDurationMs, nukeDangerStage } from "../src/components/GameEventOverlay";
+import type { Card, ChaosEffectKind, GameSnapshot, PendingChaosPhase, PublicPlayer } from "@congcard/shared";
+import { chaosTextMode, eventToastDurationMs, nukeDangerStage, selectActiveEvent } from "../src/components/GameEventOverlay";
+import { nukePenaltyFlightCount, resolvedChaosGainPlayerIds } from "../src/components/FlightLayer";
 import { diffSnapshots } from "../src/lib/events";
 import { chaosSoundTimeline, soundForEvent, TURN_ALERT_SOUND } from "../src/lib/sound";
+import { mergeVisibleUiEvents } from "../src/lib/store";
 
 function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer {
   return {
@@ -116,11 +118,12 @@ describe("diffSnapshots", () => {
         id: 10,
         seq: 10,
         kind: "chaos",
+        chainId: 44,
         chaosKind: "nuke",
         phase: "detonating",
         targetIds: ["b"],
         startsAt: 41_000,
-        resolvesAt: 42_600
+        resolvesAt: 43_800
       }]
     });
 
@@ -129,7 +132,8 @@ describe("diffSnapshots", () => {
     );
 
     expect(detonation).toBeDefined();
-    expect(eventToastDurationMs(detonation!)).toBe(1_600);
+    expect(detonation).toMatchObject({ chainId: 44 });
+    expect(eventToastDurationMs(detonation!)).toBe(2_800);
   });
 
   it("raises the Nuke danger stage as the countdown runs out", () => {
@@ -143,6 +147,7 @@ describe("diffSnapshots", () => {
         id: 11,
         seq: 11,
         kind: "chaos",
+        chainId: 45,
         chaosKind: "throwup",
         phase: "sequence",
         actorId: "a",
@@ -154,12 +159,12 @@ describe("diffSnapshots", () => {
     });
 
     const event = diffSnapshots(prev, next).find((item) => item.type === "chaos");
-    expect(event).toMatchObject({ kind: "throwup", phase: "sequence", actorId: "a", amount: 12, color: "red" });
+    expect(event).toMatchObject({ kind: "throwup", phase: "sequence", chainId: 45, actorId: "a", amount: 12, color: "red" });
     expect(eventToastDurationMs(event!)).toBe(2_180);
   });
 
   it("keeps each meme clip at its intended cinematic phase", () => {
-    const chaosEvent = (kind: "throwup" | "steal" | "favor" | "peek" | "timeskip", phase: "opening" | "sequence" | "reveal" | "autoplay", targetIds?: string[], amount?: number) => ({
+    const chaosEvent = (kind: ChaosEffectKind, phase: PendingChaosPhase, targetIds?: string[], amount?: number) => ({
       id: 1,
       type: "chaos" as const,
       kind,
@@ -187,6 +192,80 @@ describe("diffSnapshots", () => {
     expect(chaosSoundTimeline(chaosEvent("timeskip", "sequence"))).toEqual([
       { sound: "chaosTimeReturn", offsetMs: 0, level: 1 }
     ]);
+    expect(chaosSoundTimeline(chaosEvent("flashbang", "sequence"))).toEqual([
+      { sound: "opening", offsetMs: 0, level: 1 },
+      { sound: "chaosFlashbangCharge", offsetMs: 0, level: 1 },
+      { sound: "memeFlashbang", offsetMs: 650, level: 1 },
+      { sound: "chaosFlashbangImpact", offsetMs: 650, level: 1 },
+      { sound: "chaosFlashbangSwap", offsetMs: 4_800, level: 1 }
+    ]);
+    expect(chaosSoundTimeline(chaosEvent("nuke", "opening"))).toEqual([
+      { sound: "batchFinale", offsetMs: 0, level: 1 },
+      { sound: "chaosNukeArm", offsetMs: 0, level: 1 },
+      { sound: "memeNuke", offsetMs: 0, level: 1 }
+    ]);
+    expect(chaosSoundTimeline(chaosEvent("nuke", "countdown"))).toEqual([
+      { sound: "memeNukeCountdown", offsetMs: 0, level: 1 },
+      { sound: "chaosNukeCountdownBed", offsetMs: 0, level: 1 }
+    ]);
+    expect(chaosSoundTimeline(chaosEvent("nuke", "detonating"))).toEqual([
+      { sound: "memeNukeDeath", offsetMs: 0, level: 1 },
+      { sound: "chaosNukeDetonate", offsetMs: 0, level: 1 },
+      { sound: "chaosNukeFinal", offsetMs: 1_900, level: 1 }
+    ]);
+  });
+
+  it("replaces older phases from the same Chaos chain", () => {
+    const opening = { id: 1, type: "chaos" as const, kind: "favor" as const, phase: "opening" as const, chainId: 71, actorId: "a" };
+    const choice = { id: 2, type: "chaos" as const, kind: "favor" as const, phase: "chooseTarget" as const, chainId: 71, actorId: "a" };
+
+    expect(mergeVisibleUiEvents([opening], [choice])).toEqual([choice]);
+    expect(mergeVisibleUiEvents(
+      [{ ...opening, chainId: undefined }],
+      [{ ...choice, chainId: undefined }]
+    )).toEqual([{ ...choice, chainId: undefined }]);
+  });
+
+  it("uses the newest phase and shows only one title per Chaos chain", () => {
+    const opening = { id: 1, type: "chaos" as const, kind: "favor" as const, phase: "opening" as const, chainId: 8, actorId: "a", startsAt: 1_000 };
+    const choice = { id: 2, type: "chaos" as const, kind: "favor" as const, phase: "chooseTarget" as const, chainId: 8, actorId: "a", startsAt: 2_000 };
+    const targetOpening = { id: 3, type: "chaos" as const, kind: "favor" as const, phase: "opening" as const, chainId: 8, actorId: "a", targetIds: ["b"], startsAt: 3_000 };
+
+    expect(selectActiveEvent([opening, choice])).toBe(choice);
+    expect(chaosTextMode(opening)).toBe("opening");
+    expect(chaosTextMode(choice)).toBe("prompt");
+    expect(chaosTextMode(targetOpening)).toBe("none");
+    expect(chaosTextMode({ ...opening, id: 4, kind: "flashbang", phase: "sequence" })).toBe("openingResult");
+    expect(chaosTextMode({ ...opening, id: 5, kind: "nuke", phase: "detonating" })).toBe("result");
+  });
+
+  it("suppresses generic gain flights for Flashbang and creates Nuke penalty flights", () => {
+    const flashbang = {
+      id: 1,
+      seq: 1,
+      kind: "chaos" as const,
+      chaosKind: "flashbang" as const,
+      phase: "sequence" as const,
+      targetIds: ["a", "b"],
+      startsAt: 1_000,
+      resolvesAt: 6_650
+    };
+    const nuke = {
+      id: 2,
+      seq: 2,
+      kind: "chaos" as const,
+      chaosKind: "nuke" as const,
+      phase: "detonating" as const,
+      targetIds: ["b"],
+      amount: 17,
+      startsAt: 7_000,
+      resolvesAt: 9_800
+    };
+
+    expect(resolvedChaosGainPlayerIds([flashbang], 6_500, 6_700)).toEqual(["a", "b"]);
+    expect(resolvedChaosGainPlayerIds([nuke], 9_700, 9_900)).toEqual(["b"]);
+    expect(nukePenaltyFlightCount(nuke)).toBe(12);
+    expect(nukePenaltyFlightCount(flashbang)).toBe(0);
   });
 
   it("detects a penalty when a player's card count jumps by two or more", () => {
